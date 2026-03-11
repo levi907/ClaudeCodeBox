@@ -1,5 +1,6 @@
 import express from 'express'
 import fetch from 'node-fetch'
+import { existsSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -70,11 +71,16 @@ app.post('/api/scryfall/collection', async (req, res) => {
   }
 })
 
-// Serve built frontend in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, 'dist')))
-  app.get('*', (_, res) => res.sendFile(join(__dirname, 'dist', 'index.html')))
-}
+// Always serve the built frontend (run `npm run build` first)
+app.use(express.static(join(__dirname, 'dist')))
+app.get('*', (_, res) => {
+  const indexPath = join(__dirname, 'dist', 'index.html')
+  if (existsSync(indexPath)) {
+    res.sendFile(indexPath)
+  } else {
+    res.status(503).send('Frontend not built. Run: npm run build')
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`)
