@@ -178,7 +178,38 @@ html, body {
   white-space: nowrap;
 }
 
-#weapon-slots, #relic-slots {
+/* Wand HUD button (replaces weapon slots) */
+#wand-hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(80, 0, 160, 0.55);
+  border: 1px solid rgba(192, 80, 255, 0.6);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-bottom: 3px;
+  font-size: 14px;
+  cursor: pointer;
+  pointer-events: all;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.12s;
+  max-width: 140px;
+}
+#wand-hud-btn:hover, #wand-hud-btn:active {
+  background: rgba(120, 0, 220, 0.75);
+}
+.wand-gem-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.gem-dot-common    { background: #6688bb; box-shadow: 0 0 4px #6688bb; }
+.gem-dot-rare      { background: #4466cc; box-shadow: 0 0 5px #88aaff; }
+.gem-dot-legendary { background: #cc7700; box-shadow: 0 0 6px #ffaa33; }
+
+#relic-slots {
   display: flex;
   gap: 4px;
   margin-bottom: 3px;
@@ -214,6 +245,202 @@ html, body {
   font-size: 11px;
   pointer-events: none;
 }
+
+/* ============================================================
+   INVENTORY PANEL
+   ============================================================ */
+#inventory-panel {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+}
+#inventory-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(4, 0, 16, 0.88);
+  backdrop-filter: blur(4px);
+}
+#inventory-content {
+  position: relative;
+  z-index: 111;
+  background: linear-gradient(160deg, #0d0018, #060010);
+  border: 1px solid rgba(192, 80, 255, 0.4);
+  border-radius: 12px;
+  padding: 14px;
+  max-width: 94vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  width: min(580px, 94vw);
+  box-shadow: 0 0 40px rgba(120, 0, 200, 0.3);
+}
+#inventory-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.inv-title {
+  color: #c8a0ff;
+  font-size: clamp(12px, 2.5vw, 16px);
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+#inventory-close-btn {
+  background: rgba(80, 0, 160, 0.5);
+  border: 1px solid rgba(192, 80, 255, 0.4);
+  color: #c8a0ff;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  pointer-events: all;
+}
+#inventory-close-btn:hover { background: rgba(120, 0, 220, 0.7); }
+
+/* Wand section */
+#wand-section {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+#wand-graphic {
+  background: linear-gradient(160deg, #18003a, #0d0020);
+  border: 1px solid rgba(192, 80, 255, 0.5);
+  border-radius: 8px;
+  padding: 10px 14px;
+  text-align: center;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+#wand-icon-wrap {
+  font-size: 28px;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 8px rgba(192,80,255,0.8));
+}
+#wand-label {
+  color: #c8a0ff;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+#wand-stats-readout {
+  color: #7760a0;
+  font-size: 9px;
+  line-height: 1.5;
+  white-space: normal;
+  word-break: break-word;
+}
+#wand-sockets {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+.wand-socket-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wand-socket-label {
+  color: rgba(192, 80, 255, 0.6);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+.wand-gem-slot {
+  min-height: 80px;
+  border: 1.5px dashed rgba(192, 80, 255, 0.35);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: rgba(60, 0, 100, 0.2);
+}
+.wand-gem-slot:hover { border-color: rgba(192, 80, 255, 0.7); }
+.wand-gem-slot.selected { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+.empty-socket-label {
+  color: rgba(192, 80, 255, 0.3);
+  font-size: 10px;
+  text-align: center;
+}
+
+.inv-divider {
+  height: 1px;
+  background: rgba(192, 80, 255, 0.2);
+  margin: 10px 0 8px;
+}
+#inventory-section-label {
+  color: rgba(192, 80, 255, 0.5);
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+#inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.inv-slot {
+  min-height: 70px;
+  border: 1px dashed rgba(100, 80, 140, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  background: rgba(20, 0, 40, 0.4);
+}
+.inv-slot:hover  { border-color: rgba(192, 80, 255, 0.5); }
+.inv-slot.selected { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.4); }
+.empty-inv-label { color: rgba(100, 80, 140, 0.3); font-size: 16px; }
+
+/* Gem cell (shown inside socket or inventory slot) */
+.gem-cell {
+  width: 100%;
+  border-radius: 5px;
+  padding: 5px 6px;
+}
+.gem-cell-common    { background: rgba(85, 119, 170, 0.12); border: 1px solid rgba(85,119,170,0.35); }
+.gem-cell-rare      { background: rgba(68, 102, 204, 0.12); border: 1px solid rgba(68,102,204,0.45); }
+.gem-cell-legendary { background: rgba(204,119,0,0.10);     border: 1px solid rgba(204,119,0,0.5);   }
+
+.gem-rarity-tag {
+  font-size: 8px;
+  letter-spacing: 1px;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+.gem-rarity-common    { color: #6688bb; }
+.gem-rarity-rare      { color: #6699ff; }
+.gem-rarity-legendary { color: #ffaa33; }
+
+.gem-mod-line {
+  font-size: clamp(8px, 1.4vw, 10px);
+  line-height: 1.4;
+}
+.gem-mod-line-common    { color: #8899bb; }
+.gem-mod-line-rare      { color: #ccaa44; }
+.gem-mod-line-legendary { color: #ff8c00; }
+
+#inv-hint {
+  color: rgba(120, 100, 160, 0.5);
+  font-size: 9px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ============================================================
+   UPGRADE SCREEN – GEM DRAFT ADDITIONS
+   ============================================================ */
 
 /* Upgrade Screen */
 #upgrade-screen {
@@ -271,11 +498,52 @@ html, body {
   border-color: #c050ff;
   box-shadow: 0 8px 25px rgba(192, 80, 255, 0.4);
 }
-.upgrade-card.rarity-common { border-color: #5060b0; }
-.upgrade-card.rarity-rare { border-color: #3090d0; }
-.upgrade-card.rarity-epic { border-color: #9030d0; }
-.upgrade-card.rarity-weapon { border-color: #d04010; }
-.upgrade-card.rarity-relic { border-color: #20a060; }
+.upgrade-card.rarity-common    { border-color: #5060b0; }
+.upgrade-card.rarity-rare      { border-color: #3090d0; }
+.upgrade-card.rarity-epic      { border-color: #9030d0; }
+.upgrade-card.rarity-weapon    { border-color: #d04010; }
+.upgrade-card.rarity-relic     { border-color: #20a060; }
+
+/* Gem draft cards */
+.upgrade-card.rarity-gem-common    { border-color: #5577aa; background: linear-gradient(160deg, #0d1520, #080e18); }
+.upgrade-card.rarity-gem-rare      { border-color: #4466cc; background: linear-gradient(160deg, #0d102a, #080818); }
+.upgrade-card.rarity-gem-legendary { border-color: #cc7700; background: linear-gradient(160deg, #221200, #160900); }
+.upgrade-card.rarity-gem-common:hover, .upgrade-card.rarity-gem-common:active {
+  border-color: #88aadd; box-shadow: 0 8px 25px rgba(85,119,170,0.45);
+}
+.upgrade-card.rarity-gem-rare:hover, .upgrade-card.rarity-gem-rare:active {
+  border-color: #88aaff; box-shadow: 0 8px 28px rgba(68,102,204,0.5);
+}
+.upgrade-card.rarity-gem-legendary:hover, .upgrade-card.rarity-gem-legendary:active {
+  border-color: #ffaa33; box-shadow: 0 8px 32px rgba(204,119,0,0.6);
+}
+
+/* Gem diamond shape in upgrade cards */
+.gem-diamond-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.gem-diamond {
+  width: 28px; height: 28px;
+  transform: rotate(45deg);
+  border-radius: 3px;
+  margin: 4px;
+}
+.gem-diamond-common    { background: radial-gradient(circle at 35% 35%, #aabbdd, #445577); box-shadow: 0 0 10px rgba(85,119,170,0.6); }
+.gem-diamond-rare      { background: radial-gradient(circle at 35% 35%, #99bbff, #2244aa); box-shadow: 0 0 12px rgba(68,102,204,0.7); }
+.gem-diamond-legendary { background: radial-gradient(circle at 35% 35%, #ffcc66, #884400); box-shadow: 0 0 16px rgba(255,150,0,0.8); }
+
+/* Gem mod lines in upgrade cards */
+.gem-mods { text-align: left; margin-top: 4px; }
+.gem-mod {
+  font-size: clamp(9px, 1.6vw, 11px);
+  line-height: 1.5;
+  padding: 1px 0;
+}
+.gem-mod-common    { color: #8899bb; }
+.gem-mod-rare      { color: #ccaa44; }
+.gem-mod-legendary { color: #ff8c00; font-weight: bold; }
 
 .card-icon {
   font-size: clamp(28px, 5vw, 40px);
