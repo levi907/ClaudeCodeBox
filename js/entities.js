@@ -99,7 +99,7 @@ const ENEMY_DEFS = {
   zombie: {
     name: 'Zombie',
     hp: 30, speed: 45, damage: 12, armor: 0,
-    xpDrop: [2, 4],
+    xpDrop: [18, 22],
     size: 16,
     score: 1,
     drawFn: (ctx, x, y, af) => Sprites.enemyZombie(ctx, x, y, 100, 100, af),
@@ -109,7 +109,7 @@ const ENEMY_DEFS = {
   bat: {
     name: 'Bat',
     hp: 10, speed: 95, damage: 6, armor: 0,
-    xpDrop: [1, 2],
+    xpDrop: [18, 22],
     size: 12,
     score: 1,
     drawFn: (ctx, x, y, af) => Sprites.enemyBat(ctx, x, y, af),
