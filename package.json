@@ -1,0 +1,14 @@
+{
+  "name": "spell-survivors",
+  "version": "1.0.0",
+  "description": "A Vampire Survivors-like browser game with auto-firing spells, upgrades, and relics",
+  "main": "generate-assets.js",
+  "scripts": {
+    "generate": "node generate-assets.js",
+    "serve": "npx serve . -p 3000"
+  },
+  "keywords": ["game", "browser", "vampire-survivors", "canvas"],
+  "dependencies": {
+    "canvas": "^3.2.1"
+  }
+}

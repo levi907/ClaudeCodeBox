@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Spell Survivors</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Virtual joystick overlay -->
+    <div id="joystick-zone" class="touch-zone left-zone"></div>
+    <div id="joystick-base" class="joystick-base hidden">
+      <div id="joystick-thumb" class="joystick-thumb"></div>
+    </div>
+
+    <!-- HUD overlay -->
+    <div id="hud-overlay">
+      <div id="top-bar">
+        <div id="level-badge">Lv <span id="level-display">1</span></div>
+        <div id="xp-bar-container">
+          <div id="xp-bar-fill"></div>
+          <span id="xp-label">0 / 100 XP</span>
+        </div>
+        <div id="timer-display">00:00</div>
+      </div>
+      <div id="hp-bar-container">
+        <div id="hp-bar-fill"></div>
+        <span id="hp-label">100 / 100</span>
+      </div>
+      <div id="weapon-slots"></div>
+      <div id="relic-slots"></div>
+      <div id="kill-counter">Kills: <span id="kill-count">0</span></div>
+    </div>
+
+    <!-- Upgrade Draft Screen -->
+    <div id="upgrade-screen" class="hidden">
+      <div id="upgrade-backdrop"></div>
+      <div id="upgrade-panel">
+        <h2 id="upgrade-title">Level Up!</h2>
+        <p id="upgrade-subtitle">Choose an upgrade</p>
+        <div id="upgrade-cards"></div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="hidden">
+      <div id="gameover-panel">
+        <h1>YOU DIED</h1>
+        <div id="gameover-stats"></div>
+        <button id="restart-btn">Play Again</button>
+      </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+      <div id="start-panel">
+        <h1 class="game-title">SPELL<br>SURVIVORS</h1>
+        <p class="game-subtitle">Survive the endless horde</p>
+        <div id="start-tips">
+          <p>Auto-attack enemies • Level up • Build synergies</p>
+          <p>Move with joystick or WASD</p>
+        </div>
+        <button id="start-btn">START GAME</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/weapons.js"></script>
+  <script src="js/relics.js"></script>
+  <script src="js/upgrade.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
