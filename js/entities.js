@@ -271,21 +271,35 @@ class Projectile {
     this.size = opts.size || 6;
     this.pierce = opts.pierce || 0;
     this.pierceCount = 0;
+    this.bounce = opts.bounce || 0;
+    this.bounceCount = 0;
+    this._needsBounce = false;
+    this.chain = opts.chain || 0;
+    this.chainRange = opts.chainRange || 130;
     this.type = opts.type || 'bolt';
     this.color = opts.color || '#c050ff';
     this.lifetime = opts.lifetime || 3.0;
     this.age = 0;
     this.isDead = false;
     this.hitEnemies = new Set();
-    this.owner = opts.owner || null;
     this.isCrit = opts.isCrit || false;
+    // Gem-based special flags
+    this.spiraling = opts.spiraling || false;
+    this._spiralOmega = 0;
+    this.explosive = opts.explosive || false;
     this.explosionRadius = opts.explosionRadius || 0;
-    this.slowAmount = opts.slowAmount || 0;
-    this.slowDuration = opts.slowDuration || 0;
-    this.extraData = opts.extraData || {};
+    this.virulentPoison = opts.virulentPoison || false;
   }
 
   update(dt) {
+    if (this.spiraling) {
+      // Gradually rotate velocity vector, creating a widening spiral
+      this._spiralOmega += 2.8 * dt;
+      const spd = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      const a = Math.atan2(this.vy, this.vx) + this._spiralOmega * dt;
+      this.vx = Math.cos(a) * spd;
+      this.vy = Math.sin(a) * spd;
+    }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.age += dt;
@@ -293,31 +307,27 @@ class Projectile {
   }
 
   draw(ctx, screenX, screenY) {
-    const angle = Math.atan2(this.vy, this.vx);
-    switch (this.type) {
-      case 'bolt':
-        Sprites.drawMagicBolt(ctx, screenX, screenY, angle, this.color, this.size);
-        break;
-      case 'fireball':
-        Sprites.drawFireball(ctx, screenX, screenY, this.size, this.age * 60);
-        break;
-      case 'ice':
-        Sprites.drawIceShard(ctx, screenX, screenY, angle, this.size);
-        break;
-      case 'void':
-        Sprites.drawVoidOrb(ctx, screenX, screenY, this.size, this.age * 60);
-        break;
-    }
+    const a = Math.atan2(this.vy, this.vx);
+    Sprites.drawMagicBolt(ctx, screenX, screenY, a, this.color, this.size);
   }
 
+  // Returns true if the hit should be processed.
+  // Sets isDead / _needsBounce based on pierce/bounce budget.
   hitEnemy(enemy) {
     if (this.hitEnemies.has(enemy.id)) return false;
     this.hitEnemies.add(enemy.id);
-    if (this.pierceCount >= this.pierce) {
-      this.isDead = true;
-    } else {
+    // Pierce first
+    if (this.pierceCount < this.pierce) {
       this.pierceCount++;
+      return true;
     }
+    // Then bounce
+    if (this.bounceCount < this.bounce) {
+      this.bounceCount++;
+      this._needsBounce = true;
+      return true;
+    }
+    this.isDead = true;
     return true;
   }
 }
