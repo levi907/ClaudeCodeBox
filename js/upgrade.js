@@ -65,22 +65,6 @@ class UpgradeSystem {
       }
     }
 
-    // 3) Level up existing relics
-    for (const r of relics) {
-      if (r.level < r.maxLevel) {
-        options.push({ kind: 'relic_upgrade', id: r.id, newLevel: r.level + 1 });
-      }
-    }
-
-    // 4) New relics (if slots available)
-    if (relics.length < CONFIG.MAX_RELICS) {
-      for (const id of Object.keys(RELIC_DEFS)) {
-        if (!relics.find(r => r.id === id)) {
-          options.push({ kind: 'new_relic', id });
-        }
-      }
-    }
-
     // Shuffle and pick 3 (prefer upgrades over new items for variety)
     const upgrades = shuffleArray(options.filter(o => o.kind.endsWith('_upgrade')));
     const newItems = shuffleArray(options.filter(o => o.kind.startsWith('new_')));
