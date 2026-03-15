@@ -13,6 +13,7 @@ class Game {
 
     this.running = false;
     this.paused = false;
+    this.inventoryOpen = false;
     this.time = 0;
     this.frame = 0;
 
@@ -21,17 +22,16 @@ class Game {
     this.projectiles = [];
     this.xpOrbs = [];
     this.heartPickups = [];
-    this.weapons = [];
+    this.wand = null;
+    this.inventory = [];  // 9 gem slots
     this.relics = [];
 
     this.camera = { x: 0, y: 0 };
 
     this._spawnTimer = 0;
     this._spawnInterval = CONFIG.ENEMY_SPAWN_INTERVAL_START;
-    this._spawnWaveTimer = 0;
     this._bossSpawnIndex = 0;
     this._lightningArcs = [];
-    this._garlicPulse = 0;
     this._processingLevelUp = false;
 
     this._lastTime = 0;
@@ -49,13 +49,13 @@ class Game {
   }
 
   init() {
-    // Create player at world center
     this.player = new Player(0, 0);
     this.enemies = [];
     this.projectiles = [];
     this.xpOrbs = [];
     this.heartPickups = [];
-    this.weapons = [new WeaponInstance('magic_wand')];
+    this.wand = new Wand();
+    this.inventory = new Array(9).fill(null);
     this.relics = [];
     this.particles.clear();
     this.time = 0;
@@ -64,8 +64,8 @@ class Game {
     this._spawnInterval = CONFIG.ENEMY_SPAWN_INTERVAL_START;
     this._bossSpawnIndex = 0;
     this._lightningArcs = [];
-    this._garlicPulse = 0;
     this._processingLevelUp = false;
+    this.inventoryOpen = false;
     this.camera.x = 0;
     this.camera.y = 0;
     this.ui.updateSlots();
@@ -94,7 +94,7 @@ class Game {
     this._raf = requestAnimationFrame((ts) => {
       const dt = Math.min((ts - this._lastTime) / 1000, 0.05);
       this._lastTime = ts;
-      if (!this.paused && !this.upgradeSystem.active) {
+      if (!this.paused && !this.upgradeSystem.active && !this.inventoryOpen) {
         this.update(dt);
       }
       this.draw();
@@ -109,11 +109,9 @@ class Game {
     this.frame++;
 
     // HP regen from relics
-    if (this.player._hpRegen) {
-      this.player.heal(this.player._hpRegen * dt);
-    }
+    if (this.player._hpRegen) this.player.heal(this.player._hpRegen * dt);
 
-    // Player
+    // Player movement
     this.player.update(dt, this.input);
 
     // Camera follows player
@@ -138,24 +136,16 @@ class Game {
             e.takeDamage(this.player._thorns);
             if (e.isDead) this.onEnemyDead(e);
           }
-          if (this.player.isDead) {
-            this.ui.showGameOver();
-            return;
-          }
+          if (this.player.isDead) { this.ui.showGameOver(); return; }
         }
       }
     }
 
-    // Weapons
-    for (const w of this.weapons) {
-      w.update(dt, this);
-    }
+    // Wand fires
+    this.wand.update(dt, this);
 
     // Lightning arcs decay
     this._lightningArcs = this._lightningArcs.filter(a => { a.age += dt; return a.age < a.maxAge; });
-
-    // Garlic aura pulse decay
-    if (this._garlicPulse > 0) this._garlicPulse -= dt * 3;
 
     // Projectiles
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
@@ -163,43 +153,54 @@ class Game {
       p.update(dt);
       if (p.isDead) { this.projectiles.splice(i, 1); continue; }
 
-      // Check collisions with enemies
       for (const e of this.enemies) {
         if (e.isDead) continue;
         const d = dist(p.x, p.y, e.x, e.y);
         if (d < p.size + e.size) {
-          if (p.hitEnemy(e)) {
-            const isCrit = p.isCrit || (Math.random() < this.player.critChance);
-            const dmg = isCrit ? p.damage * 2 : p.damage;
-            const result = e.takeDamage(dmg, isCrit);
+          if (!p.hitEnemy(e)) continue;
 
-            // Lifesteal
-            if (this.player.lifesteal > 0) {
-              this.player.heal(result.actual * this.player.lifesteal);
+          // Damage
+          const isCrit = p.isCrit || (Math.random() < this.player.critChance);
+          const dmg = isCrit ? p.damage * 2 : p.damage;
+          const result = e.takeDamage(dmg, isCrit);
+
+          // Lifesteal
+          if (this.player.lifesteal > 0) this.player.heal(result.actual * this.player.lifesteal);
+
+          // Virulent poison application
+          if (p.virulentPoison && !e.virulentlyPoisoned) {
+            e.virulentlyPoisoned = true;
+            e.poisoned = 6.0;
+            this.particles.spark(e.x, e.y, '#80ff40', 5);
+          }
+
+          this.particles.floatText(e.x, e.y - 15, `${result.actual}`,
+            isCrit ? '#ffd700' : '#ffffff', isCrit ? 16 : 12);
+          if (isCrit) this.particles.spark(e.x, e.y, '#ffd700', 6);
+          else this.particles.spark(e.x, e.y, '#c050ff', 4);
+
+          if (e.isDead) this.onEnemyDead(e);
+
+          // Bounce: redirect projectile toward nearest unhit enemy
+          if (p._needsBounce) {
+            p._needsBounce = false;
+            const bt = [...this.enemies]
+              .filter(en => !en.isDead && !p.hitEnemies.has(en.id))
+              .sort((a, b) => distSq(p.x, p.y, a.x, a.y) - distSq(p.x, p.y, b.x, b.y))[0];
+            if (bt) {
+              const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+              const a = angle(p.x, p.y, bt.x, bt.y);
+              p.vx = Math.cos(a) * spd;
+              p.vy = Math.sin(a) * spd;
+            } else {
+              p.isDead = true;
             }
+          }
 
-            // Slow/freeze
-            if (p.extraData && p.extraData.freeze) {
-              e.frozen = p.extraData.freeze;
-              this.particles.freeze(e.x, e.y);
-            }
-
-            this.particles.floatText(e.x, e.y - 15, `${result.actual}`,
-              isCrit ? '#ffd700' : '#ffffff', isCrit ? 16 : 12);
-            if (isCrit) this.particles.spark(e.x, e.y, '#ffd700', 6);
-            else this.particles.spark(e.x, e.y, '#c050ff', 4);
-
-            // Weapon-specific on-hit effects
-            const wDef = this.weapons.find(w => p.owner === w.id || p.type === w.id);
-            if (wDef && WEAPON_DEFS[wDef.id] && WEAPON_DEFS[wDef.id].onHit) {
-              WEAPON_DEFS[wDef.id].onHit(this, p, e);
-            }
-            // Fireball special
-            if (p.type === 'fireball' && p.explosionRadius > 0 && p.isDead) {
-              this._fireballExplode(p);
-            }
-
-            if (e.isDead) this.onEnemyDead(e);
+          // On projectile death: explosion and/or chain
+          if (p.isDead) {
+            if (p.explosive && p.explosionRadius > 0) this._wandExplode(p);
+            if (p.chain > 0) this._spawnChainProjectiles(p);
           }
         }
       }
@@ -229,24 +230,46 @@ class Game {
       }
     }
 
-    // Particles
     this.particles.update(dt);
-
-    // UI
     this.ui.update();
   }
 
-  _fireballExplode(proj) {
-    this.particles.explode(proj.x, proj.y, '#ff6000', 25);
+  // Explosive gem: bolt explodes in AoE on impact
+  _wandExplode(proj) {
+    this.particles.explode(proj.x, proj.y, '#c050ff', 20);
     for (const e of this.enemies) {
       if (e.isDead) continue;
       const d = dist(proj.x, proj.y, e.x, e.y);
       if (d < proj.explosionRadius + e.size) {
-        const dmg = Math.round(proj.damage * 0.75);
+        const dmg = Math.round(proj.damage * 0.7);
         const result = e.takeDamage(dmg);
-        this.particles.floatText(e.x, e.y - 12, `${result.actual}`, '#ff9030', 11);
+        this.particles.floatText(e.x, e.y - 12, `${result.actual}`, '#dd88ff', 11);
         if (e.isDead) this.onEnemyDead(e);
       }
+    }
+  }
+
+  // Chain gem: on hit, fire new bolts at nearby unhit enemies
+  _spawnChainProjectiles(proj) {
+    const chainTargets = [...this.enemies]
+      .filter(e => !e.isDead && !proj.hitEnemies.has(e.id) && dist(proj.x, proj.y, e.x, e.y) < proj.chainRange)
+      .sort((a, b) => distSq(proj.x, proj.y, a.x, a.y) - distSq(proj.x, proj.y, b.x, b.y))
+      .slice(0, proj.chain);
+
+    for (const t of chainTargets) {
+      const a = angle(proj.x, proj.y, t.x, t.y);
+      const spd = Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy);
+      this.spawnProjectile(new Projectile({
+        x: proj.x, y: proj.y,
+        vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+        damage: Math.round(proj.damage * 0.7),
+        size: proj.size * 0.8,
+        pierce: 0, bounce: 0, chain: 0, // no further chaining
+        type: 'bolt', color: '#88aaff',
+        lifetime: 1.5,
+        explosive: proj.explosive, explosionRadius: proj.explosionRadius,
+      }));
+      this._lightningArcs.push({ x1: proj.x, y1: proj.y, x2: t.x, y2: t.y, age: 0, maxAge: 0.18 });
     }
   }
 
@@ -254,16 +277,26 @@ class Game {
     if (!enemy.isDead) return;
     this.player.kills++;
 
-    // Drop XP
+    // Virulent poison: spreads to nearby enemies on death
+    if (enemy.virulentlyPoisoned) {
+      const nearby = this.enemies
+        .filter(e => !e.isDead && !e.virulentlyPoisoned && dist(e.x, e.y, enemy.x, enemy.y) < 160)
+        .slice(0, 4);
+      for (const e of nearby) {
+        e.virulentlyPoisoned = true;
+        e.poisoned = 6.0;
+        this.particles.spark(e.x, e.y, '#80ff40', 6);
+        this.particles.floatText(e.x, e.y - 12, 'INFECTED', '#80ff40', 10);
+      }
+    }
+
     const orbs = enemy.dropXP();
     for (const o of orbs) this.xpOrbs.push(new XPOrb(o.x, o.y, o.value, o.size));
 
-    // Rare heart drop
     if (Math.random() < (enemy.isBoss ? 0.8 : 0.04)) {
       this.heartPickups.push(new HeartPickup(enemy.x, enemy.y));
     }
 
-    // Death particles
     if (enemy.isBoss) {
       this.particles.explode(enemy.x, enemy.y, '#ff0000', 40);
       this.particles.levelUpBurst(enemy.x, enemy.y);
@@ -272,7 +305,6 @@ class Game {
       this.particles.spark(enemy.x, enemy.y, '#ff4040', 4);
     }
 
-    // Remove from array
     const idx = this.enemies.indexOf(enemy);
     if (idx !== -1) this.enemies.splice(idx, 1);
   }
@@ -291,19 +323,14 @@ class Game {
 
   _updateSpawning(dt) {
     this._spawnTimer += dt;
-
-    // Ramp up spawn rate over time
     this._spawnInterval = Math.max(
       CONFIG.ENEMY_SPAWN_INTERVAL_MIN,
       CONFIG.ENEMY_SPAWN_INTERVAL_START - this.time * 0.01
     );
-
     if (this._spawnTimer >= this._spawnInterval) {
       this._spawnTimer = 0;
       this._spawnEnemyWave();
     }
-
-    // Boss spawns
     const bossMinutes = CONFIG.BOSS_SPAWN_MINUTES;
     if (this._bossSpawnIndex < bossMinutes.length) {
       const nextBoss = bossMinutes[this._bossSpawnIndex] * 60;
@@ -317,7 +344,6 @@ class Game {
   _spawnEnemyWave() {
     const minutes = this.time / 60;
     const count = Math.min(1 + Math.floor(minutes * 0.5), 6);
-
     for (let i = 0; i < count; i++) {
       const type = this._pickEnemyType(minutes);
       const { x, y } = this._spawnPosition();
@@ -355,16 +381,14 @@ class Game {
     let x, y;
     const hw = this.width / 2 + margin;
     const hh = this.height / 2 + margin;
-    if (side === 0) { x = rng(-hw, hw); y = -hh; }       // top
-    else if (side === 1) { x = rng(-hw, hw); y = hh; }   // bottom
-    else if (side === 2) { x = -hw; y = rng(-hh, hh); }  // left
-    else { x = hw; y = rng(-hh, hh); }                    // right
+    if (side === 0)      { x = rng(-hw, hw); y = -hh; }
+    else if (side === 1) { x = rng(-hw, hw); y = hh; }
+    else if (side === 2) { x = -hw; y = rng(-hh, hh); }
+    else                 { x = hw; y = rng(-hh, hh); }
     return { x: this.player.x + x, y: this.player.y + y };
   }
 
-  spawnProjectile(proj) {
-    this.projectiles.push(proj);
-  }
+  spawnProjectile(proj) { this.projectiles.push(proj); }
 
   getNearestEnemies(count) {
     if (this.enemies.length === 0) return [];
@@ -375,81 +399,82 @@ class Game {
       .slice(0, count);
   }
 
-  _reapplyRelics() {
-    // Reset player stats before reapplying
-    this.player.damageMultiplier = 1.0;
-    this.player.speedMultiplier = 1.0;
-    this.player.xpRangeBonus = 0;
-    this.player.critChance = 0;
-    this.player.lifesteal = 0;
-    this.player.cooldownReduction = 0;
-    this.player.projectileCountBonus = 0;
-    this.player.armor = CONFIG.PLAYER_BASE_ARMOR;
-    this.player._hpRegen = 0;
-    this.player._xpMultiplier = 1.0;
-    this.player._thorns = 0;
-    this.player._duplicatorLevel = 0;
-    this.player._critStun = 0;
-
-    for (const r of this.relics) {
-      r.apply(this.player);
+  // Add a gem reward from the draft: auto-socket if slot open, else inventory
+  addGemReward(gem) {
+    for (let i = 0; i < 2; i++) {
+      if (!this.wand.socketedGems[i]) {
+        this.wand.socketedGems[i] = gem;
+        this._reapplyAllBonuses();
+        this.particles.levelUpBurst(this.player.x, this.player.y);
+        return;
+      }
     }
+    // Wand full: add to inventory
+    for (let i = 0; i < 9; i++) {
+      if (!this.inventory[i]) { this.inventory[i] = gem; return; }
+    }
+    // Inventory full: replace oldest slot
+    this.inventory[0] = gem;
   }
+
+  // Reset all player bonus stats, then apply relics, then gem bonuses on top
+  _reapplyAllBonuses() {
+    const p = this.player;
+    p.maxHp            = p.baseHp;
+    p.damageMultiplier = 1.0;
+    p.speedMultiplier  = 1.0;
+    p.xpRangeBonus     = 0;
+    p.critChance       = 0;
+    p.lifesteal        = 0;
+    p.cooldownReduction = 0;
+    p.projectileCountBonus = 0;
+    p.armor            = CONFIG.PLAYER_BASE_ARMOR;
+    p._hpRegen         = 0;
+    p._xpMultiplier    = 1.0;
+    p._thorns          = 0;
+    p._duplicatorLevel = 0;
+    p._critStun        = 0;
+
+    for (const r of this.relics) r.apply(p);
+
+    // Layer gem bonuses on top of relic bonuses
+    const ws = this.wand.computeStats();
+    p.maxHp         += ws.maxHpBonus;
+    p.hp             = Math.min(p.hp, p.maxHp);
+    p.speedMultiplier += ws.moveSpeedBonus;
+    p.lifesteal      = Math.min(p.lifesteal + ws.lifestealBonus, 0.8);
+    p.critChance     = Math.min(p.critChance + ws.critBonus, 0.95);
+  }
+
+  // Keep legacy alias so old relics code paths don't break
+  _reapplyRelics() { this._reapplyAllBonuses(); }
 
   // ---- Draw ----
   draw() {
     const ctx = this.ctx;
-    const w = this.width;
-    const h = this.height;
+    const w = this.width, h = this.height;
+    const cx = this.camera.x, cy = this.camera.y;
 
-    // Background
-    Sprites.drawBackground(ctx, this.camera.x, this.camera.y, w, h);
-
-    // Draw order: effects, enemies, projectiles, player, particles
-    const cx = this.camera.x;
-    const cy = this.camera.y;
-
-    // Garlic aura
-    const garlicWeapon = this.weapons.find(w => w.id === 'garlic');
-    if (garlicWeapon) {
-      const gDef = garlicWeapon.currentLevel;
-      const pulse = Math.max(0, this._garlicPulse);
-      Sprites.drawGarlicAura(ctx,
-        this.player.x - cx, this.player.y - cy,
-        gDef.radius, 0.25 + pulse * 0.2);
-    }
-
-    // Orbital weapons (behind enemies)
-    for (const w of this.weapons) {
-      w.draw(ctx, this);
-    }
+    Sprites.drawBackground(ctx, cx, cy, w, h);
 
     // XP orbs
-    for (const orb of this.xpOrbs) {
-      orb.draw(ctx, orb.x - cx, orb.y - cy);
-    }
+    for (const orb of this.xpOrbs) orb.draw(ctx, orb.x - cx, orb.y - cy);
 
     // Heart pickups
-    for (const h of this.heartPickups) {
-      h.draw(ctx, h.x - cx, h.y - cy);
-    }
+    for (const hb of this.heartPickups) hb.draw(ctx, hb.x - cx, hb.y - cy);
 
     // Enemies
-    for (const e of this.enemies) {
-      e.draw(ctx, e.x - cx, e.y - cy);
-    }
+    for (const e of this.enemies) e.draw(ctx, e.x - cx, e.y - cy);
 
     // Projectiles
-    for (const p of this.projectiles) {
-      p.draw(ctx, p.x - cx, p.y - cy);
-    }
+    for (const p of this.projectiles) p.draw(ctx, p.x - cx, p.y - cy);
 
     // Player
     if (!this.player.isDead) {
       this.player.draw(ctx, this.player.x - cx, this.player.y - cy);
     }
 
-    // XP range indicator (subtle ring)
+    // XP range ring
     ctx.save();
     ctx.globalAlpha = 0.06;
     ctx.strokeStyle = '#40ff80';
@@ -462,22 +487,17 @@ class Game {
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    // Lightning arcs
+    // Lightning arcs (from chain gem)
     for (const arc of this._lightningArcs) {
       const alpha = 1 - (arc.age / arc.maxAge);
-      Sprites.drawLightning(ctx,
-        arc.x1 - cx, arc.y1 - cy,
-        arc.x2 - cx, arc.y2 - cy, alpha);
+      Sprites.drawLightning(ctx, arc.x1 - cx, arc.y1 - cy, arc.x2 - cx, arc.y2 - cy, alpha);
     }
 
-    // Particles (in world space)
     this.particles.draw(ctx);
 
-    // Boss HP bar
     const boss = this.enemies.find(e => e.isBoss && !e.isDead);
     this.ui.drawBossBar(ctx, boss, w, h);
 
-    // Vignette
     this._drawVignette(ctx, w, h);
   }
 

@@ -33,9 +33,52 @@
         <div id="hp-bar-fill"></div>
         <span id="hp-label">100 / 100</span>
       </div>
-      <div id="weapon-slots"></div>
+      <!-- Wand button (opens inventory) -->
+      <div id="wand-hud-btn" title="Open Inventory">✨</div>
       <div id="relic-slots"></div>
       <div id="kill-counter">Kills: <span id="kill-count">0</span></div>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div id="inventory-panel" class="hidden">
+      <div id="inventory-backdrop"></div>
+      <div id="inventory-content">
+        <div id="inventory-header">
+          <span class="inv-title">✨ WAND &amp; INVENTORY</span>
+          <button id="inventory-close-btn">✕</button>
+        </div>
+
+        <!-- Wand section -->
+        <div id="wand-section">
+          <div id="wand-graphic">
+            <div id="wand-icon-wrap">✨</div>
+            <div id="wand-label">ARCANE WAND</div>
+            <div id="wand-stats-readout">No gems socketed</div>
+          </div>
+          <div id="wand-sockets">
+            <div class="wand-socket-wrap">
+              <div class="wand-socket-label">Socket I</div>
+              <div class="wand-gem-slot" id="wand-socket-0">
+                <div class="empty-socket-label">Empty Socket</div>
+              </div>
+            </div>
+            <div class="wand-socket-wrap">
+              <div class="wand-socket-label">Socket II</div>
+              <div class="wand-gem-slot" id="wand-socket-1">
+                <div class="empty-socket-label">Empty Socket</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-divider"></div>
+
+        <!-- 9-slot inventory grid -->
+        <div id="inventory-section-label">Gem Storage</div>
+        <div id="inventory-grid"></div>
+
+        <div id="inv-hint">Tap a gem to select it, then tap a slot to move it</div>
+      </div>
     </div>
 
     <!-- Upgrade Draft Screen -->
@@ -63,8 +106,8 @@
         <h1 class="game-title">SPELL<br>SURVIVORS</h1>
         <p class="game-subtitle">Survive the endless horde</p>
         <div id="start-tips">
-          <p>Auto-attack enemies • Level up • Build synergies</p>
-          <p>Move with joystick or WASD</p>
+          <p>Auto-attack enemies • Level up • Socket gems into your wand</p>
+          <p>Move with joystick or WASD • Tap ✨ to open inventory</p>
         </div>
         <button id="start-btn">START GAME</button>
       </div>
@@ -76,6 +119,7 @@
   <script src="js/input.js"></script>
   <script src="js/particles.js"></script>
   <script src="js/entities.js"></script>
+  <script src="js/gems.js"></script>
   <script src="js/weapons.js"></script>
   <script src="js/relics.js"></script>
   <script src="js/upgrade.js"></script>
