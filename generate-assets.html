@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spell Survivors - Asset Generator</title>
+  <style>
+    body { background: #111; color: #ccc; font-family: monospace; padding: 20px; }
+    canvas { border: 1px solid #444; margin: 4px; image-rendering: pixelated; }
+    h2 { color: #c050ff; }
+    .sprite-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: flex-end; }
+    label { font-size: 11px; color: #888; display: block; text-align: center; }
+    button { background: #5010a0; color: #fff; border: none; padding: 8px 20px; font-size: 14px;
+             font-family: monospace; cursor: pointer; border-radius: 4px; margin: 4px; }
+    button:hover { background: #7020d0; }
+    #status { margin-top: 12px; color: #80ff80; }
+  </style>
+</head>
+<body>
+  <h2>🔮 Spell Survivors - PNG Asset Generator</h2>
+  <p>Click "Generate All PNGs" to create and download all game sprite assets.</p>
+  <button onclick="generateAll()">⬇ Generate All PNGs</button>
+  <button onclick="previewAll()">👁 Preview All Sprites</button>
+  <div id="status"></div>
+  <div id="preview"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/sprites.js"></script>
+  <script>
+    function makeCanvas(w, h) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      return c;
+    }
+
+    function downloadCanvas(canvas, name) {
+      const link = document.createElement('a');
+      link.download = name;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    const SPRITES = [
+      {
+        name: 'player_idle',
+        w: 64, h: 64,
+        frames: 8,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.player(ctx, w/2, h/2 + 4, 1, frame * 8, 0);
+        }
+      },
+      {
+        name: 'player_hurt',
+        w: 64, h: 64,
+        frames: 1,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.player(ctx, w/2, h/2 + 4, 1, 0, 1);
+        }
+      },
+      {
+        name: 'enemy_zombie',
+        w: 48, h: 64,
+        frames: 6,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.enemyZombie(ctx, w/2, h/2 + 4, 100, 100, frame * 10);
+        }
+      },
+      {
+        name: 'enemy_bat',
+        w: 56, h: 40,
+        frames: 6,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.enemyBat(ctx, w/2, h/2, frame * 4);
+        }
+      },
+      {
+        name: 'enemy_golem',
+        w: 72, h: 80,
+        frames: 4,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.enemyGolem(ctx, w/2, h/2 + 6, frame * 15);
+        }
+      },
+      {
+        name: 'enemy_wraith',
+        w: 56, h: 64,
+        frames: 6,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.enemyWraith(ctx, w/2, h/2, frame * 10);
+        }
+      },
+      {
+        name: 'enemy_boss',
+        w: 96, h: 112,
+        frames: 4,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.enemyBoss(ctx, w/2, h/2 + 8, frame * 15);
+        }
+      },
+      {
+        name: 'proj_bolt',
+        w: 32, h: 16,
+        frames: 1,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawMagicBolt(ctx, w/2, h/2, 0, '#c050ff', 7);
+        }
+      },
+      {
+        name: 'proj_fireball',
+        w: 32, h: 32,
+        frames: 4,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawFireball(ctx, w/2, h/2, 10, frame * 15);
+        }
+      },
+      {
+        name: 'proj_ice',
+        w: 24, h: 32,
+        frames: 1,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawIceShard(ctx, w/2, h/2, -Math.PI/2, 7);
+        }
+      },
+      {
+        name: 'proj_void_orb',
+        w: 24, h: 24,
+        frames: 4,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawVoidOrb(ctx, w/2, h/2, 9, frame * 15);
+        }
+      },
+      {
+        name: 'xp_orb',
+        w: 16, h: 16,
+        frames: 4,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawXPOrb(ctx, w/2, h/2, 5, frame * 15);
+        }
+      },
+      {
+        name: 'heart_pickup',
+        w: 24, h: 24,
+        frames: 4,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawHeart(ctx, w/2, h/2, 8, frame * 15);
+        }
+      },
+      {
+        name: 'scythe',
+        w: 56, h: 56,
+        frames: 1,
+        draw(ctx, w, h, frame) {
+          ctx.clearRect(0, 0, w, h);
+          Sprites.drawScythe(ctx, w/2, h/2, 0, 22);
+        }
+      },
+    ];
+
+    // Generate sprite sheet (all frames horizontally)
+    function buildSpriteSheet(sprite) {
+      const sheet = makeCanvas(sprite.w * sprite.frames, sprite.h);
+      const sCtx = sheet.getContext('2d');
+      for (let f = 0; f < sprite.frames; f++) {
+        const fc = makeCanvas(sprite.w, sprite.h);
+        sprite.draw(fc.getContext('2d'), sprite.w, sprite.h, f);
+        sCtx.drawImage(fc, f * sprite.w, 0);
+      }
+      return sheet;
+    }
+
+    function generateAll() {
+      const status = document.getElementById('status');
+      status.textContent = 'Generating...';
+      let count = 0;
+      for (const sprite of SPRITES) {
+        setTimeout(() => {
+          const sheet = buildSpriteSheet(sprite);
+          downloadCanvas(sheet, `${sprite.name}.png`);
+          count++;
+          status.textContent = `Generated ${count}/${SPRITES.length}: ${sprite.name}.png`;
+          if (count === SPRITES.length) {
+            status.textContent = `✅ Done! Generated ${count} sprite sheets into assets/ folder.`;
+          }
+        }, count * 80);
+        count++;
+      }
+      count = 0;
+    }
+
+    function previewAll() {
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+      for (const sprite of SPRITES) {
+        const sheet = buildSpriteSheet(sprite);
+        sheet.style.width = (sprite.w * sprite.frames * 2) + 'px';
+        sheet.style.height = (sprite.h * 2) + 'px';
+        sheet.style.imageRendering = 'pixelated';
+        const wrap = document.createElement('div');
+        wrap.style.display = 'inline-block';
+        wrap.style.textAlign = 'center';
+        wrap.style.margin = '8px';
+        wrap.style.verticalAlign = 'top';
+        const lbl = document.createElement('label');
+        lbl.textContent = sprite.name + (sprite.frames > 1 ? ` (${sprite.frames}f)` : '');
+        wrap.appendChild(sheet);
+        wrap.appendChild(lbl);
+        preview.appendChild(wrap);
+      }
+    }
+  </script>
+</body>
+</html>
