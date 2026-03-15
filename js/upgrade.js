@@ -18,6 +18,30 @@ class UpgradeSystem {
     this.subtitleEl = document.getElementById('upgrade-subtitle');
   }
 
+  // Generate 3 relic-only options for the every-5-levels relic reward
+  generateRelicCards() {
+    const relics = this.game.relics;
+    const options = [];
+
+    // New relics first
+    if (relics.length < CONFIG.MAX_RELICS) {
+      for (const id of Object.keys(RELIC_DEFS)) {
+        if (!relics.find(r => r.id === id)) {
+          options.push({ kind: 'new_relic', id });
+        }
+      }
+    }
+
+    // Upgradeable existing relics as fallback
+    for (const r of relics) {
+      if (r.level < r.maxLevel) {
+        options.push({ kind: 'relic_upgrade', id: r.id, newLevel: r.level + 1 });
+      }
+    }
+
+    return shuffleArray(options).slice(0, 3);
+  }
+
   // Generate a pool of 3 upgrade options
   generateCards() {
     const options = [];
@@ -37,22 +61,6 @@ class UpgradeSystem {
       for (const id of Object.keys(WEAPON_DEFS)) {
         if (!weapons.find(w => w.id === id)) {
           options.push({ kind: 'new_weapon', id });
-        }
-      }
-    }
-
-    // 3) Level up existing relics
-    for (const r of relics) {
-      if (r.level < r.maxLevel) {
-        options.push({ kind: 'relic_upgrade', id: r.id, newLevel: r.level + 1 });
-      }
-    }
-
-    // 4) New relics (if slots available)
-    if (relics.length < CONFIG.MAX_RELICS) {
-      for (const id of Object.keys(RELIC_DEFS)) {
-        if (!relics.find(r => r.id === id)) {
-          options.push({ kind: 'new_relic', id });
         }
       }
     }
@@ -147,14 +155,21 @@ class UpgradeSystem {
     return html;
   }
 
-  show() {
+  show(isRelicReward = false) {
     return new Promise(resolve => {
       this._resolve = resolve;
-      const options = this.generateCards();
+      const options = isRelicReward ? this.generateRelicCards() : this.generateCards();
       this.cards = options;
 
-      this.titleEl.textContent = `Level ${this.game.player.level}!`;
-      this.subtitleEl.textContent = 'Choose your upgrade';
+      if (isRelicReward) {
+        this.titleEl.textContent = `✦ Relic Reward ✦`;
+        this.subtitleEl.textContent = `Level ${this.game.player.level} — Choose a relic`;
+        this.screen.classList.add('relic-reward');
+      } else {
+        this.titleEl.textContent = `Level ${this.game.player.level}!`;
+        this.subtitleEl.textContent = 'Choose your upgrade';
+        this.screen.classList.remove('relic-reward');
+      }
       this.cardsEl.innerHTML = options.map(o => this.buildCardHTML(o)).join('');
 
       // Attach click handlers
@@ -172,6 +187,7 @@ class UpgradeSystem {
   _pick(index) {
     if (!this.active) return;
     this.active = false;
+    this.screen.classList.remove('relic-reward');
     this.screen.classList.add('hidden');
     this._applyUpgrade(this.cards[index]);
     if (this._resolve) {

@@ -281,7 +281,8 @@ class Game {
     if (this.player.pendingLevelUps > 0 && !this._processingLevelUp && !this.upgradeSystem.active) {
       this._processingLevelUp = true;
       this.player.pendingLevelUps--;
-      this.upgradeSystem.show().then(() => {
+      const isRelicReward = this.player.level % 5 === 0;
+      this.upgradeSystem.show(isRelicReward).then(() => {
         this._processingLevelUp = false;
         if (this.player.pendingLevelUps > 0) this._checkLevelUp();
       });

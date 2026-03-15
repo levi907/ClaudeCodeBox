@@ -317,6 +317,35 @@ html, body {
 }
 .level-pip.filled { background: #ffd700; border-color: #ffd700; }
 
+/* Relic Reward special styling */
+#upgrade-screen.relic-reward #upgrade-backdrop {
+  background: rgba(0, 15, 10, 0.88);
+}
+#upgrade-screen.relic-reward #upgrade-title {
+  color: #40ffaa;
+  text-shadow: 0 0 20px rgba(64, 255, 170, 0.8), 0 0 50px rgba(32, 200, 120, 0.4);
+}
+#upgrade-screen.relic-reward #upgrade-subtitle {
+  color: #80ffc0;
+}
+#upgrade-screen.relic-reward .upgrade-card {
+  border-color: #20a060;
+  background: linear-gradient(160deg, #001a0d, #000d06);
+}
+#upgrade-screen.relic-reward .upgrade-card:hover,
+#upgrade-screen.relic-reward .upgrade-card:active {
+  border-color: #40ffaa;
+  box-shadow: 0 8px 28px rgba(64, 255, 170, 0.45);
+}
+#upgrade-screen.relic-reward .upgrade-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at top, rgba(64,255,170,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
 /* Game Over */
 #gameover-screen {
   position: absolute;
