@@ -1398,54 +1398,52 @@ const Sprites = {
   //  WORLD / BACKGROUND — Stone Dungeon Floor
   // ======================================================
   drawBackground(ctx, camX, camY, width, height) {
-    // Pixel-art dungeon floor — offset ashlar bricks matching the start-screen stone.
-    // At PIXEL_SCALE=4: TW=64 → 16 canvas px, TH=32 → 8 canvas px, MORT=4 → 1 canvas px.
-    const TW   = CONFIG.TILE_SIZE;       // 64 world units — brick width
-    const TH   = CONFIG.TILE_SIZE >> 1;  // 32 world units — brick height
-    const MORT = 4;                       //  4 world units — mortar gap
+    // Pixel-art dungeon floor — square stone tiles viewed from above.
+    // At PIXEL_SCALE=4: T=64 → 16 canvas px, MORT=4 → 1 canvas px (crisp grid).
+    const T    = CONFIG.TILE_SIZE;  // 64 world units — tile size (square)
+    const MORT = 4;                  //  4 world units — mortar gap (= 1 canvas px)
 
-    // Mortar / base fill
-    ctx.fillStyle = '#0a0806';
+    // Mortar / grout colour fills the gaps between tiles
+    ctx.fillStyle = '#080706';
     ctx.fillRect(0, 0, width, height);
 
-    // Stone palette  (same as start-screen wall)
-    const SHADES = ['#181614', '#1a1816', '#1e1c18', '#201e1c'];
-    const LIGHT  = '#2c2826';
-    const SHADOW = '#0e0c0a';
+    // Floor stone palette — slightly warmer/lighter than the wall to read as floor
+    const SHADES = ['#1c1a17', '#1e1c19', '#211f1c', '#231f1b'];
+    const LIGHT  = '#302c28';   // top-left inner bevel
+    const SHADOW = '#100e0c';   // bottom-right inner bevel
 
-    const startRow = Math.floor(camY / TH) - 1;
-    const startCol = Math.floor(camX / TW) - 2;
+    const startRow = Math.floor(camY / T) - 1;
+    const startCol = Math.floor(camX / T) - 1;
 
-    for (let row = startRow; row * TH < camY + height + TH; row++) {
-      const ty   = row * TH - camY;
-      const xOff = (row & 1) ? TW >> 1 : 0;   // half-brick offset every other row
+    for (let row = startRow; row * T < camY + height + T; row++) {
+      const ty = row * T - camY;
 
-      for (let col = startCol; col * TW - xOff < camX + width + TW; col++) {
-        const tx   = col * TW - xOff - camX;
+      for (let col = startCol; col * T < camX + width + T; col++) {
+        const tx   = col * T - camX;
         const hash = Math.abs((col * 73856093) ^ (row * 19349663));
 
-        // Stone face
+        // Stone face (square, uniform grid — no row offset)
         ctx.fillStyle = SHADES[hash & 3];
-        ctx.fillRect(tx, ty, TW - MORT, TH - MORT);
+        ctx.fillRect(tx, ty, T - MORT, T - MORT);
 
-        // Top lit edge
+        // Top-left inner bevel (lit)
         ctx.fillStyle = LIGHT;
-        ctx.fillRect(tx,        ty,        TW - MORT, MORT);
-        ctx.fillRect(tx,        ty + MORT, MORT,      TH - MORT * 2);
+        ctx.fillRect(tx,        ty,        T - MORT, MORT);
+        ctx.fillRect(tx,        ty + MORT, MORT,      T - MORT * 2);
 
-        // Bottom shadow edge
+        // Bottom-right inner bevel (shadow)
         ctx.fillStyle = SHADOW;
-        ctx.fillRect(tx,               ty + TH - MORT * 2, TW - MORT, MORT);
-        ctx.fillRect(tx + TW - MORT*2, ty,                 MORT,      TH - MORT);
+        ctx.fillRect(tx,              ty + T - MORT * 2, T - MORT, MORT);
+        ctx.fillRect(tx + T - MORT*2, ty,                MORT,      T - MORT);
 
-        // Rare arcane rune  (~1 in 28 tiles, flat colour, no blur)
-        if ((hash % 28) === 0) {
+        // Rare arcane rune (~1 in 32 tiles)
+        if ((hash % 32) === 0) {
           const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', '✦', '◈'];
-          ctx.fillStyle = 'rgba(110,35,190,0.22)';
-          ctx.font = `${TH * 0.65}px monospace`;
+          ctx.fillStyle = 'rgba(110,35,190,0.20)';
+          ctx.font = `${T * 0.45}px monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(runes[hash % runes.length], tx + TW / 2, ty + TH / 2);
+          ctx.fillText(runes[hash % runes.length], tx + T / 2, ty + T / 2);
         }
       }
     }
