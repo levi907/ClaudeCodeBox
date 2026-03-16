@@ -1071,319 +1071,33 @@ html, body {
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 200;
   overflow: hidden;
-  /* Rough stone wall: cool grey-brown blocks, warm only at lantern spots */
-  background:
-    /* Horizontal mortar courses — 52px stone rows */
-    repeating-linear-gradient(
-      180deg,
-      transparent 0px, transparent 50px,
-      rgba(0,0,0,0.55) 50px, rgba(0,0,0,0.55) 52px
-    ),
-    /* Vertical joints — 92px wide blocks */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 90px,
-      rgba(0,0,0,0.30) 90px, rgba(0,0,0,0.30) 92px
-    ),
-    /* Vertical joints offset — 108px, half-phase shift */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 106px,
-      rgba(0,0,0,0.18) 106px, rgba(0,0,0,0.18) 108px
-    ),
-    /* Left lantern warm glow — tight amber patch around lantern */
-    radial-gradient(ellipse 160px 140px at 21% 43%, rgba(210,130,20,0.38) 0%, transparent 55%),
-    /* Right lantern warm glow */
-    radial-gradient(ellipse 160px 140px at 79% 43%, rgba(210,130,20,0.38) 0%, transparent 55%),
-    /* Central depth shadow */
-    radial-gradient(ellipse 380px 300px at 50% 60%, rgba(0,0,0,0.55) 0%, transparent 72%),
-    /* Top & bottom vignette */
-    linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.40) 100%),
-    /* Dark cool stone base — charcoal grey with faint warmth */
-    #1e1c18;
+  /* Background is now drawn by the pixel-art canvas (#ds-canvas) */
+  background: #0d0b09;
 }
 
-/* ── Stone Floor ─────────────────────────── */
-.ds-floor {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 72px;
-  background:
-    /* Flagstone mortar horizontal */
-    repeating-linear-gradient(
-      180deg,
-      transparent 0px, transparent 34px,
-      rgba(4,2,1,0.55) 34px, rgba(4,2,1,0.55) 36px
-    ),
-    /* Flagstone mortar vertical */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 72px,
-      rgba(4,2,1,0.40) 72px, rgba(4,2,1,0.40) 74px
-    ),
-    linear-gradient(to top, #201c14, #342e20);
-  box-shadow: inset 0 6px 20px rgba(0,0,0,0.50);
-  z-index: 1;
-}
-
-/* ── Stone Arch Surround ─────────────────── */
-/* Outer (stone frame — larger arch) */
-.ds-arch-outer {
-  position: absolute;
-  bottom: 72px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 370px;
-  height: 308px;
-  border-radius: 185px 185px 0 0;
-  background:
-    /* Stone block lines on arch frame */
-    repeating-linear-gradient(
-      180deg,
-      transparent 0px, transparent 44px,
-      rgba(4,2,1,0.42) 44px, rgba(4,2,1,0.42) 46px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 56px,
-      rgba(4,2,1,0.28) 56px, rgba(4,2,1,0.28) 58px
-    ),
-    /* Ashlar (cut stone) — cool grey, clearly distinct from background */
-    linear-gradient(160deg, #4a4638, #38342a, #44403a, #3c3830);
-  box-shadow:
-    inset 0 8px 40px rgba(0,0,0,0.55),
-    inset 5px 0 20px rgba(0,0,0,0.30),
-    inset -5px 0 20px rgba(0,0,0,0.30),
-    0 0 0 3px rgba(18,12,5,0.9);
-  z-index: 2;
-}
-
-/* Inner (dark arch opening — overflow clips the doors to arch shape) */
-.ds-arch-inner {
-  position: absolute;
-  bottom: 72px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 268px;
-  height: 308px;
-  border-radius: 134px 134px 0 0;
-  overflow: hidden;
-  background: #0a0604;
-  box-shadow:
-    inset 0 0 80px rgba(0,0,0,0.90),
-    inset 0 40px 60px rgba(0,0,0,0.70);
-  z-index: 3;
-}
-
-/* ── Wooden Double Doors ─────────────────── */
-.ds-door {
-  position: absolute;
-  bottom: 0;
-  width: calc(50% + 1px); /* +1px prevents hairline gap */
-  height: 100%;
-}
-.ds-door-l { left: 0; }
-.ds-door-r { right: 0; }
-
-.ds-door-l {
-  background:
-    /* Vertical plank separators */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 19px,
-      rgba(0,0,0,0.35) 19px, rgba(0,0,0,0.35) 20px
-    ),
-    /* Subtle horizontal grain */
-    repeating-linear-gradient(
-      180deg,
-      rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 3px,
-      transparent 3px, transparent 9px
-    ),
-    /* Aged dark oak — lit from outside */
-    linear-gradient(180deg, #4e3212 0%, #3c2408 35%, #2e1c08 65%, #3a2208 100%);
-  border-right: 1px solid rgba(10,6,2,0.8);
-}
-.ds-door-r {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 19px,
-      rgba(0,0,0,0.35) 19px, rgba(0,0,0,0.35) 20px
-    ),
-    repeating-linear-gradient(
-      180deg,
-      rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 3px,
-      transparent 3px, transparent 9px
-    ),
-    linear-gradient(180deg, #402808 0%, #4c3212 35%, #2e1c08 65%, #382008 100%);
-  border-left: 1px solid rgba(10,6,2,0.8);
-}
-
-/* Iron strap hinges */
-.ds-hinge {
-  position: absolute;
-  height: 10px;
-  background: linear-gradient(to bottom, #2e2418, #1c1610, #2e2418);
-  border-radius: 2px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.7), inset 0 1px 0 rgba(90,65,30,0.18);
-}
-.ds-door-l .ds-hinge {
-  left: 0; width: 78%;
-  border-radius: 0 3px 3px 0;
-}
-.ds-door-r .ds-hinge {
-  right: 0; width: 78%;
-  border-radius: 3px 0 0 3px;
-}
-/* Hinge knuckle (the pin barrel) */
-.ds-door-l .ds-hinge::before,
-.ds-door-r .ds-hinge::before {
-  content: '';
-  position: absolute;
-  top: 50%; transform: translateY(-50%);
-  width: 10px; height: 14px;
-  background: linear-gradient(to right, #3c2c1a, #2a1e0e);
-  border-radius: 2px;
-}
-.ds-door-l .ds-hinge::before { left: 0; border-radius: 0 2px 2px 0; }
-.ds-door-r .ds-hinge::before { right: 0; border-radius: 2px 0 0 2px; }
-
-/* Central iron bar (where doors meet) + lock ring */
-.ds-door-bar {
-  position: absolute;
-  left: 50%; top: 0; bottom: 0;
-  width: 4px;
-  transform: translateX(-50%);
-  background: linear-gradient(to right, #1e1608, #32240e, #1e1608);
-  z-index: 1;
-}
-.ds-door-bar::before { /* iron lock ring */
-  content: '';
-  position: absolute;
-  top: 38%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 20px; height: 20px;
-  border: 3px solid #342410;
-  border-radius: 50%;
-  background: #1a1208;
-  box-shadow: 0 0 10px rgba(0,0,0,0.9), inset 0 1px 0 rgba(90,65,20,0.2);
-}
-
-/* ── Wall Lanterns ───────────────────────── */
-.ds-lantern {
-  position: absolute;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-/* Position flanking arch outer edges (arch outer = 370px wide, centered)
-   Arch outer left edge at x = 50% - 185px. Lanterns 55px outboard. */
-.ds-lantern-l { left:  calc(50% - 258px); top: 37%; }
-.ds-lantern-r { right: calc(50% - 258px); top: 37%; }
-
-/* Iron cage body */
-.ds-lantern-cage {
-  width: 28px; height: 38px;
-  border: 2px solid #3e2c14;
-  background: rgba(6,4,1,0.45);
-  border-radius: 3px;
-  position: relative;
-  box-shadow:
-    0 2px 10px rgba(0,0,0,0.65),
-    inset 0 0 14px rgba(210,145,22,0.14);
-}
-/* Cage cross bars */
-.ds-lantern-cage::before { /* horizontal bar */
-  content: '';
-  position: absolute;
-  top: 50%; left: -2px; right: -2px;
-  height: 2px;
-  background: rgba(44,30,12,0.85);
-}
-.ds-lantern-cage::after { /* vertical bar */
-  content: '';
-  position: absolute;
-  top: -2px; bottom: -2px;
-  left: 50%;
-  width: 2px;
-  background: rgba(44,30,12,0.85);
-  transform: translateX(-50%);
-}
-/* Flame inside cage */
-.ds-lantern-flame {
-  position: absolute;
-  bottom: 5px; left: 50%;
-  transform: translateX(-50%);
-  transform-origin: center bottom;
-  width: 9px; height: 18px;
-  background: radial-gradient(ellipse at 50% 65%,
-    #fffab0 0%, #f09020 45%, rgba(190,80,10,0.5) 75%, transparent 100%);
-  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
-  animation: lanternFlicker 1.05s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-
-/* Wall bracket connecting cage to stone */
-.ds-lantern-bracket {
-  width: 22px; height: 7px;
-  background: linear-gradient(to bottom, #3e2c10, #2c1e0a);
-  border-radius: 1px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.55);
-  margin-top: 2px;
-}
-
-/* Ambient glow pool cast on wall */
-.ds-lantern-glow {
-  position: absolute;
-  top: -10px; left: 50%;
-  transform: translateX(-50%);
-  width: 220px; height: 170px;
-  background: radial-gradient(ellipse at 50% 32%,
-    rgba(215,135,18,0.32) 0%,
-    rgba(185,105,14,0.14) 40%,
-    transparent 68%);
-  pointer-events: none;
-  animation: glowPulse 1.4s ease-in-out infinite 0.18s;
-  will-change: opacity, transform;
-}
-
-@keyframes lanternFlicker {
-  0%   { transform: translateX(-50%) scaleX(1.00) scaleY(1.00) rotate(-1deg); opacity: 0.90; }
-  28%  { transform: translateX(-50%) scaleX(0.78) scaleY(1.14) rotate( 2deg); opacity: 1.00; }
-  58%  { transform: translateX(-50%) scaleX(1.08) scaleY(0.91) rotate(-2deg); opacity: 0.80; }
-  100% { transform: translateX(-50%) scaleX(1.00) scaleY(1.00) rotate(-1deg); opacity: 0.90; }
-}
-@keyframes glowPulse {
-  0%,100% { opacity: 0.82; transform: translateX(-50%) scale(1.00); }
-  38%      { opacity: 1.00; transform: translateX(-50%) scale(1.14); }
-  68%      { opacity: 0.62; transform: translateX(-50%) scale(0.88); }
-}
-
-/* ── Title — engraved into stone wall above arch ── */
+/* ── Title — pixel-font engraved into stone above the arch ── */
 .game-title {
   position: absolute;
-  /* Sit centered in the stone wall above the arch.
-     Arch outer top = bottom: 72px + 308px = 380px from bottom = y≈126px from top.
-     Place title bottom 16px above that: bottom = 396px. */
-  bottom: 396px;
+  /* Canvas arch outer top ≈ y 124px from display top (22/90 × 506).
+     Keep title bottom ~14px above that = bottom: 398px. */
+  bottom: 398px;
   left: 0; right: 0;
   text-align: center;
-  font-family: var(--font-title);
-  font-size: clamp(22px, 4.5vw, 40px);
-  letter-spacing: clamp(5px, 1.8vw, 12px);
-  line-height: 1.08;
+  /* Press Start 2P is the classic pixel game font; fall back to monospace */
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: clamp(8px, 1.85vw, 16px);
+  letter-spacing: 3px;
+  line-height: 1.7;
   z-index: 10;
   pointer-events: none;
-  /* Stone engraving: colour matches the stone, shadows mimic a chiselled cut.
-     No gold, no glow — just the shadow cast inside the V-groove. */
-  color: #4e4a3c;
+  /* Stone engraving: same hue as the pixel-art wall, chiselled-shadow effect */
+  color: #4a4640;
   text-shadow:
-    0 -2px 3px rgba(0,0,0,0.75),       /* shadow from wall above the cut */
-    0  1px 0   rgba(230,200,130,0.16), /* faint torchlight on lower lip */
-    0  2px 6px rgba(0,0,0,0.65),       /* depth below */
-    1px 0  2px rgba(0,0,0,0.35),
-   -1px 0  2px rgba(0,0,0,0.35);
+    0 -2px 2px rgba(0,0,0,0.85),
+    0  1px 0  rgba(200,175,110,0.14),
+    0  2px 5px rgba(0,0,0,0.70),
+    1px 0  2px rgba(0,0,0,0.30),
+   -1px 0  2px rgba(0,0,0,0.30);
 }
 
 /* ── Game UI Overlay ─────────────────────── */
@@ -1393,7 +1107,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
   padding: 0 48px 90px;
   background: none;
   border: none;
@@ -1401,16 +1115,6 @@ html, body {
   z-index: 10;
 }
 
-#start-tips {
-  color: rgba(148,118,70,0.65);
-  font-size: clamp(9px, 1.55vw, 11px);
-  line-height: 1.85;
-  margin-top: auto;  /* pushed down; button follows below */
-  margin-bottom: 0;
-  font-family: var(--font-mono);
-  text-align: center;
-}
-#start-tips p { margin: 0; }
 
 .start-corner-ornament {
   margin-top: 14px;

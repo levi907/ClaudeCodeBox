@@ -132,49 +132,21 @@
 
     <!-- Start Screen -->
     <div id="start-screen">
-      <!-- Dungeon door scene (pure CSS) -->
-      <div class="ds-floor" aria-hidden="true"></div>
-      <div class="ds-arch-outer" aria-hidden="true"></div>
-      <div class="ds-arch-inner" aria-hidden="true">
-        <div class="ds-door ds-door-l">
-          <div class="ds-hinge" style="top:9%"></div>
-          <div class="ds-hinge" style="top:43%"></div>
-          <div class="ds-hinge" style="top:76%"></div>
-        </div>
-        <div class="ds-door ds-door-r">
-          <div class="ds-hinge" style="top:9%"></div>
-          <div class="ds-hinge" style="top:43%"></div>
-          <div class="ds-hinge" style="top:76%"></div>
-        </div>
-        <div class="ds-door-bar" aria-hidden="true"></div>
-      </div>
-      <!-- Wall lanterns flanking the arch -->
-      <div class="ds-lantern ds-lantern-l" aria-hidden="true">
-        <div class="ds-lantern-cage"><div class="ds-lantern-flame"></div></div>
-        <div class="ds-lantern-bracket"></div>
-        <div class="ds-lantern-glow"></div>
-      </div>
-      <div class="ds-lantern ds-lantern-r" aria-hidden="true">
-        <div class="ds-lantern-cage"><div class="ds-lantern-flame"></div></div>
-        <div class="ds-lantern-bracket"></div>
-        <div class="ds-lantern-glow"></div>
-      </div>
+      <!-- Dungeon door scene — pixel art canvas -->
+      <canvas id="ds-canvas" aria-hidden="true"></canvas>
 
       <!-- Title engraved into stone wall above the arch -->
       <h1 class="game-title">PATH OF SURVIVAL</h1>
 
       <!-- Game UI overlay -->
       <div id="start-panel">
-        <div id="start-tips">
-          <p>Auto-attack enemies · Level up · Socket gems into your wand</p>
-          <p>Move with joystick or WASD · Tap wand icon to open inventory</p>
-        </div>
         <button id="start-btn">Enter the Dungeon</button>
         <div class="start-corner-ornament">✦ ——— ✦ ——— ✦</div>
       </div>
     </div>
   </div>
 
+  <script src="js/pixel-dungeon.js"></script>
   <script src="js/config.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/input.js"></script>
