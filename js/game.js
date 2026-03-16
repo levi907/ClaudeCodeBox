@@ -406,16 +406,16 @@ class Game {
     const orbs = enemy.dropXP();
     for (const o of orbs) this.xpOrbs.push(new XPOrb(o.x, o.y, o.value, o.size));
 
-    if (Math.random() < (enemy.isBoss ? 0.8 : 0.04)) {
+    if (Math.random() < (enemy.isBoss ? 0.001 : 0.001)) {
       this.heartPickups.push(new HeartPickup(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.005) {
+    if (!enemy.isBoss && Math.random() < 0.001) {
       this.xpMagnets.push(new XPMagnet(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.01) {
+    if (!enemy.isBoss && Math.random() < 0.001) {
       this.rareForgePickups.push(new RareForge(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.005) {
+    if (!enemy.isBoss && Math.random() < 0.001) {
       this.diceForgePickups.push(new DiceForge(enemy.x, enemy.y));
     }
 
