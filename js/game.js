@@ -319,9 +319,7 @@ class Game {
       f.update(dt, this.player.x, this.player.y);
       if (f.collected) {
         this.legendaryForgePickups.splice(i, 1);
-        this.ui.showForgeDialog('legendary').then(claimed => {
-          if (claimed) this.ui.openLegendaryForge();
-        });
+        this.ui.openLegendaryForge();
       }
     }
 
@@ -331,9 +329,7 @@ class Game {
       f.update(dt, this.player.x, this.player.y);
       if (f.collected) {
         this.rareForgePickups.splice(i, 1);
-        this.ui.showForgeDialog('rare').then(claimed => {
-          if (claimed) this.ui.openRareForge();
-        });
+        this.ui.openRareForge();
       }
     }
 
@@ -343,9 +339,7 @@ class Game {
       f.update(dt, this.player.x, this.player.y);
       if (f.collected) {
         this.diceForgePickups.splice(i, 1);
-        this.ui.showForgeDialog('dice').then(claimed => {
-          if (claimed) this.ui.openDiceForge();
-        });
+        this.ui.openDiceForge();
       }
     }
 
