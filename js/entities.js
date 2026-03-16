@@ -424,6 +424,70 @@ class XPMagnet {
   }
 }
 
+// ---- Rare Forge Pickup (1% drop) ----
+class RareForge {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.age = 0;
+    this.collected = false;
+  }
+
+  update(dt, playerX, playerY) {
+    this.age += dt;
+    if (dist(this.x, this.y, playerX, playerY) < 25) this.collected = true;
+  }
+
+  draw(ctx, screenX, screenY) {
+    ctx.save();
+    const pulse = 0.65 + 0.35 * Math.sin(this.age * 4.5);
+    ctx.shadowColor = '#40c0ff';
+    ctx.shadowBlur = 18 * pulse;
+    ctx.font = 'bold 22px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.9 + 0.1 * pulse;
+    ctx.fillText('🔨', screenX, screenY);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.85;
+    ctx.font = 'bold 7px "Courier New"';
+    ctx.fillStyle = '#40c0ff';
+    ctx.fillText('RARE FORGE', screenX, screenY + 17);
+    ctx.restore();
+  }
+}
+
+// ---- Dice Forge Pickup (0.5% drop) ----
+class DiceForge {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.age = 0;
+    this.collected = false;
+  }
+
+  update(dt, playerX, playerY) {
+    this.age += dt;
+    if (dist(this.x, this.y, playerX, playerY) < 25) this.collected = true;
+  }
+
+  draw(ctx, screenX, screenY) {
+    ctx.save();
+    const pulse = 0.65 + 0.35 * Math.sin(this.age * 5);
+    ctx.shadowColor = '#c080ff';
+    ctx.shadowBlur = 18 * pulse;
+    ctx.font = 'bold 22px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.9 + 0.1 * pulse;
+    ctx.fillText('🎲', screenX, screenY);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.85;
+    ctx.font = 'bold 7px "Courier New"';
+    ctx.fillStyle = '#c080ff';
+    ctx.fillText('DICE FORGE', screenX, screenY + 17);
+    ctx.restore();
+  }
+}
+
 // ---- Legendary Forge Pickup (dropped by bosses) ----
 class LegendaryForge {
   constructor(x, y) {

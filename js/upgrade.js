@@ -23,7 +23,10 @@ class UpgradeSystem {
 
   // ---- Gem draft (normal level-up) ----
   generateGemCards() {
-    return [generateGem(), generateGem(), generateGem()];
+    const count = 3 + (this.game.player._extraChoices || 0);
+    const gems = [];
+    for (let i = 0; i < count; i++) gems.push(generateGem());
+    return gems;
   }
 
   // ---- Relic draft (every 5 levels) ----

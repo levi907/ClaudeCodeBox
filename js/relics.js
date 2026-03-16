@@ -1,182 +1,173 @@
 // ============================================================
 //  SPELL SURVIVORS - Relics System
-//  10 relics that synergize with weapons and boost the player
+//  10 powerful game-changing relics
 // ============================================================
 
 const RELIC_DEFS = {
 
-  spellbook: {
-    id: 'spellbook',
-    name: 'Ancient Spellbook',
+  forbidden_codex: {
+    id: 'forbidden_codex',
+    name: 'Forbidden Codex',
     icon: '📖',
     type: 'relic',
-    desc: '+1 projectile to all weapons. Spells seek targets better.',
-    synergy: ['magic_wand', 'fireball', 'frost_lance'],
+    desc: 'See more gem choices every level-up.',
     levels: [
-      { desc: '+1 projectile to all spells', projectileBonus: 1 },
-      { desc: '+2 projectiles, better seeking', projectileBonus: 2 },
-      { desc: '+3 projectiles, auto-aim', projectileBonus: 3 },
+      { desc: 'Choose from 4 gems per level-up', extraChoices: 1 },
+      { desc: 'Choose from 5 gems per level-up', extraChoices: 2 },
+      { desc: 'Choose from 6 gems per level-up', extraChoices: 3 },
     ],
     apply(player, level) {
-      player.projectileCountBonus = this.levels[level - 1].projectileBonus;
+      player._extraChoices = (player._extraChoices || 0) + this.levels[level - 1].extraChoices;
     },
   },
 
-  hollow_heart: {
-    id: 'hollow_heart',
-    name: 'Hollow Heart',
-    icon: '💜',
+  arcane_cyclone: {
+    id: 'arcane_cyclone',
+    name: 'Arcane Cyclone',
+    icon: '🌀',
     type: 'relic',
-    desc: 'Increases max HP and restores some health.',
+    desc: 'Fire extra projectiles in all directions each shot.',
     levels: [
-      { desc: '+25% Max HP', hpMult: 1.25 },
-      { desc: '+50% Max HP, +20 HP on pickup', hpMult: 1.50 },
-      { desc: '+80% Max HP, regenerate 1 HP/sec', hpMult: 1.80, regen: 1 },
+      { desc: '+2 omnidirectional projectiles per shot', omniShot: 2 },
+      { desc: '+4 omnidirectional projectiles per shot', omniShot: 4 },
+      { desc: '+6 omnidirectional projectiles per shot', omniShot: 6 },
+    ],
+    apply(player, level) {
+      player._omniShot = (player._omniShot || 0) + this.levels[level - 1].omniShot;
+    },
+  },
+
+  giants_wand: {
+    id: 'giants_wand',
+    name: "Giant's Wand",
+    icon: '🔮',
+    type: 'relic',
+    desc: 'Your projectiles grow to enormous size.',
+    levels: [
+      { desc: '3× projectile size', sizeMult: 3 },
+      { desc: '6× projectile size', sizeMult: 6 },
+      { desc: '10× projectile size', sizeMult: 10 },
+    ],
+    apply(player, level) {
+      player._projSizeMult = this.levels[level - 1].sizeMult;
+    },
+  },
+
+  cataclysm_clock: {
+    id: 'cataclysm_clock',
+    name: 'Cataclysm Clock',
+    icon: '💥',
+    type: 'relic',
+    desc: 'Periodically detonates a massive explosion around you.',
+    levels: [
+      { desc: 'Nuke every 30s — 250px kill radius', nukeInterval: 30, nukeRadius: 250 },
+      { desc: 'Nuke every 25s — 350px kill radius', nukeInterval: 25, nukeRadius: 350 },
+      { desc: 'Nuke every 20s — 450px kill radius', nukeInterval: 20, nukeRadius: 450 },
     ],
     apply(player, level) {
       const def = this.levels[level - 1];
-      const prevMax = player.maxHp;
-      player.maxHp = Math.floor(player.baseHp * def.hpMult);
-      player.hp = Math.min(player.maxHp, player.hp + (player.maxHp - prevMax));
-      player._hpRegen = def.regen || 0;
+      player._nukeInterval = def.nukeInterval;
+      player._nukeRadius   = def.nukeRadius;
     },
   },
 
-  spinach: {
-    id: 'spinach',
-    name: 'Power Spinach',
-    icon: '🌿',
+  berserker_rage: {
+    id: 'berserker_rage',
+    name: 'Berserker Rage',
+    icon: '😈',
     type: 'relic',
-    desc: 'Permanently increases all damage dealt.',
+    desc: 'Deal more damage the lower your HP.',
     levels: [
-      { desc: '+15% damage', damageMult: 1.15 },
-      { desc: '+30% damage', damageMult: 1.30 },
-      { desc: '+50% damage', damageMult: 1.50 },
+      { desc: 'Up to +100% damage at 1 HP', maxMult: 1.0 },
+      { desc: 'Up to +200% damage at 1 HP', maxMult: 2.0 },
+      { desc: 'Up to +400% damage at 1 HP', maxMult: 4.0 },
     ],
     apply(player, level) {
-      player.damageMultiplier = this.levels[level - 1].damageMult;
+      player._berserkerMaxMult = this.levels[level - 1].maxMult;
     },
   },
 
-  wings: {
-    id: 'wings',
-    name: 'Spectral Wings',
-    icon: '🦋',
+  chain_death: {
+    id: 'chain_death',
+    name: 'Chain Death',
+    icon: '⛓',
     type: 'relic',
-    desc: 'Move faster. Higher speed also improves dodge chance.',
+    desc: 'Enemies explode on death, damaging nearby foes.',
     levels: [
-      { desc: '+20% move speed', speedMult: 1.20 },
-      { desc: '+35% move speed', speedMult: 1.35 },
-      { desc: '+55% move speed, ghostly dash', speedMult: 1.55 },
-    ],
-    apply(player, level) {
-      player.speedMultiplier = this.levels[level - 1].speedMult;
-    },
-  },
-
-  magnet: {
-    id: 'magnet',
-    name: 'Soul Magnet',
-    icon: '🧲',
-    type: 'relic',
-    desc: 'Attracts XP orbs from much greater distance.',
-    levels: [
-      { desc: '+80px XP range', xpBonus: 80 },
-      { desc: '+160px XP range, +20% XP', xpBonus: 160, xpMult: 1.2 },
-      { desc: '+250px XP range, +50% XP', xpBonus: 250, xpMult: 1.5 },
+      { desc: 'Deaths deal 60% dmg in 80px', pct: 0.60, radius: 80 },
+      { desc: 'Deaths deal 100% dmg in 120px', pct: 1.00, radius: 120 },
+      { desc: 'Deaths deal 150% dmg in 180px', pct: 1.50, radius: 180 },
     ],
     apply(player, level) {
       const def = this.levels[level - 1];
-      player.xpRangeBonus = def.xpBonus;
-      player._xpMultiplier = def.xpMult || 1.0;
+      player._chainDeathPct    = def.pct;
+      player._chainDeathRadius = def.radius;
     },
   },
 
-  clover: {
-    id: 'clover',
-    name: 'Lucky Clover',
-    icon: '🍀',
+  soul_vampire: {
+    id: 'soul_vampire',
+    name: 'Soul Vampire',
+    icon: '🧛',
     type: 'relic',
-    desc: 'Improves critical hit chance. Crits deal double damage.',
+    desc: 'Each kill restores a portion of your max HP.',
     levels: [
-      { desc: '+10% crit chance', critChance: 0.10 },
-      { desc: '+20% crit chance', critChance: 0.20 },
-      { desc: '+35% crit chance, crits stun', critChance: 0.35, critStun: 0.3 },
+      { desc: 'Heal 3% max HP per kill', healPct: 0.03 },
+      { desc: 'Heal 7% max HP per kill', healPct: 0.07 },
+      { desc: 'Heal 15% max HP per kill', healPct: 0.15 },
     ],
     apply(player, level) {
-      const def = this.levels[level - 1];
-      player.critChance = def.critChance;
-      player._critStun = def.critStun || 0;
+      player._killHealPct = this.levels[level - 1].healPct;
     },
   },
 
-  empty_tome: {
-    id: 'empty_tome',
-    name: 'Empty Tome',
-    icon: '📜',
+  time_warp: {
+    id: 'time_warp',
+    name: 'Time Warp',
+    icon: '⏰',
     type: 'relic',
-    desc: 'Reduces all weapon cooldowns significantly.',
-    synergy: ['magic_wand', 'lightning', 'fireball'],
+    desc: 'Massively reduce all weapon cooldowns.',
     levels: [
-      { desc: '-15% cooldowns', cdr: 0.15 },
-      { desc: '-25% cooldowns', cdr: 0.25 },
-      { desc: '-40% cooldowns', cdr: 0.40 },
+      { desc: '-40% all cooldowns', cdr: 0.40 },
+      { desc: '-55% all cooldowns', cdr: 0.55 },
+      { desc: '-70% all cooldowns', cdr: 0.70 },
     ],
     apply(player, level) {
-      player.cooldownReduction = this.levels[level - 1].cdr;
+      player.cooldownReduction = Math.max(player.cooldownReduction, this.levels[level - 1].cdr);
     },
   },
 
-  armor_plate: {
-    id: 'armor_plate',
-    name: 'Iron Rune Plate',
+  iron_fortress: {
+    id: 'iron_fortress',
+    name: 'Iron Fortress',
     icon: '🛡️',
     type: 'relic',
-    desc: 'Reduces damage taken from all sources.',
+    desc: 'Gain massive armor. Become briefly invincible when near death.',
     levels: [
-      { desc: '+2 Armor (reduces dmg)', armor: 2 },
-      { desc: '+4 Armor', armor: 4 },
-      { desc: '+7 Armor, thorns on hit', armor: 7, thorns: 5 },
+      { desc: '+10 Armor', armor: 10 },
+      { desc: '+20 Armor, invincible for 2s when below 20% HP', armor: 20, lowHpShield: 2 },
+      { desc: '+35 Armor, invincible for 4s when below 30% HP', armor: 35, lowHpShield: 4 },
     ],
     apply(player, level) {
       const def = this.levels[level - 1];
-      player.armor = def.armor;
-      player._thorns = def.thorns || 0;
+      player.armor += def.armor;
+      if (def.lowHpShield) player._fortressShieldDur = def.lowHpShield;
     },
   },
 
-  vampire_fang: {
-    id: 'vampire_fang',
-    name: 'Vampire Fang',
-    icon: '🦷',
+  void_prism: {
+    id: 'void_prism',
+    name: 'Void Prism',
+    icon: '💎',
     type: 'relic',
-    desc: 'Restore HP when dealing damage. Higher damage = more healing.',
-    synergy: ['garlic', 'death_spiral', 'void_orbs'],
+    desc: 'Each shot has a chance to fire at an additional target.',
     levels: [
-      { desc: '+10% lifesteal', lifesteal: 0.10 },
-      { desc: '+20% lifesteal', lifesteal: 0.20 },
-      { desc: '+35% lifesteal', lifesteal: 0.35 },
+      { desc: '40% chance to fire at a second enemy', chance: 0.40 },
+      { desc: '70% chance to fire at a second enemy', chance: 0.70 },
+      { desc: 'Always fire at a second enemy (+50% more)', chance: 1.0 },
     ],
     apply(player, level) {
-      player.lifesteal = this.levels[level - 1].lifesteal;
-    },
-  },
-
-  duplicator: {
-    id: 'duplicator',
-    name: 'Void Duplicator',
-    icon: '👁️',
-    type: 'relic',
-    desc: 'Weapons fire in an additional direction.',
-    synergy: ['void_orbs', 'death_spiral'],
-    levels: [
-      { desc: 'Mirror shot: weapons fire backward too', mirror: true },
-      { desc: 'Also fires sideways (4 directions)', four_way: true },
-      { desc: 'Fires in 6 directions total', six_way: true },
-    ],
-    _mirrorDir: 0,
-    apply(player, level) {
-      player._duplicatorLevel = level;
+      player._voidPrismChance = this.levels[level - 1].chance;
     },
   },
 };

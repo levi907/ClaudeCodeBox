@@ -6,7 +6,7 @@
 
 class Wand {
   constructor() {
-    this.socketedGems = [null, null]; // 2 gem sockets
+    this.socketedGems = [null, null, null]; // 3 gem sockets
     this.cooldownTimer = 0;
   }
 
@@ -78,27 +78,36 @@ class Wand {
   }
 
   _fire(game, stats) {
-    const count = stats.projectiles + game.player.projectileCountBonus;
-    const targets = game.getNearestEnemies(count);
+    const p = game.player;
+    const count = stats.projectiles + p.projectileCountBonus;
+    const targets = game.getNearestEnemies(count + 2); // a few extras for prism
     if (targets.length === 0) return;
 
-    const totalDmgMult = game.player.damageMultiplier * (1 + stats.damageMultBonus);
+    // Berserker rage: damage bonus based on missing HP
+    let berserkerMult = 1.0;
+    if (p._berserkerMaxMult) {
+      const hpRatio = p.hp / p.maxHp;
+      berserkerMult = 1 + p._berserkerMaxMult * (1 - hpRatio);
+    }
 
-    for (let i = 0; i < count; i++) {
-      const target = targets[i % targets.length];
-      let a = angle(game.player.x, game.player.y, target.x, target.y);
-      if (count > 1) a += rng(-0.15, 0.15);
+    const totalDmgMult = p.damageMultiplier * (1 + stats.damageMultBonus) * berserkerMult;
+    const projSize = 7 * (p._projSizeMult || 1);
+
+    const spawnProj = (target, extraTarget) => {
+      const tgt = extraTarget || target;
+      let a = angle(p.x, p.y, tgt.x, tgt.y);
+      if (count > 1 && !extraTarget) a += rng(-0.15, 0.15);
 
       const baseDmg = Math.round(stats.damage * totalDmgMult);
-      const isCrit  = Math.random() < (game.player.critChance + stats.critBonus);
+      const isCrit  = Math.random() < (p.critChance + stats.critBonus);
       const dmg     = isCrit ? baseDmg * 2 : baseDmg;
 
       game.spawnProjectile(new Projectile({
-        x: game.player.x, y: game.player.y,
+        x: p.x, y: p.y,
         vx: Math.cos(a) * stats.projSpeed,
         vy: Math.sin(a) * stats.projSpeed,
         damage: dmg,
-        size: 7,
+        size: projSize,
         pierce: stats.pierce,
         bounce: stats.bounce,
         chain: stats.chain,
@@ -112,6 +121,47 @@ class Wand {
         explosionRadius: stats.explosionRadius,
         virulentPoison: stats.virulentPoison,
       }));
+    };
+
+    // Main targeted shots
+    for (let i = 0; i < count; i++) {
+      const target = targets[i % targets.length];
+      spawnProj(target);
+
+      // Void Prism: chance to fire at a second target
+      if (p._voidPrismChance && Math.random() < p._voidPrismChance) {
+        const altTarget = targets.find((t, idx) => idx !== (i % targets.length)) || target;
+        spawnProj(target, altTarget);
+      }
+    }
+
+    // Arcane Cyclone: omni-directional shots
+    if (p._omniShot > 0) {
+      const baseDmg = Math.round(stats.damage * totalDmgMult);
+      const isCrit  = Math.random() < (p.critChance + stats.critBonus);
+      const dmg     = isCrit ? baseDmg * 2 : baseDmg;
+      for (let i = 0; i < p._omniShot; i++) {
+        const a = (Math.PI * 2 * i) / p._omniShot;
+        game.spawnProjectile(new Projectile({
+          x: p.x, y: p.y,
+          vx: Math.cos(a) * stats.projSpeed,
+          vy: Math.sin(a) * stats.projSpeed,
+          damage: dmg,
+          size: projSize,
+          pierce: stats.pierce,
+          bounce: 0,
+          chain: 0,
+          chainRange: stats.chainRange,
+          type: 'bolt',
+          color: '#ff80c0',
+          lifetime: stats.spiral ? 9.0 : 2.5,
+          isCrit,
+          spiraling: stats.spiral,
+          explosive: stats.explosive,
+          explosionRadius: stats.explosionRadius,
+          virulentPoison: stats.virulentPoison,
+        }));
+      }
     }
   }
 }

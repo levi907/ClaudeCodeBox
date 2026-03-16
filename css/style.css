@@ -300,12 +300,9 @@ html, body {
 }
 #inventory-close-btn:hover { background: rgba(120, 0, 220, 0.7); }
 
-/* Legendary Forge mode */
+/* Forge banners */
 #forge-banner {
-  background: linear-gradient(90deg, rgba(180,80,0,0.35), rgba(255,140,0,0.2));
-  border: 1px solid rgba(255,140,0,0.6);
   border-radius: 6px;
-  color: #ffaa33;
   font-size: 10px;
   letter-spacing: 1px;
   padding: 6px 10px;
@@ -313,10 +310,26 @@ html, body {
   margin-bottom: 10px;
   animation: forgePulse 1.4s ease-in-out infinite;
 }
+#forge-banner.forge-banner-legendary {
+  background: linear-gradient(90deg, rgba(180,80,0,0.35), rgba(255,140,0,0.2));
+  border: 1px solid rgba(255,140,0,0.6);
+  color: #ffaa33;
+}
+#forge-banner.forge-banner-rare {
+  background: linear-gradient(90deg, rgba(0,80,180,0.35), rgba(64,192,255,0.2));
+  border: 1px solid rgba(64,192,255,0.6);
+  color: #40c0ff;
+}
+#forge-banner.forge-banner-dice {
+  background: linear-gradient(90deg, rgba(120,0,180,0.35), rgba(192,128,255,0.2));
+  border: 1px solid rgba(192,128,255,0.6);
+  color: #c080ff;
+}
 @keyframes forgePulse {
   0%, 100% { box-shadow: 0 0 8px rgba(255,140,0,0.4); }
   50%       { box-shadow: 0 0 18px rgba(255,140,0,0.8); }
 }
+/* Legendary forge selectable */
 .forge-selectable {
   border-color: rgba(255,140,0,0.7) !important;
   box-shadow: 0 0 10px rgba(255,140,0,0.45);
@@ -325,6 +338,31 @@ html, body {
 .forge-selectable:hover {
   border-color: #ff8c00 !important;
   box-shadow: 0 0 18px rgba(255,140,0,0.8);
+}
+/* Rare forge selectable */
+.forge-selectable-rare {
+  border-color: rgba(64,192,255,0.7) !important;
+  box-shadow: 0 0 10px rgba(64,192,255,0.45);
+  cursor: pointer;
+}
+.forge-selectable-rare:hover {
+  border-color: #40c0ff !important;
+  box-shadow: 0 0 18px rgba(64,192,255,0.8);
+}
+.forge-selectable-rare.forge-selected {
+  border-color: #40c0ff !important;
+  box-shadow: 0 0 20px rgba(64,192,255,1.0);
+  background: rgba(64,192,255,0.1) !important;
+}
+/* Dice forge selectable */
+.forge-selectable-dice {
+  border-color: rgba(192,128,255,0.7) !important;
+  box-shadow: 0 0 10px rgba(192,128,255,0.45);
+  cursor: pointer;
+}
+.forge-selectable-dice:hover {
+  border-color: #c080ff !important;
+  box-shadow: 0 0 18px rgba(192,128,255,0.8);
 }
 
 /* Wand section */
@@ -363,8 +401,9 @@ html, body {
 }
 #wand-sockets {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
+  flex-wrap: wrap;
 }
 .wand-socket-wrap {
   flex: 1;
