@@ -30,12 +30,13 @@ class UI {
     // Close when tapping/clicking anywhere outside the content box
     const panel = document.getElementById('inventory-panel');
     const content = document.getElementById('inventory-content');
-    const closeOnOutside = (e) => { if (!content.contains(e.target)) { e.preventDefault(); this.closeInventory(); } };
+    const closeOnOutside = (e) => { if (!content.contains(e.target) && !this._dragState) { e.preventDefault(); this.closeInventory(); } };
     panel.addEventListener('click', closeOnOutside);
     panel.addEventListener('touchend', closeOnOutside);
 
     this._selectedSlot = null; // { type: 'wand'|'inv', index: N }
     this._forgeMode = false;
+    this._dragState = null; // active drag
   }
 
   update() {
@@ -136,11 +137,13 @@ class UI {
       const el  = document.getElementById(`wand-socket-${i}`);
       if (!el) continue;
       const gem = wand.socketedGems[i];
-      const isSel = this._selectedSlot && this._selectedSlot.type === 'wand' && this._selectedSlot.index === i;
+      const isDragging = this._dragState && this._dragState.type === 'wand' && this._dragState.index === i;
       const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' : '';
-      el.className = 'wand-gem-slot' + (isSel ? ' selected' : '') + forgeClass;
+      el.className = 'wand-gem-slot' + (isDragging ? ' dragging' : '') + forgeClass;
+      el.dataset.slotType  = 'wand';
+      el.dataset.slotIndex = i;
       el.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-socket-label">Empty Socket</div>';
-      el.onclick = () => this._handleSlotClick('wand', i);
+      el.onpointerdown = (e) => this._onSlotPointerDown(e, 'wand', i);
     }
 
     // Inventory grid (9 slots)
@@ -149,12 +152,14 @@ class UI {
     grid.innerHTML = '';
     for (let i = 0; i < 9; i++) {
       const gem  = inv[i];
-      const isSel = this._selectedSlot && this._selectedSlot.type === 'inv' && this._selectedSlot.index === i;
+      const isDragging = this._dragState && this._dragState.type === 'inv' && this._dragState.index === i;
       const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' : '';
       const slot = document.createElement('div');
-      slot.className = 'inv-slot' + (isSel ? ' selected' : '') + forgeClass;
+      slot.className = 'inv-slot' + (isDragging ? ' dragging' : '') + forgeClass;
+      slot.dataset.slotType  = 'inv';
+      slot.dataset.slotIndex = i;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
-      slot.onclick = () => this._handleSlotClick('inv', i);
+      slot.onpointerdown = (e) => this._onSlotPointerDown(e, 'inv', i);
       grid.appendChild(slot);
     }
   }
@@ -170,42 +175,111 @@ class UI {
     </div>`;
   }
 
-  _handleSlotClick(type, index) {
-    const getGem = (s) =>
-      s.type === 'wand' ? this.game.wand.socketedGems[s.index] : this.game.inventory[s.index];
+  // ---- Drag and drop ----
 
-    const setGem = (s, val) => {
-      if (s.type === 'wand') {
-        this.game.wand.socketedGems[s.index] = val;
-        this.game._reapplyAllBonuses();
-      } else {
-        this.game.inventory[s.index] = val;
+  _getGem(s) {
+    return s.type === 'wand' ? this.game.wand.socketedGems[s.index] : this.game.inventory[s.index];
+  }
+
+  _setGem(s, val) {
+    if (s.type === 'wand') {
+      this.game.wand.socketedGems[s.index] = val;
+      this.game._reapplyAllBonuses();
+    } else {
+      this.game.inventory[s.index] = val;
+    }
+  }
+
+  _slotFromElement(el) {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.dataset && node.dataset.slotType != null) {
+        return { type: node.dataset.slotType, index: parseInt(node.dataset.slotIndex) };
       }
-    };
+      node = node.parentElement;
+    }
+    return null;
+  }
 
-    // Forge mode: upgrade selected gem to legendary
+  _onSlotPointerDown(e, type, index) {
+    // Forge mode: treat as a simple tap
     if (this._forgeMode) {
-      const gem = getGem({ type, index });
+      const gem = this._getGem({ type, index });
       if (!gem || gem.rarity === 'legendary') return;
-      this._forgifyGem(gem, { type, index }, setGem);
+      this._forgifyGem(gem, { type, index }, (s, v) => this._setGem(s, v));
       return;
     }
 
-    if (!this._selectedSlot) {
-      if (getGem({ type, index })) {
-        this._selectedSlot = { type, index };
-        this._renderInventory();
+    const gem = this._getGem({ type, index });
+    if (!gem) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX, startY = e.clientY;
+    let dragging = false;
+
+    // Ghost element that follows the pointer
+    const ghost = document.createElement('div');
+    ghost.id = 'drag-ghost';
+    ghost.innerHTML = this._gemCellHTML(gem);
+    ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:9999;opacity:0.88;' +
+      'transform:translate(-50%,-50%) rotate(3deg);transition:none;';
+    ghost.style.left = startX + 'px';
+    ghost.style.top  = startY + 'px';
+
+    this._dragState = { type, index, gem };
+
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if (!dragging && Math.sqrt(dx*dx + dy*dy) > 5) {
+        dragging = true;
+        document.body.appendChild(ghost);
+        this._renderInventory(); // mark source slot as dragging
       }
-    } else {
-      const from = this._selectedSlot;
-      const gemA = getGem(from);
-      const gemB = getGem({ type, index });
-      setGem(from, gemB);
-      setGem({ type, index }, gemA);
-      this._selectedSlot = null;
+      if (dragging) {
+        ghost.style.left = ev.clientX + 'px';
+        ghost.style.top  = ev.clientY + 'px';
+        // Highlight drop target
+        ghost.style.visibility = 'hidden';
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        ghost.style.visibility = '';
+        document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+        const toSlot = this._slotFromElement(under);
+        if (toSlot) {
+          const toEl = toSlot.type === 'wand'
+            ? document.getElementById(`wand-socket-${toSlot.index}`)
+            : document.getElementById('inventory-grid')?.children[toSlot.index];
+          if (toEl) toEl.classList.add('drop-over');
+        }
+      }
+    };
+
+    const onUp = (ev) => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      ghost.remove();
+      document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+      this._dragState = null;
+
+      if (dragging) {
+        // Complete drop
+        ghost.style.visibility = 'hidden';
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        const to = this._slotFromElement(under);
+        if (to && !(to.type === type && to.index === index)) {
+          const gemA = this._getGem({ type, index });
+          const gemB = this._getGem(to);
+          this._setGem({ type, index }, gemB);
+          this._setGem(to, gemA);
+          this.updateSlots();
+        }
+      }
       this._renderInventory();
-      this.updateSlots();
-    }
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
   }
 
   _forgifyGem(gem, slot, setGem) {
