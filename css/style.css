@@ -390,8 +390,24 @@ html, body {
   padding: 6px;
   background: rgba(60, 0, 100, 0.2);
 }
-.wand-gem-slot:hover { border-color: rgba(192, 80, 255, 0.7); }
+.wand-gem-slot { touch-action: none; }
+.inv-slot        { touch-action: none; }
+.wand-gem-slot:hover { border-color: rgba(192, 80, 255, 0.7); cursor: grab; }
 .wand-gem-slot.selected { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+.wand-gem-slot.dragging, .inv-slot.dragging { opacity: 0.35; border-style: dashed; }
+.wand-gem-slot.drop-over, .inv-slot.drop-over {
+  border-color: #c8a0ff !important;
+  box-shadow: 0 0 14px rgba(200, 160, 255, 0.7);
+  background: rgba(120, 60, 200, 0.25);
+}
+
+/* Drag ghost */
+#drag-ghost {
+  width: 130px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 18px rgba(192,80,255,0.5);
+  cursor: grabbing;
+}
 .empty-socket-label {
   color: rgba(192, 80, 255, 0.3);
   font-size: 10px;
@@ -426,7 +442,7 @@ html, body {
   padding: 5px;
   background: rgba(20, 0, 40, 0.4);
 }
-.inv-slot:hover  { border-color: rgba(192, 80, 255, 0.5); }
+.inv-slot:hover  { border-color: rgba(192, 80, 255, 0.5); cursor: grab; }
 .inv-slot.selected { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.4); }
 .empty-inv-label { color: rgba(100, 80, 140, 0.3); font-size: 16px; }
 
