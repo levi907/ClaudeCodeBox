@@ -151,59 +151,49 @@ html, body {
   margin-bottom: 5px;
 }
 
-/* Level badge — stone-carved crest */
+/* Level badge — pixel art flat chip */
 #level-badge {
-  background: linear-gradient(160deg, #221808, #3c2a10);
-  color: var(--gold-bright);
+  background: #1e1608;
+  color: #d4a84a;
   font-weight: bold;
   font-size: 12px;
   padding: 4px 9px;
-  border-radius: 5px;
-  border: 1px solid var(--gold);
-  box-shadow: 0 0 10px rgba(192,112,32,0.35), inset 0 1px 0 rgba(224,144,48,0.2);
+  border-radius: 0;
+  border: 2px solid #8a5c1a;
   white-space: nowrap;
   min-width: 46px;
   text-align: center;
-  font-family: var(--font-title);
-  letter-spacing: 2px;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
 }
 
-/* XP bar — torch energy */
+/* XP bar */
 #xp-bar-container {
   flex: 1;
   position: relative;
   height: 22px;
-  background: rgba(0,0,0,0.55);
-  border-radius: 2px;
-  border: 1px solid rgba(192,112,32,0.3);
+  background: #0e0a04;
+  border-radius: 0;
+  border: 2px solid #6a4010;
   overflow: hidden;
-  box-shadow: -3px 0 0 rgba(192,112,32,0.3), 3px 0 0 rgba(192,112,32,0.3);
 }
 #xp-bar-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #3a1804, #8a4010, #c07020);
-  border-radius: 2px;
+  background: #a05c18;
+  border-radius: 0;
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.3s var(--ease-out);
 }
-/* Shimmer on XP bar */
-#xp-bar-fill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 50%, transparent 100%);
-  border-radius: 2px;
-}
+#xp-bar-fill::after { display: none; }
 #xp-label {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 11px;
-  color: rgba(210,185,140,0.9);
-  text-shadow: 0 1px 4px rgba(0,0,0,1);
+  color: #c8a060;
   white-space: nowrap;
   font-family: var(--font-mono);
   letter-spacing: 0.5px;
@@ -211,43 +201,40 @@ html, body {
 
 /* Timer */
 #timer-display {
-  color: var(--gold-bright);
+  color: #d4a84a;
   font-size: 13px;
   font-weight: bold;
   min-width: 48px;
   text-align: right;
   font-family: var(--font-mono);
-  text-shadow: 0 0 8px rgba(224,144,48,0.4);
   letter-spacing: 1px;
 }
 
-/* HP bar — blood/vitality */
+/* HP bar */
 #hp-bar-container {
   position: relative;
   height: 20px;
-  background: rgba(0,0,0,0.55);
-  border-radius: 2px;
-  border: 1px solid rgba(138,16,16,0.5);
+  background: #0e0404;
+  border-radius: 0;
+  border: 2px solid #7a0c0c;
   overflow: hidden;
   margin-bottom: 5px;
-  box-shadow: -3px 0 0 rgba(138,16,16,0.4), 3px 0 0 rgba(138,16,16,0.4);
 }
 #hp-bar-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #700010, #cc1828, #ff3040);
-  border-radius: 2px;
+  background: #c01828;
+  border-radius: 0;
   transform: scaleX(1);
   transform-origin: left center;
   transition: transform 0.2s var(--ease-out);
 }
-/* Low HP danger pulse */
 #hp-bar-fill.hp-danger {
   animation: hpDangerPulse 0.9s ease-in-out infinite;
 }
 @keyframes hpDangerPulse {
   0%, 100% { filter: brightness(1); }
-  50%       { filter: brightness(1.5) saturate(1.4); }
+  50%       { filter: brightness(1.4); }
 }
 #hp-label {
   position: absolute;
@@ -255,8 +242,7 @@ html, body {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 11px;
-  color: rgba(240,200,190,0.95);
-  text-shadow: 0 1px 4px rgba(0,0,0,1);
+  color: #e0b0a0;
   white-space: nowrap;
   font-family: var(--font-mono);
   letter-spacing: 0.5px;

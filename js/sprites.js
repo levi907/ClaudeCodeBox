@@ -210,8 +210,8 @@ const Sprites = {
 
       // right eye — arcane purple glow
       ctx.fillStyle = '#9040e0';
-      ctx.shadowColor = '#c060ff';
-      ctx.shadowBlur = 9;
+      
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.ellipse(3.5, -18.5 + bob, 1.5, 1.5, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -368,8 +368,8 @@ const Sprites = {
       ctx.fill();
 
       // arcane glow orb
-      ctx.shadowColor = '#a030ff';
-      ctx.shadowBlur = 16;
+      
+      ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(155,50,255,0.7)';
       ctx.beginPath();
       ctx.ellipse(12, -23 + sb, 4.5, 6, 0, 0, Math.PI * 2);
@@ -513,8 +513,8 @@ const Sprites = {
 
     // Void-red eyes in sockets
     ctx.fillStyle = '#dd1010';
-    ctx.shadowColor = '#ff2020';
-    ctx.shadowBlur = 7;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.ellipse(-2.5, -12 + bob, 1.6, 1.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(2.5, -12 + bob, 1.6, 1.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
@@ -595,8 +595,8 @@ const Sprites = {
 
     // Pale eyes
     ctx.fillStyle = '#d8f8ff';
-    ctx.shadowColor = '#60d8ff';
-    ctx.shadowBlur = 9;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.ellipse(-2.5, -1.5 + bob, 2.4, 2.4, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(2.5, -1.5 + bob, 2.4, 2.4, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
@@ -666,8 +666,8 @@ const Sprites = {
 
     // Chest arcane circle rune
     ctx.strokeStyle = `rgba(255,150,50,${runeGlow})`;
-    ctx.shadowColor = '#ff8020';
-    ctx.shadowBlur = 9 * runeGlow;
+    
+    ctx.shadowBlur = 0;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(0, -1 + bob, 5.5, 0, Math.PI * 2);
@@ -721,8 +721,8 @@ const Sprites = {
 
     // Forehead rune
     ctx.strokeStyle = `rgba(255,150,50,${runeGlow * 0.7})`;
-    ctx.shadowColor = '#ff8020';
-    ctx.shadowBlur = 5 * runeGlow;
+    
+    ctx.shadowBlur = 0;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(-3, -21 + bob); ctx.lineTo(3, -21 + bob);
@@ -732,8 +732,8 @@ const Sprites = {
 
     // Eyes — lava glow
     ctx.fillStyle = '#ff9030';
-    ctx.shadowColor = '#ff6010';
-    ctx.shadowBlur = 12;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.ellipse(-3.5, -17 + bob, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(3.5, -17 + bob, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
@@ -812,8 +812,8 @@ const Sprites = {
 
     // Void eyes — twin teal orbs
     ctx.fillStyle = '#00f0e8';
-    ctx.shadowColor = '#00e8e0';
-    ctx.shadowBlur = 14;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.ellipse(-3.5, -9.5 + float, 3, 3.5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(3.5, -9.5 + float, 3, 3.5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
@@ -884,8 +884,8 @@ const Sprites = {
 
     // Chest necrotic glyph
     ctx.strokeStyle = `rgba(255,40,80,${glow})`;
-    ctx.shadowColor = '#ff0040';
-    ctx.shadowBlur = 12;
+    
+    ctx.shadowBlur = 0;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, -11 + bob); ctx.lineTo(-8, 5 + bob);
@@ -955,8 +955,8 @@ const Sprites = {
     }
     // Crown center gem — glowing blood-red
     ctx.fillStyle = '#ff1030';
-    ctx.shadowColor = '#ff0020';
-    ctx.shadowBlur = 10;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.ellipse(0, -52 + bob, 3, 3.5, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -975,8 +975,8 @@ const Sprites = {
 
     // Glowing red void eyes
     ctx.fillStyle = '#ff0000';
-    ctx.shadowColor = '#ff0000';
-    ctx.shadowBlur = 22;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath(); ctx.ellipse(-4.5, -30 + bob, 3.2, 3.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(4.5, -30 + bob, 3.2, 3.8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
@@ -1019,8 +1019,8 @@ const Sprites = {
     ctx.beginPath(); ctx.ellipse(-28.5, -34 + bob, 1.8, 2, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(-25.5, -34 + bob, 1.8, 2, 0, 0, Math.PI * 2); ctx.fill();
     // Staff orb below skull
-    ctx.shadowColor = '#8800ff';
-    ctx.shadowBlur = 18;
+    
+    ctx.shadowBlur = 0;
     const grad = ctx.createRadialGradient(-27, -42 + bob, 0, -27, -42 + bob, 5);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.4, '#b060ff');
@@ -1041,8 +1041,8 @@ const Sprites = {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 12;
+    
+    ctx.shadowBlur = 0;
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(size * 1.5, 0);
@@ -1057,8 +1057,8 @@ const Sprites = {
     ctx.save();
     ctx.translate(x, y);
     const flicker = Math.sin(frame * 0.3) * 0.15 + 1;
-    ctx.shadowColor = '#ff6000';
-    ctx.shadowBlur = 20;
+    
+    ctx.shadowBlur = 0;
     const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * flicker);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.3, '#ffff00');
@@ -1076,8 +1076,8 @@ const Sprites = {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    ctx.shadowColor = '#80d0ff';
-    ctx.shadowBlur = 10;
+    
+    ctx.shadowBlur = 0;
     ctx.fillStyle = '#a0e8ff';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
@@ -1097,8 +1097,8 @@ const Sprites = {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = '#c0e0ff';
-    ctx.shadowColor = '#80b0ff';
-    ctx.shadowBlur = 15;
+    
+    ctx.shadowBlur = 0;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -1121,8 +1121,8 @@ const Sprites = {
     ctx.save();
     ctx.translate(x, y);
     const pulse = Math.sin(frame * 0.2) * 0.15 + 1;
-    ctx.shadowColor = '#8000ff';
-    ctx.shadowBlur = 18;
+    
+    ctx.shadowBlur = 0;
     const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * pulse);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.4, '#c050ff');
@@ -1139,8 +1139,8 @@ const Sprites = {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rotation);
-    ctx.shadowColor = '#30ff80';
-    ctx.shadowBlur = 12;
+    
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = '#80ffb0';
     ctx.lineWidth = 2;
     ctx.fillStyle = 'rgba(48,255,128,0.15)';
@@ -1185,8 +1185,8 @@ const Sprites = {
     // Outer ring
     ctx.strokeStyle = 'rgba(80,230,150,0.4)';
     ctx.lineWidth = 1;
-    ctx.shadowColor = '#30e880';
-    ctx.shadowBlur = 7;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.arc(0, 0, size * pulse * 1.6, 0, Math.PI * 2);
     ctx.stroke();
@@ -1215,8 +1215,8 @@ const Sprites = {
     const bob = Math.sin(age * 3.5) * 3;
 
     // Outer aura halo
-    ctx.shadowColor = '#30d8c8';
-    ctx.shadowBlur = 22 * pulse;
+    
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = `rgba(48,216,200,${0.35 + 0.4 * pulse})`;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -1230,8 +1230,8 @@ const Sprites = {
     ctx.rotate(rotation);
     ctx.strokeStyle = `rgba(100,230,210,${0.7 + 0.25 * pulse})`;
     ctx.lineWidth = 1.5;
-    ctx.shadowColor = '#40e8d8';
-    ctx.shadowBlur = 6;
+    
+    ctx.shadowBlur = 0;
     ctx.setLineDash([5, 4]);
     ctx.beginPath();
     ctx.ellipse(0, 0, 15, 7, 0.25, 0, Math.PI * 2);
@@ -1257,8 +1257,8 @@ const Sprites = {
     grad.addColorStop(0.25, '#c0fff8');
     grad.addColorStop(0.6, '#20c8b8');
     grad.addColorStop(1, 'rgba(0,150,140,0)');
-    ctx.shadowColor = '#20e8d8';
-    ctx.shadowBlur = 18 * pulse;
+    
+    ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.arc(x, y + bob, 10, 0, Math.PI * 2);
     ctx.fillStyle = grad;
@@ -1292,8 +1292,8 @@ const Sprites = {
     ctx.scale(pulse, pulse);
 
     // Outer glow
-    ctx.shadowColor = '#ff1848';
-    ctx.shadowBlur = 14;
+    
+    ctx.shadowBlur = 0;
     // Heart shape
     ctx.fillStyle = '#c01038';
     ctx.beginPath();
@@ -1322,8 +1322,8 @@ const Sprites = {
     const s = size / 32; // scale factor relative to 32px design size
 
     // Shaft shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 3;
+    
+    ctx.shadowBlur = 0;
     ctx.strokeStyle = '#6030a0';
     ctx.lineWidth = 5 * s;
     ctx.lineCap = 'round';
@@ -1358,8 +1358,8 @@ const Sprites = {
     ctx.stroke();
 
     // Crystal orb glow
-    ctx.shadowColor = '#b060ff';
-    ctx.shadowBlur = 14 * s;
+    
+    ctx.shadowBlur = 0;
     const orbGrad = ctx.createRadialGradient(7 * s, -9 * s, 0, 9 * s, -10 * s, 9 * s);
     orbGrad.addColorStop(0, '#ffffff');
     orbGrad.addColorStop(0.3, '#d8a0ff');
@@ -1398,85 +1398,54 @@ const Sprites = {
   //  WORLD / BACKGROUND — Stone Dungeon Floor
   // ======================================================
   drawBackground(ctx, camX, camY, width, height) {
-    // Deep void base
-    ctx.fillStyle = '#0c0a14';
+    // Pixel-art dungeon floor — offset ashlar bricks matching the start-screen stone.
+    // At PIXEL_SCALE=4: TW=64 → 16 canvas px, TH=32 → 8 canvas px, MORT=4 → 1 canvas px.
+    const TW   = CONFIG.TILE_SIZE;       // 64 world units — brick width
+    const TH   = CONFIG.TILE_SIZE >> 1;  // 32 world units — brick height
+    const MORT = 4;                       //  4 world units — mortar gap
+
+    // Mortar / base fill
+    ctx.fillStyle = '#0a0806';
     ctx.fillRect(0, 0, width, height);
 
-    const tileSize = CONFIG.TILE_SIZE;
-    const startX = Math.floor(camX / tileSize) * tileSize - camX;
-    const startY = Math.floor(camY / tileSize) * tileSize - camY;
+    // Stone palette  (same as start-screen wall)
+    const SHADES = ['#181614', '#1a1816', '#1e1c18', '#201e1c'];
+    const LIGHT  = '#2c2826';
+    const SHADOW = '#0e0c0a';
 
-    for (let x = startX; x < width + tileSize; x += tileSize) {
-      for (let y = startY; y < height + tileSize; y += tileSize) {
-        const wx = Math.floor((x + camX) / tileSize);
-        const wy = Math.floor((y + camY) / tileSize);
-        const hash = (wx * 73856093) ^ (wy * 19349663);
-        const v  = Math.abs(hash % 100) / 100;
-        const v2 = Math.abs((hash >> 8) % 100) / 100;
-        const v3 = Math.abs((hash >> 16) % 100) / 100;
+    const startRow = Math.floor(camY / TH) - 1;
+    const startCol = Math.floor(camX / TW) - 2;
 
-        // Tile stone color — 4 subtle shades
-        const shade =
-          v < 0.12 ? '#181428' :
-          v < 0.30 ? '#151120' :
-          v < 0.55 ? '#17131e' : '#13101c';
-        ctx.fillStyle = shade;
-        ctx.fillRect(x, y, tileSize, tileSize);
+    for (let row = startRow; row * TH < camY + height + TH; row++) {
+      const ty   = row * TH - camY;
+      const xOff = (row & 1) ? TW >> 1 : 0;   // half-brick offset every other row
 
-        // Mortar gaps — thin dark lines at top and left edges
-        ctx.fillStyle = '#08060f';
-        ctx.fillRect(x, y, tileSize, 1.5);   // top
-        ctx.fillRect(x, y, 1.5, tileSize);   // left
+      for (let col = startCol; col * TW - xOff < camX + width + TW; col++) {
+        const tx   = col * TW - xOff - camX;
+        const hash = Math.abs((col * 73856093) ^ (row * 19349663));
 
-        // Stone crack (some tiles)
-        if (v > 0.80 && v < 0.90) {
-          ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-          ctx.lineWidth = 0.8;
-          ctx.lineCap = 'round';
-          const cx = x + tileSize * 0.25 + v2 * tileSize * 0.5;
-          const cy = y + tileSize * 0.15 + v3 * tileSize * 0.1;
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + (v2 - 0.5) * 18, cy + tileSize * 0.45);
-          ctx.lineTo(cx + (v2 - 0.4) * 14 + 5, cy + tileSize * 0.78);
-          ctx.stroke();
-          // Branch crack
-          if (v > 0.85) {
-            ctx.beginPath();
-            ctx.moveTo(cx + (v2 - 0.5) * 10, cy + tileSize * 0.3);
-            ctx.lineTo(cx + (v2 - 0.5) * 20 + 6, cy + tileSize * 0.5);
-            ctx.stroke();
-          }
-        }
+        // Stone face
+        ctx.fillStyle = SHADES[hash & 3];
+        ctx.fillRect(tx, ty, TW - MORT, TH - MORT);
 
-        // Arcane rune inscription (rare, glowing)
-        if (v > 0.965) {
-          const runeAlpha = 0.11 + (v - 0.965) * 2.5;
-          ctx.save();
-          ctx.shadowColor = `rgba(120,30,220,${runeAlpha * 3})`;
-          ctx.shadowBlur = 10;
-          ctx.fillStyle = `rgba(130,40,220,${runeAlpha})`;
-          ctx.font = `${tileSize * 0.48}px serif`;
+        // Top lit edge
+        ctx.fillStyle = LIGHT;
+        ctx.fillRect(tx,        ty,        TW - MORT, MORT);
+        ctx.fillRect(tx,        ty + MORT, MORT,      TH - MORT * 2);
+
+        // Bottom shadow edge
+        ctx.fillStyle = SHADOW;
+        ctx.fillRect(tx,               ty + TH - MORT * 2, TW - MORT, MORT);
+        ctx.fillRect(tx + TW - MORT*2, ty,                 MORT,      TH - MORT);
+
+        // Rare arcane rune  (~1 in 28 tiles, flat colour, no blur)
+        if ((hash % 28) === 0) {
+          const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', '✦', '◈'];
+          ctx.fillStyle = 'rgba(110,35,190,0.22)';
+          ctx.font = `${TH * 0.65}px monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', '✦', '◈', '⟁'];
-          ctx.fillText(runes[Math.abs(hash) % runes.length], x + tileSize / 2, y + tileSize / 2);
-          ctx.restore();
-        }
-
-        // Warm torch glow pool (very rare — scattered ambient light)
-        if (v > 0.988) {
-          ctx.save();
-          const torchGrad = ctx.createRadialGradient(
-            x + tileSize / 2, y + tileSize / 2, 0,
-            x + tileSize / 2, y + tileSize / 2, tileSize * 1.8
-          );
-          torchGrad.addColorStop(0, 'rgba(200,90,15,0.07)');
-          torchGrad.addColorStop(0.6, 'rgba(180,70,8,0.03)');
-          torchGrad.addColorStop(1, 'rgba(160,60,5,0)');
-          ctx.fillStyle = torchGrad;
-          ctx.fillRect(x - tileSize, y - tileSize, tileSize * 3, tileSize * 3);
-          ctx.restore();
+          ctx.fillText(runes[hash % runes.length], tx + TW / 2, ty + TH / 2);
         }
       }
     }
@@ -1490,8 +1459,8 @@ const Sprites = {
     ctx.save();
     ctx.globalAlpha = p.alpha;
     if (p.type === 'spark') {
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
+      
+      ctx.shadowBlur = 0;
       ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
@@ -1505,12 +1474,12 @@ const Sprites = {
       ctx.font = `bold ${p.size}px "Courier New"`;
       ctx.textAlign = 'center';
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 6;
+      
+      ctx.shadowBlur = 0;
       ctx.fillText(p.text, sx, sy);
     } else if (p.type === 'star') {
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 12;
+      
+      ctx.shadowBlur = 0;
       ctx.fillStyle = p.color;
       ctx.save();
       ctx.translate(sx, sy);
