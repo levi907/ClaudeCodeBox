@@ -156,19 +156,6 @@ class UI {
       document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
     }
 
-    // Wand stats readout
-    const ws = wand.computeStats();
-    const statEl = document.getElementById('wand-stats-readout');
-    if (statEl) {
-      statEl.textContent = `DMG ${ws.damage}  ·  CD ${ws.cooldown.toFixed(2)}s  ·  PROJ ${ws.projectiles}` +
-        (ws.pierce > 0 ? `  ·  PIERCE ${ws.pierce}` : '') +
-        (ws.bounce > 0 ? `  ·  BOUNCE ${ws.bounce}` : '') +
-        (ws.chain  > 0 ? `  ·  CHAIN ${ws.chain}`   : '') +
-        (ws.spiral          ? '  ·  SPIRAL'  : '') +
-        (ws.explosive       ? '  ·  EXPLOSIVE': '') +
-        (ws.virulentPoison  ? '  ·  POISON'  : '');
-    }
-
     // Wand socket slots
     for (let i = 0; i < 3; i++) {
       const el  = document.getElementById(`wand-socket-${i}`);

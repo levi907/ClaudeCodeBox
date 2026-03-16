@@ -377,28 +377,20 @@ html, body {
   background: linear-gradient(160deg, #18003a, #0d0020);
   border: 1px solid rgba(192, 80, 255, 0.5);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 6px 8px;
   text-align: center;
-  width: 120px;
+  width: 72px;
   flex-shrink: 0;
 }
 #wand-icon-wrap {
-  font-size: 28px;
-  margin-bottom: 4px;
-  filter: drop-shadow(0 0 8px rgba(192,80,255,0.8));
+  font-size: 20px;
+  filter: drop-shadow(0 0 6px rgba(192,80,255,0.8));
 }
 #wand-label {
   color: #c8a0ff;
-  font-size: 10px;
-  letter-spacing: 2px;
-  margin-bottom: 6px;
-}
-#wand-stats-readout {
-  color: #7760a0;
-  font-size: 9px;
-  line-height: 1.5;
-  white-space: normal;
-  word-break: break-word;
+  font-size: 7px;
+  letter-spacing: 1px;
+  margin-top: 3px;
 }
 #wand-sockets {
   display: flex;
