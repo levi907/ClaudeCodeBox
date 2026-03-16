@@ -269,11 +269,12 @@ html, body {
   background: linear-gradient(160deg, #0d0018, #060010);
   border: 1px solid rgba(192, 80, 255, 0.4);
   border-radius: 12px;
-  padding: 10px;
-  max-width: 88vw;
-  max-height: 88vh;
+  padding: 12px 14px;
+  max-width: 96vw;
+  max-height: 92vh;
   overflow-y: auto;
-  width: min(460px, 88vw);
+  overflow-x: hidden;
+  width: min(660px, 96vw);
   box-shadow: 0 0 40px rgba(120, 0, 200, 0.3);
 }
 #inventory-header {
@@ -376,9 +377,9 @@ html, body {
   background: linear-gradient(160deg, #18003a, #0d0020);
   border: 1px solid rgba(192, 80, 255, 0.5);
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   text-align: center;
-  min-width: 110px;
+  width: 120px;
   flex-shrink: 0;
 }
 #wand-icon-wrap {
@@ -401,12 +402,13 @@ html, body {
 }
 #wand-sockets {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 .wand-socket-wrap {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -488,8 +490,10 @@ html, body {
 /* Gem cell (shown inside socket or inventory slot) */
 .gem-cell {
   width: 100%;
+  min-width: 0;
   border-radius: 5px;
   padding: 5px 6px;
+  overflow: hidden;
 }
 .gem-cell-common    { background: rgba(85, 119, 170, 0.12); border: 1px solid rgba(85,119,170,0.35); }
 .gem-cell-rare      { background: rgba(68, 102, 204, 0.12); border: 1px solid rgba(68,102,204,0.45); }
@@ -508,6 +512,9 @@ html, body {
 .gem-mod-line {
   font-size: clamp(8px, 1.4vw, 10px);
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .gem-mod-line-common    { color: #8899bb; }
 .gem-mod-line-rare      { color: #ccaa44; }

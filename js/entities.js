@@ -29,6 +29,7 @@ class Player {
     this.cooldownReduction = 0;
     this.projectileCountBonus = 0;
     this.pendingLevelUps = 0;
+    this.pendingRelicLevels = 0;
     this.isDead = false;
     this.vx = 0; this.vy = 0;
   }
@@ -80,7 +81,11 @@ class Player {
       this.xp -= this.xpToNext;
       this.level++;
       this.xpToNext = xpRequired(this.level);
-      this.pendingLevelUps++;
+      if (this.level % 5 === 0) {
+        this.pendingRelicLevels++;
+      } else {
+        this.pendingLevelUps++;
+      }
       leveled = true;
     }
     if (leveled) {
