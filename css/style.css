@@ -1064,230 +1064,355 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════
-   START SCREEN — The Dungeon Gate
+   START SCREEN — Dungeon Door
    ═══════════════════════════════════════════ */
 #start-screen {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 200;
   overflow: hidden;
-  /* Stone masonry: horizontal mortar courses + warm dungeon depths */
+  /* Rough stone wall: cool grey-brown blocks, warm only at lantern spots */
   background:
+    /* Horizontal mortar courses — 52px stone rows */
     repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      transparent 39px,
-      rgba(0,0,0,0.28) 39px,
-      rgba(0,0,0,0.28) 41px
+      180deg,
+      transparent 0px, transparent 50px,
+      rgba(0,0,0,0.55) 50px, rgba(0,0,0,0.55) 52px
+    ),
+    /* Vertical joints — 92px wide blocks */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 90px,
+      rgba(0,0,0,0.30) 90px, rgba(0,0,0,0.30) 92px
+    ),
+    /* Vertical joints offset — 108px, half-phase shift */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 106px,
+      rgba(0,0,0,0.18) 106px, rgba(0,0,0,0.18) 108px
+    ),
+    /* Left lantern warm glow — tight amber patch around lantern */
+    radial-gradient(ellipse 160px 140px at 21% 43%, rgba(210,130,20,0.38) 0%, transparent 55%),
+    /* Right lantern warm glow */
+    radial-gradient(ellipse 160px 140px at 79% 43%, rgba(210,130,20,0.38) 0%, transparent 55%),
+    /* Central depth shadow */
+    radial-gradient(ellipse 380px 300px at 50% 60%, rgba(0,0,0,0.55) 0%, transparent 72%),
+    /* Top & bottom vignette */
+    linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.40) 100%),
+    /* Dark cool stone base — charcoal grey with faint warmth */
+    #1e1c18;
+}
+
+/* ── Stone Floor ─────────────────────────── */
+.ds-floor {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 72px;
+  background:
+    /* Flagstone mortar horizontal */
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px, transparent 34px,
+      rgba(4,2,1,0.55) 34px, rgba(4,2,1,0.55) 36px
+    ),
+    /* Flagstone mortar vertical */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 72px,
+      rgba(4,2,1,0.40) 72px, rgba(4,2,1,0.40) 74px
+    ),
+    linear-gradient(to top, #201c14, #342e20);
+  box-shadow: inset 0 6px 20px rgba(0,0,0,0.50);
+  z-index: 1;
+}
+
+/* ── Stone Arch Surround ─────────────────── */
+/* Outer (stone frame — larger arch) */
+.ds-arch-outer {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 370px;
+  height: 368px;
+  border-radius: 185px 185px 0 0;
+  background:
+    /* Stone block lines on arch frame */
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px, transparent 44px,
+      rgba(4,2,1,0.42) 44px, rgba(4,2,1,0.42) 46px
     ),
     repeating-linear-gradient(
       90deg,
-      transparent 0px,
-      transparent 79px,
-      rgba(0,0,0,0.10) 79px,
-      rgba(0,0,0,0.10) 81px
+      transparent 0px, transparent 56px,
+      rgba(4,2,1,0.28) 56px, rgba(4,2,1,0.28) 58px
     ),
-    radial-gradient(ellipse at 12% 38%, rgba(160,90,15,0.20) 0%, transparent 32%),
-    radial-gradient(ellipse at 88% 38%, rgba(160,90,15,0.20) 0%, transparent 32%),
-    radial-gradient(ellipse at 50% 50%, rgba(28,18,6,0.55) 0%, transparent 68%),
-    #100b06;
+    /* Ashlar (cut stone) — cool grey, clearly distinct from background */
+    linear-gradient(160deg, #4a4638, #38342a, #44403a, #3c3830);
+  box-shadow:
+    inset 0 8px 40px rgba(0,0,0,0.55),
+    inset 5px 0 20px rgba(0,0,0,0.30),
+    inset -5px 0 20px rgba(0,0,0,0.30),
+    0 0 0 3px rgba(18,12,5,0.9);
+  z-index: 2;
 }
 
-/* ── Wall Torches ────────────────────────── */
-.wall-torch {
+/* Inner (dark arch opening — overflow clips the doors to arch shape) */
+.ds-arch-inner {
   position: absolute;
-  top: 26%;
-  display: flex;
-  flex-direction: column-reverse; /* mount below flames */
-  align-items: center;
-  gap: 0;
-}
-.torch-left  { left:  clamp(24px, 9%, 80px); }
-.torch-right { right: clamp(24px, 9%, 80px); }
-
-/* Stone bracket arm */
-.torch-mount {
-  width: 10px;
-  height: 30px;
-  background: linear-gradient(to bottom, #4a2e10, #2a1808);
-  border-radius: 2px 2px 5px 5px;
-  position: relative;
-  box-shadow: inset -1px 0 0 rgba(0,0,0,0.5), inset 1px 0 0 rgba(255,220,120,0.06);
-}
-.torch-mount::before { /* wall bracket */
-  content: '';
-  position: absolute;
-  top: -8px; left: 50%;
+  bottom: 72px;
+  left: 50%;
   transform: translateX(-50%);
-  width: 20px; height: 8px;
-  border: 2px solid rgba(80,52,18,0.9);
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-}
-.torch-mount::after { /* ember bowl */
-  content: '';
-  position: absolute;
-  top: -12px; left: 50%;
-  transform: translateX(-50%);
-  width: 14px; height: 6px;
-  background: #2a1404;
-  border-radius: 2px;
-  box-shadow: 0 2px 6px rgba(180,90,10,0.4);
+  width: 268px;
+  height: 368px;
+  border-radius: 134px 134px 0 0;
+  overflow: hidden;
+  background: #0a0604;
+  box-shadow:
+    inset 0 0 80px rgba(0,0,0,0.90),
+    inset 0 40px 60px rgba(0,0,0,0.70);
+  z-index: 3;
 }
 
-/* Flame container */
-.torch-flames {
-  position: relative;
-  width: 32px;
-  height: 44px;
-  margin-bottom: 4px;
-}
-.tc-flame {
+/* ── Wooden Double Doors ─────────────────── */
+.ds-door {
   position: absolute;
   bottom: 0;
+  width: calc(50% + 1px); /* +1px prevents hairline gap */
+  height: 100%;
+}
+.ds-door-l { left: 0; }
+.ds-door-r { right: 0; }
+
+.ds-door-l {
+  background:
+    /* Vertical plank separators */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 19px,
+      rgba(0,0,0,0.35) 19px, rgba(0,0,0,0.35) 20px
+    ),
+    /* Subtle horizontal grain */
+    repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 3px,
+      transparent 3px, transparent 9px
+    ),
+    /* Aged dark oak — lit from outside */
+    linear-gradient(180deg, #4e3212 0%, #3c2408 35%, #2e1c08 65%, #3a2208 100%);
+  border-right: 1px solid rgba(10,6,2,0.8);
+}
+.ds-door-r {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 19px,
+      rgba(0,0,0,0.35) 19px, rgba(0,0,0,0.35) 20px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 3px,
+      transparent 3px, transparent 9px
+    ),
+    linear-gradient(180deg, #402808 0%, #4c3212 35%, #2e1c08 65%, #382008 100%);
+  border-left: 1px solid rgba(10,6,2,0.8);
+}
+
+/* Iron strap hinges */
+.ds-hinge {
+  position: absolute;
+  height: 10px;
+  background: linear-gradient(to bottom, #2e2418, #1c1610, #2e2418);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.7), inset 0 1px 0 rgba(90,65,30,0.18);
+}
+.ds-door-l .ds-hinge {
+  left: 0; width: 78%;
+  border-radius: 0 3px 3px 0;
+}
+.ds-door-r .ds-hinge {
+  right: 0; width: 78%;
+  border-radius: 3px 0 0 3px;
+}
+/* Hinge knuckle (the pin barrel) */
+.ds-door-l .ds-hinge::before,
+.ds-door-r .ds-hinge::before {
+  content: '';
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 10px; height: 14px;
+  background: linear-gradient(to right, #3c2c1a, #2a1e0e);
+  border-radius: 2px;
+}
+.ds-door-l .ds-hinge::before { left: 0; border-radius: 0 2px 2px 0; }
+.ds-door-r .ds-hinge::before { right: 0; border-radius: 2px 0 0 2px; }
+
+/* Central iron bar (where doors meet) + lock ring */
+.ds-door-bar {
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 4px;
+  transform: translateX(-50%);
+  background: linear-gradient(to right, #1e1608, #32240e, #1e1608);
+  z-index: 1;
+}
+.ds-door-bar::before { /* iron lock ring */
+  content: '';
+  position: absolute;
+  top: 38%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px; height: 20px;
+  border: 3px solid #342410;
+  border-radius: 50%;
+  background: #1a1208;
+  box-shadow: 0 0 10px rgba(0,0,0,0.9), inset 0 1px 0 rgba(90,65,20,0.2);
+}
+
+/* ── Wall Lanterns ───────────────────────── */
+.ds-lantern {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* Position flanking arch outer edges (arch outer = 370px wide, centered)
+   Arch outer left edge at x = 50% - 185px. Lanterns 55px outboard. */
+.ds-lantern-l { left:  calc(50% - 258px); top: 31%; }
+.ds-lantern-r { right: calc(50% - 258px); top: 31%; }
+
+/* Iron cage body */
+.ds-lantern-cage {
+  width: 28px; height: 38px;
+  border: 2px solid #3e2c14;
+  background: rgba(6,4,1,0.45);
+  border-radius: 3px;
+  position: relative;
+  box-shadow:
+    0 2px 10px rgba(0,0,0,0.65),
+    inset 0 0 14px rgba(210,145,22,0.14);
+}
+/* Cage cross bars */
+.ds-lantern-cage::before { /* horizontal bar */
+  content: '';
+  position: absolute;
+  top: 50%; left: -2px; right: -2px;
+  height: 2px;
+  background: rgba(44,30,12,0.85);
+}
+.ds-lantern-cage::after { /* vertical bar */
+  content: '';
+  position: absolute;
+  top: -2px; bottom: -2px;
   left: 50%;
-  border-radius: 48% 48% 28% 28% / 58% 58% 38% 38%;
+  width: 2px;
+  background: rgba(44,30,12,0.85);
+  transform: translateX(-50%);
+}
+/* Flame inside cage */
+.ds-lantern-flame {
+  position: absolute;
+  bottom: 5px; left: 50%;
+  transform: translateX(-50%);
   transform-origin: center bottom;
+  width: 9px; height: 18px;
+  background: radial-gradient(ellipse at 50% 65%,
+    #fffab0 0%, #f09020 45%, rgba(190,80,10,0.5) 75%, transparent 100%);
+  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+  animation: lanternFlicker 1.05s ease-in-out infinite;
   will-change: transform, opacity;
 }
-/* Outer flame — deep amber */
-.tc-f1 {
-  width: 26px; height: 38px;
-  margin-left: -13px;
-  background: radial-gradient(ellipse at 50% 65%, #c06010 0%, #7a2800 65%, transparent 100%);
-  animation: flameA 1.1s ease-in-out infinite;
-  opacity: 0.88;
-}
-/* Middle flame — bright orange */
-.tc-f2 {
-  width: 17px; height: 30px;
-  margin-left: -8px;
-  background: radial-gradient(ellipse at 50% 65%, #e08830 0%, #c04a10 55%, transparent 100%);
-  animation: flameB 0.75s ease-in-out infinite 0.12s;
-  opacity: 0.95;
-}
-/* Inner hot core — pale straw */
-.tc-f3 {
-  width: 8px; height: 20px;
-  margin-left: -4px;
-  background: radial-gradient(ellipse at 50% 60%, #fff3a0 0%, #e89020 50%, transparent 100%);
-  animation: flameC 0.5s ease-in-out infinite 0.05s;
-  opacity: 1;
+
+/* Wall bracket connecting cage to stone */
+.ds-lantern-bracket {
+  width: 22px; height: 7px;
+  background: linear-gradient(to bottom, #3e2c10, #2c1e0a);
+  border-radius: 1px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.55);
+  margin-top: 2px;
 }
 
-/* Torch glow pool on wall */
-.torch-glow-pool {
+/* Ambient glow pool cast on wall */
+.ds-lantern-glow {
   position: absolute;
-  top: -20px; left: 50%;
+  top: -10px; left: 50%;
   transform: translateX(-50%);
-  width: 120px; height: 80px;
-  background: radial-gradient(ellipse at 50% 40%, rgba(192,112,32,0.22) 0%, transparent 70%);
+  width: 220px; height: 170px;
+  background: radial-gradient(ellipse at 50% 32%,
+    rgba(215,135,18,0.32) 0%,
+    rgba(185,105,14,0.14) 40%,
+    transparent 68%);
   pointer-events: none;
-  animation: torchLight 1.3s ease-in-out infinite;
+  animation: glowPulse 1.4s ease-in-out infinite 0.18s;
+  will-change: opacity, transform;
 }
 
-@keyframes flameA {
-  0%   { transform: scaleX(1.00) scaleY(1.00) rotate(-1deg); opacity: 0.88; }
-  30%  { transform: scaleX(0.83) scaleY(1.10) rotate( 2deg); opacity: 1.00; }
-  60%  { transform: scaleX(1.06) scaleY(0.93) rotate(-2deg); opacity: 0.82; }
-  100% { transform: scaleX(1.00) scaleY(1.00) rotate(-1deg); opacity: 0.88; }
+@keyframes lanternFlicker {
+  0%   { transform: translateX(-50%) scaleX(1.00) scaleY(1.00) rotate(-1deg); opacity: 0.90; }
+  28%  { transform: translateX(-50%) scaleX(0.78) scaleY(1.14) rotate( 2deg); opacity: 1.00; }
+  58%  { transform: translateX(-50%) scaleX(1.08) scaleY(0.91) rotate(-2deg); opacity: 0.80; }
+  100% { transform: translateX(-50%) scaleX(1.00) scaleY(1.00) rotate(-1deg); opacity: 0.90; }
 }
-@keyframes flameB {
-  0%   { transform: scaleX(1.00) scaleY(1.00) rotate( 1deg); opacity: 0.95; }
-  35%  { transform: scaleX(0.80) scaleY(1.14) rotate(-3deg); opacity: 1.00; }
-  65%  { transform: scaleX(1.10) scaleY(0.90) rotate( 2deg); opacity: 0.85; }
-  100% { transform: scaleX(1.00) scaleY(1.00) rotate( 1deg); opacity: 0.95; }
-}
-@keyframes flameC {
-  0%   { transform: scaleX(1.00) scaleY(1.00); opacity: 1.0; }
-  40%  { transform: scaleX(0.75) scaleY(1.20); opacity: 0.9; }
-  70%  { transform: scaleX(1.15) scaleY(0.88); opacity: 1.0; }
-  100% { transform: scaleX(1.00) scaleY(1.00); opacity: 1.0; }
-}
-@keyframes torchLight {
-  0%,100% { opacity: 0.8;  transform: translateX(-50%) scaleX(1.00) scaleY(1.00); }
-  40%      { opacity: 1.0;  transform: translateX(-50%) scaleX(1.15) scaleY(1.10); }
-  70%      { opacity: 0.65; transform: translateX(-50%) scaleX(0.88) scaleY(0.92); }
+@keyframes glowPulse {
+  0%,100% { opacity: 0.82; transform: translateX(-50%) scale(1.00); }
+  38%      { opacity: 1.00; transform: translateX(-50%) scale(1.14); }
+  68%      { opacity: 0.62; transform: translateX(-50%) scale(0.88); }
 }
 
-/* ── Start Panel (stone alcove, no card) ── */
+/* ── Game UI Overlay ─────────────────────── */
 #start-panel {
-  text-align: center;
-  padding: 28px 48px 24px;
-  position: relative;
-  /* Subtle inset — the panel is a recess carved into the wall */
-  background: rgba(6,3,1,0.50);
-  box-shadow:
-    inset 0  6px 28px rgba(0,0,0,0.55),
-    inset 0 -6px 28px rgba(0,0,0,0.45),
-    inset 4px 0 20px rgba(0,0,0,0.40),
-    inset -4px 0 20px rgba(0,0,0,0.40);
-  border-top:    1px solid rgba(80,55,18,0.30);
-  border-bottom: 1px solid rgba(80,55,18,0.30);
-}
-
-/* Tiny carved corner marks */
-#start-panel::before,
-#start-panel::after {
-  content: '✦';
   position: absolute;
-  color: rgba(192,112,32,0.28);
-  font-size: 10px;
-  line-height: 1;
-}
-#start-panel::before { top: 7px; left: 12px; }
-#start-panel::after  { bottom: 7px; right: 12px; }
-
-/* Rune header row */
-.start-rune-row {
-  color: rgba(120,85,28,0.38);
-  font-size: clamp(9px, 1.5vw, 12px);
-  letter-spacing: clamp(4px, 1.2vw, 10px);
-  font-family: var(--font-mono);
-  margin-bottom: 14px;
-  pointer-events: none;
-  user-select: none;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px 48px 90px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  z-index: 10;
 }
 
 /* Title — carved stone letterforms */
 .game-title {
-  font-size: clamp(34px, 7.5vw, 66px);
-  color: #c8aa70;
-  letter-spacing: clamp(5px, 1.8vw, 12px);
-  line-height: 1.06;
-  margin-bottom: 6px;
+  font-size: clamp(28px, 6vw, 52px);
+  color: #cdb070;
+  letter-spacing: clamp(4px, 1.6vw, 10px);
+  line-height: 1.05;
+  margin-bottom: 4px;
   font-family: var(--font-title);
-  /* Carved emboss: dark undercut shadow + bright top edge catch */
+  text-align: center;
+  /* Carved-in look: bright top-lit edge, deep undercut shadow below */
   text-shadow:
-    0  1px 0   rgba(230,190,100,0.55),   /* top-lit edge */
-    0  2px 4px rgba(0,0,0,0.90),          /* deep undercut */
-    0  4px 12px rgba(0,0,0,0.70),         /* recessed depth */
-    0 -1px 0   rgba(0,0,0,0.60);          /* top shadow */
+    0  1px 0   rgba(240,200,110,0.55),
+    0  2px 5px rgba(0,0,0,1.00),
+    0  5px 16px rgba(0,0,0,0.85),
+    0 -1px 0   rgba(0,0,0,0.75);
 }
 
 .game-subtitle {
-  color: rgba(170,138,80,0.65);
-  font-size: clamp(10px, 2vw, 13px);
+  color: rgba(175,142,82,0.65);
+  font-size: clamp(10px, 1.9vw, 13px);
   letter-spacing: clamp(3px, 1vw, 7px);
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   font-family: var(--font-mono);
   text-transform: uppercase;
+  text-align: center;
 }
 
 /* Carved horizontal divider */
 .start-carved-rule {
-  width: 60%;
+  width: 180px;
   height: 1px;
-  margin: 0 auto 18px;
+  margin: 0 auto 14px;
   background: linear-gradient(
     to right,
     transparent,
-    rgba(100,70,22,0.50) 20%,
-    rgba(140,100,30,0.70) 50%,
-    rgba(100,70,22,0.50) 80%,
+    rgba(110,78,24,0.55) 20%,
+    rgba(150,108,32,0.75) 50%,
+    rgba(110,78,24,0.55) 80%,
     transparent
   );
   position: relative;
@@ -1297,29 +1422,28 @@ html, body {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  color: rgba(160,110,35,0.55);
-  font-size: 11px;
-  background: rgba(6,3,1,0.8);
-  padding: 0 6px;
+  color: rgba(165,118,38,0.60);
+  font-size: 10px;
+  padding: 0 5px;
 }
 
 #start-tips {
-  color: rgba(145,115,68,0.70);
-  font-size: clamp(9px, 1.6vw, 11px);
-  line-height: 1.8;
-  margin-bottom: 22px;
+  color: rgba(148,118,70,0.68);
+  font-size: clamp(9px, 1.55vw, 11px);
+  line-height: 1.85;
+  margin-bottom: auto; /* push button down toward door level */
   font-family: var(--font-mono);
+  text-align: center;
 }
-#start-tips p {
-  margin: 0;
-}
+#start-tips p { margin: 0; }
 
 .start-corner-ornament {
-  margin-top: 16px;
-  color: rgba(160,110,35,0.32);
+  margin-top: 14px;
+  color: rgba(158,112,36,0.30);
   font-size: 11px;
   letter-spacing: 4px;
   font-family: var(--font-mono);
+  text-align: center;
 }
 
 /* Shared button — stone-carved with torch amber */

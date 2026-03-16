@@ -132,34 +132,42 @@
 
     <!-- Start Screen -->
     <div id="start-screen">
-      <!-- Wall torches -->
-      <div class="wall-torch torch-left" aria-hidden="true">
-        <div class="torch-mount"></div>
-        <div class="torch-flames">
-          <div class="tc-flame tc-f1"></div>
-          <div class="tc-flame tc-f2"></div>
-          <div class="tc-flame tc-f3"></div>
+      <!-- Dungeon door scene (pure CSS) -->
+      <div class="ds-floor" aria-hidden="true"></div>
+      <div class="ds-arch-outer" aria-hidden="true"></div>
+      <div class="ds-arch-inner" aria-hidden="true">
+        <div class="ds-door ds-door-l">
+          <div class="ds-hinge" style="top:9%"></div>
+          <div class="ds-hinge" style="top:43%"></div>
+          <div class="ds-hinge" style="top:76%"></div>
         </div>
-        <div class="torch-glow-pool"></div>
+        <div class="ds-door ds-door-r">
+          <div class="ds-hinge" style="top:9%"></div>
+          <div class="ds-hinge" style="top:43%"></div>
+          <div class="ds-hinge" style="top:76%"></div>
+        </div>
+        <div class="ds-door-bar" aria-hidden="true"></div>
       </div>
-      <div class="wall-torch torch-right" aria-hidden="true">
-        <div class="torch-mount"></div>
-        <div class="torch-flames">
-          <div class="tc-flame tc-f1"></div>
-          <div class="tc-flame tc-f2"></div>
-          <div class="tc-flame tc-f3"></div>
-        </div>
-        <div class="torch-glow-pool"></div>
+      <!-- Wall lanterns flanking the arch -->
+      <div class="ds-lantern ds-lantern-l" aria-hidden="true">
+        <div class="ds-lantern-cage"><div class="ds-lantern-flame"></div></div>
+        <div class="ds-lantern-bracket"></div>
+        <div class="ds-lantern-glow"></div>
+      </div>
+      <div class="ds-lantern ds-lantern-r" aria-hidden="true">
+        <div class="ds-lantern-cage"><div class="ds-lantern-flame"></div></div>
+        <div class="ds-lantern-bracket"></div>
+        <div class="ds-lantern-glow"></div>
       </div>
 
+      <!-- Game UI overlay -->
       <div id="start-panel">
-        <div class="start-rune-row" aria-hidden="true">ᚨ · ᚱ · ᚦ · ᚠ · ᚢ · ᚷ · ᚹ · ᚲ</div>
         <h1 class="game-title">PATH OF<br>SURVIVAL</h1>
         <p class="game-subtitle">A dark-fantasy roguelite</p>
         <div class="start-carved-rule"></div>
         <div id="start-tips">
           <p>Auto-attack enemies · Level up · Socket gems into your wand</p>
-          <p>Move with joystick or WASD · Tap ⚔ to open inventory</p>
+          <p>Move with joystick or WASD · Tap wand icon to open inventory</p>
         </div>
         <button id="start-btn">Enter the Dungeon</button>
         <div class="start-corner-ornament">✦ ——— ✦ ——— ✦</div>
