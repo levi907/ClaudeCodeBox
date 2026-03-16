@@ -78,10 +78,11 @@ class UI {
 
     // Relic slots
     this.relicSlots.innerHTML = this.game.relics.map(r =>
-      `<div class="slot-icon" title="${r.def.name}" style="border-color:rgba(32,160,96,0.6)">
+      `<div class="slot-icon" data-relic-id="${r.id}" style="border-color:rgba(32,160,96,0.6)">
         ${r.def.icon}
       </div>`
     ).join('');
+    this._bindRelicTooltips();
 
     // Refresh inventory panel if open
     if (this.game.inventoryOpen) this._renderInventory();
@@ -564,6 +565,54 @@ class UI {
     }, () => {
       this._renderInventory(); // Cancel — stay in dice forge mode
     });
+  }
+
+  _bindRelicTooltips() {
+    const tooltip  = document.getElementById('relic-tooltip');
+    const tipIcon  = document.getElementById('relic-tooltip-icon');
+    const tipName  = document.getElementById('relic-tooltip-name');
+    const tipDesc  = document.getElementById('relic-tooltip-desc');
+
+    const show = (el) => {
+      const id  = el.dataset.relicId;
+      const def = RELIC_DEFS[id];
+      if (!def) return;
+      tipIcon.textContent = def.icon;
+      tipName.textContent = def.name;
+      tipDesc.textContent = def.desc;
+      tooltip.classList.remove('hidden');
+      this._positionRelicTooltip(el);
+    };
+    const hide = () => tooltip.classList.add('hidden');
+
+    this.relicSlots.querySelectorAll('.slot-icon[data-relic-id]').forEach(el => {
+      el.addEventListener('mouseenter', () => show(el));
+      el.addEventListener('mouseleave', hide);
+      el.addEventListener('touchstart', (e) => { e.stopPropagation(); show(el); }, { passive: true });
+      el.addEventListener('touchend',   (e) => { e.stopPropagation(); setTimeout(hide, 1200); }, { passive: true });
+    });
+  }
+
+  _positionRelicTooltip(anchor) {
+    const tooltip   = document.getElementById('relic-tooltip');
+    const container = document.getElementById('game-container');
+    const aRect  = anchor.getBoundingClientRect();
+    const cRect  = container.getBoundingClientRect();
+
+    // Position above the icon, centered horizontally
+    const tipW   = tooltip.offsetWidth  || 200;
+    const tipH   = tooltip.offsetHeight || 70;
+    const margin = 6;
+
+    let left = aRect.left - cRect.left + aRect.width / 2 - tipW / 2;
+    let top  = aRect.top  - cRect.top  - tipH - margin;
+
+    // Clamp within container
+    left = Math.max(4, Math.min(left, cRect.width  - tipW - 4));
+    top  = Math.max(4, Math.min(top,  cRect.height - tipH - 4));
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top  = top  + 'px';
   }
 
   showGameOver() {
