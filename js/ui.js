@@ -161,8 +161,16 @@ class UI {
       const banner = document.createElement('div');
       banner.id = 'forge-banner';
       banner.className = 'forge-banner-rare';
-      const need = 3 - this._rareForgeSelected.length;
-      banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} to combine into a Rare gem <button class="forge-skip-btn">Skip</button>`;
+      if (this._rareForgeSelected.length === 3) {
+        const gems = this._rareForgeSelected.map(s => this._getGem(s));
+        const resultRarity = gems.every(g => g.rarity === 'rare') ? 'legendary' : 'rare';
+        banner.innerHTML = `🔨 RARE FORGE — Result: <span class="forge-gem-preview forge-gem-preview-${resultRarity}"></span> <button class="forge-confirm-btn">⚒ Forge</button> <button class="forge-skip-btn">Skip</button>`;
+        banner.querySelector('.forge-confirm-btn').addEventListener('click', () => this._executeRareForge());
+        banner.querySelector('.forge-confirm-btn').addEventListener('touchend', e => { e.preventDefault(); this._executeRareForge(); });
+      } else {
+        const need = 3 - this._rareForgeSelected.length;
+        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} to combine (3× Rare = Legendary!) <button class="forge-skip-btn">Skip</button>`;
+      }
       banner.querySelector('.forge-skip-btn').addEventListener('click', () => this._skipForge());
       banner.querySelector('.forge-skip-btn').addEventListener('touchend', e => { e.preventDefault(); this._skipForge(); });
       document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
@@ -271,11 +279,7 @@ class UI {
       } else {
         this._rareForgeSelected.push(slot);
       }
-      if (this._rareForgeSelected.length === 3) {
-        this._executeRareForge();
-      } else {
-        this._renderInventory();
-      }
+      this._renderInventory();
       return;
     }
 
@@ -377,12 +381,22 @@ class UI {
   }
 
   _executeRareForge() {
-    // Combine 3 selected gems into a new rare gem, keeping 1 mod from each
+    // Combine 3 selected gems into a new gem, keeping 1 mod from each.
+    // If all 3 inputs are rare, the result is a legendary gem.
     const gems = this._rareForgeSelected.map(s => this._getGem(s));
+    const allRare = gems.every(g => g.rarity === 'rare');
     const keptMods = gems.map(g => pick(g.mods)).filter(Boolean);
+
     const newGem = generateGem();
-    newGem.rarity = 'rare';
-    newGem.mods = keptMods.slice(0, 3);
+    if (allRare) {
+      const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
+      const [legKey] = weightedPickUnique(legendaryKeys, 1);
+      newGem.rarity = 'legendary';
+      newGem.mods = [{ type: legKey, value: null }, ...keptMods];
+    } else {
+      newGem.rarity = 'rare';
+      newGem.mods = keptMods.slice(0, 3);
+    }
 
     // Clear source slots (first selected gets the new gem)
     for (let i = 1; i < this._rareForgeSelected.length; i++) {

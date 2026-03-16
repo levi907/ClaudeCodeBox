@@ -207,14 +207,15 @@ html, body {
 }
 .wand-gem-dot {
   display: inline-block;
-  width: 11px; height: 11px;
-  border-radius: 50%;
+  width: 8px; height: 8px;
+  transform: rotate(45deg);
   vertical-align: middle;
+  margin: 0 3px;
 }
 .gem-dot-common       { background: #6688bb; box-shadow: 0 0 4px #6688bb; }
 .gem-dot-rare         { background: #4466cc; box-shadow: 0 0 5px #88aaff; }
 .gem-dot-legendary    { background: #cc7700; box-shadow: 0 0 6px #ffaa33; }
-.wand-gem-dot-empty   { background: rgba(192,80,255,0.12); border: 1px solid rgba(192,80,255,0.25); }
+.wand-gem-dot-empty   { background: transparent; border: 1px solid rgba(192,80,255,0.35); }
 
 #relic-slots {
   display: flex;
@@ -356,6 +357,38 @@ html, body {
   transform: none;
   box-shadow: none;
 }
+.forge-confirm-btn {
+  background: rgba(0, 60, 160, 0.65);
+  border: 1px solid rgba(64, 192, 255, 0.7);
+  color: #60d0ff;
+  padding: 3px 10px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  animation: none;
+}
+.forge-confirm-btn:hover, .forge-confirm-btn:active {
+  background: rgba(0, 90, 220, 0.85);
+  color: #a0e8ff;
+  transform: none;
+  box-shadow: 0 0 10px rgba(64,192,255,0.45);
+}
+/* Preview gem outline in forge banner */
+.forge-gem-preview {
+  display: inline-block;
+  width: 11px; height: 11px;
+  transform: rotate(45deg);
+  background: transparent;
+  vertical-align: middle;
+  margin: 0 5px;
+}
+.forge-gem-preview-rare      { border: 2px solid #6699ff; box-shadow: 0 0 6px #6699ff; }
+.forge-gem-preview-legendary { border: 2px solid #ffaa33; box-shadow: 0 0 8px #ffaa33; }
 /* Legendary forge selectable */
 .forge-selectable {
   border-color: rgba(255,140,0,0.7) !important;
