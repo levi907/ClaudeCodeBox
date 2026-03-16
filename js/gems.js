@@ -1,7 +1,7 @@
 // ============================================================
 //  SPELL SURVIVORS - Gem System
 //  Gems socket into the wand and modify its behavior.
-//  Common: 2 mods | Rare: 3 mods | Legendary: 3 mods + 1 legendary
+//  Common: 1 mod | Rare: 2-3 mods | Legendary: 4 mods (1 legendary + 1 rare + 2 common)
 // ============================================================
 
 const MOD_DEFS = {
@@ -68,9 +68,10 @@ const MOD_VALUES = {
 };
 
 const GEM_COLORS = {
-  common:    { bg: '#0d1a22', border: '#5577aa', glow: 'rgba(85,119,170,0.4)',  dot: '#6688bb' },
-  rare:      { bg: '#0d0d22', border: '#4466cc', glow: 'rgba(68,102,204,0.5)',  dot: '#6699ff' },
-  legendary: { bg: '#22100a', border: '#cc7700', glow: 'rgba(204,119,0,0.6)',   dot: '#ffaa33' },
+  common:           { bg: '#0d1a22', border: '#5577aa', glow: 'rgba(85,119,170,0.4)',  dot: '#6688bb' },
+  rare:             { bg: '#0d0d22', border: '#4466cc', glow: 'rgba(68,102,204,0.5)',  dot: '#6699ff' },
+  legendary:        { bg: '#22100a', border: '#cc7700', glow: 'rgba(204,119,0,0.6)',   dot: '#ffaa33' },
+  superLegendary:   { bg: '#2a0800', border: '#ff6600', glow: 'rgba(255,100,0,0.9)',   dot: '#ff8800' },
 };
 
 // Pick `n` unique keys from a list using MOD_WEIGHTS
@@ -102,7 +103,8 @@ function generateGem(rarityOverride) {
   const mods = [];
 
   if (rarity === 'common') {
-    for (const k of weightedPickUnique(commonKeys, 2)) {
+    // Common: 1 mod only
+    for (const k of weightedPickUnique(commonKeys, 1)) {
       mods.push({ type: k, value: MOD_VALUES[k] });
     }
   } else if (rarity === 'rare') {
@@ -125,6 +127,48 @@ function generateGem(rarityOverride) {
   return {
     id: `gem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     rarity,
+    superLegendary: false,
+    mods,
+  };
+}
+
+// Upgrade an existing legendary gem to Super Legendary:
+// adds a second legendary mod and marks it superLegendary.
+function upgradeSuperLegendary(gem) {
+  const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
+  const existingLegMods = gem.mods.filter(m => MOD_DEFS[m.type]?.rarity === 'legendary').map(m => m.type);
+  const missing = legendaryKeys.filter(k => !existingLegMods.includes(k));
+  const legKey = missing.length ? pick(missing) : pick(legendaryKeys);
+  // Insert second legendary mod right after the first legendary mod
+  const firstLegIdx = gem.mods.findIndex(m => MOD_DEFS[m.type]?.rarity === 'legendary');
+  gem.mods.splice(firstLegIdx + 1, 0, { type: legKey, value: null });
+  if (gem.mods.length > 5) gem.mods.length = 5;
+  gem.superLegendary = true;
+  gem.rarity = 'legendary';
+  return gem;
+}
+
+// Create a brand-new Super Legendary gem from scratch (2 legendary mods).
+function generateSuperLegendaryGem(forcedLegKeys) {
+  const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
+  const rareKeys      = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'rare');
+  const commonKeys    = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'common');
+
+  let [legA, legB] = forcedLegKeys || weightedPickUnique(legendaryKeys, 2);
+  const [rareMod]  = weightedPickUnique(rareKeys, 1);
+  const comMods    = weightedPickUnique(commonKeys, 2);
+
+  const mods = [
+    { type: legA, value: null },
+    { type: legB, value: null },
+    { type: rareMod, value: MOD_VALUES[rareMod] },
+    ...comMods.map(k => ({ type: k, value: MOD_VALUES[k] })),
+  ];
+
+  return {
+    id: `gem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    rarity: 'legendary',
+    superLegendary: true,
     mods,
   };
 }

@@ -49,19 +49,25 @@ class UpgradeSystem {
     `;
   }
   buildGemCardHTML(gem) {
-    const col = GEM_COLORS[gem.rarity];
     const modLines = gem.mods.map(mod => {
       const def = MOD_DEFS[mod.type];
       return `<div class="gem-mod gem-mod-${def.rarity}">${def.format(mod.value)}</div>`;
     }).join('');
 
-    const rarityLabel = gem.rarity === 'legendary' ? '✦ LEGENDARY ✦' :
+    const rarityLabel = gem.superLegendary          ? '✦ LEGENDARY <span class="super-legendary-badge">✦+</span>' :
+                        gem.rarity === 'legendary'  ? '✦ LEGENDARY ✦' :
                         gem.rarity === 'rare'       ? '◆ RARE'        : '◇ COMMON';
+    const cardClass = gem.superLegendary
+      ? 'upgrade-card rarity-gem-legendary rarity-gem-super'
+      : `upgrade-card rarity-gem-${gem.rarity}`;
+    const diamondClass = gem.superLegendary ? 'gem-diamond gem-diamond-legendary gem-diamond-super' : `gem-diamond gem-diamond-${gem.rarity}`;
+    const pipClass = gem.superLegendary ? 'gem-corner-pip gem-corner-pip-super' : `gem-corner-pip gem-corner-pip-${gem.rarity}`;
 
     return `
-      <div class="upgrade-card rarity-gem-${gem.rarity}" data-gem-idx>
+      <div class="${cardClass}" data-gem-idx style="position:relative">
+        <div class="${pipClass}" style="position:absolute;top:8px;right:8px"></div>
         <div class="gem-diamond-wrap">
-          <div class="gem-diamond gem-diamond-${gem.rarity}"></div>
+          <div class="${diamondClass}"></div>
         </div>
         <div class="card-name">${rarityLabel} GEM</div>
         <div class="gem-mods">${modLines}</div>

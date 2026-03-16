@@ -503,25 +503,56 @@ class LegendaryForge {
 
   update(dt, playerX, playerY) {
     this.age += dt;
-    if (dist(this.x, this.y, playerX, playerY) < 28) this.collected = true;
+    if (dist(this.x, this.y, playerX, playerY) < 42) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {
     ctx.save();
-    const pulse = 0.65 + 0.35 * Math.sin(this.age * 4);
+    const pulse    = 0.55 + 0.45 * Math.sin(this.age * 3.5);
+    const rotation = this.age * 1.2;
+    const bob      = Math.sin(this.age * 2.8) * 5;
+
+    // Outer ring glow
     ctx.shadowColor = '#ff8c00';
-    ctx.shadowBlur = 22 * pulse;
-    ctx.font = 'bold 24px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.globalAlpha = 0.9 + 0.1 * pulse;
-    ctx.fillText('⚒', screenX, screenY);
-    // Label
+    ctx.shadowBlur  = 36 * pulse;
+    ctx.strokeStyle = `rgba(255,140,0,${0.4 + 0.5 * pulse})`;
+    ctx.lineWidth   = 2.5;
+    ctx.beginPath();
+    ctx.arc(screenX, screenY + bob, 28, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.shadowBlur = 0;
-    ctx.globalAlpha = 0.85;
-    ctx.font = 'bold 8px "Courier New"';
-    ctx.fillStyle = '#ffaa33';
-    ctx.fillText('LEGENDARY FORGE', screenX, screenY + 18);
+
+    // Rotating diamond bg
+    ctx.save();
+    ctx.translate(screenX, screenY + bob);
+    ctx.rotate(rotation);
+    ctx.fillStyle = `rgba(255,120,0,${0.18 + 0.12 * pulse})`;
+    ctx.strokeStyle = `rgba(255,180,0,${0.6 + 0.4 * pulse})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const s = 20;
+    ctx.moveTo(0, -s); ctx.lineTo(s, 0); ctx.lineTo(0, s); ctx.lineTo(-s, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Hammer icon
+    ctx.shadowColor = '#ffcc66';
+    ctx.shadowBlur  = 14 * pulse;
+    ctx.font        = `bold 26px serif`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha  = 0.9 + 0.1 * pulse;
+    ctx.fillText('⚒', screenX, screenY + bob);
+
+    // Label
+    ctx.shadowBlur   = 8;
+    ctx.shadowColor  = '#ff8c00';
+    ctx.globalAlpha  = 0.9;
+    ctx.font         = 'bold 10px "Courier New"';
+    ctx.fillStyle    = '#ffcc44';
+    ctx.fillText('✦ LEGENDARY FORGE ✦', screenX, screenY + bob + 34);
     ctx.restore();
   }
 }

@@ -25,8 +25,8 @@ const RELIC_DEFS = {
     id: 'giants_wand',
     name: "Giant's Wand",
     icon: '🔮',
-    desc: 'Your projectiles are 10× larger.',
-    apply(player) { player._projSizeMult = 10; },
+    desc: 'Your projectiles are 10× larger and knock enemies back.',
+    apply(player) { player._projSizeMult = 10; player._giantsKnockback = 400; },
   },
 
   cataclysm_clock: {

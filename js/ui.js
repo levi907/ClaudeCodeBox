@@ -49,16 +49,16 @@ class UI {
 
     this.levelDisplay.textContent = player.level;
 
-    const xpPct = (player.xp / player.xpToNext) * 100;
-    this.xpFill.style.width = xpPct + '%';
+    const xpPct = (player.xp / player.xpToNext);
+    this.xpFill.style.transform = `scaleX(${xpPct})`;
     this.xpLabel.textContent = `${player.xp} / ${player.xpToNext} XP`;
 
-    const hpPct = (player.hp / player.maxHp) * 100;
-    this.hpFill.style.width = hpPct + '%';
+    const hpPct = (player.hp / player.maxHp);
+    this.hpFill.style.transform = `scaleX(${hpPct})`;
     this.hpLabel.textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
     this.hpFill.style.background =
-      hpPct > 50 ? 'linear-gradient(90deg, #880000, #ff3030)' :
-      hpPct > 25 ? 'linear-gradient(90deg, #884000, #ff6000)' :
+      hpPct > 0.5 ? 'linear-gradient(90deg, #880000, #ff3030)' :
+      hpPct > 0.25 ? 'linear-gradient(90deg, #884000, #ff6000)' :
                    'linear-gradient(90deg, #600000, #ff0000)';
 
     const minutes = Math.floor(t / 60);
@@ -153,7 +153,7 @@ class UI {
       const banner = document.createElement('div');
       banner.id = 'forge-banner';
       banner.className = 'forge-banner-legendary';
-      banner.innerHTML = '⚒ LEGENDARY FORGE — Tap a gem to upgrade it to Legendary <button class="forge-skip-btn">Skip</button>';
+      banner.innerHTML = '⚒ LEGENDARY FORGE — Upgrade a gem to Legendary, or upgrade a Legendary to <span class="super-legendary-badge">✦+</span> Super Legendary! <button class="forge-skip-btn">Skip</button>';
       banner.querySelector('.forge-skip-btn').addEventListener('click', () => this._skipForge());
       banner.querySelector('.forge-skip-btn').addEventListener('touchend', e => { e.preventDefault(); this._skipForge(); });
       document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
@@ -163,13 +163,25 @@ class UI {
       banner.className = 'forge-banner-rare';
       if (this._rareForgeSelected.length === 3) {
         const gems = this._rareForgeSelected.map(s => this._getGem(s));
-        const resultRarity = gems.every(g => g.rarity === 'rare') ? 'legendary' : 'rare';
-        banner.innerHTML = `🔨 RARE FORGE — Result: <span class="forge-gem-preview forge-gem-preview-${resultRarity}"></span> <button class="forge-confirm-btn">⚒ Forge</button> <button class="forge-skip-btn">Skip</button>`;
+        const allLeg  = gems.every(g => g.rarity === 'legendary');
+        const allRare = gems.every(g => g.rarity === 'rare');
+        let resultLabel, resultPreview;
+        if (allLeg) {
+          resultLabel = `<span class="super-legendary-badge">✦+ SUPER LEGENDARY</span>`;
+          resultPreview = `<span class="forge-gem-preview forge-gem-preview-legendary" style="border-color:#ff6600;box-shadow:0 0 8px #ff6600"></span>`;
+        } else if (allRare) {
+          resultLabel = 'Legendary';
+          resultPreview = `<span class="forge-gem-preview forge-gem-preview-legendary"></span>`;
+        } else {
+          resultLabel = 'Rare';
+          resultPreview = `<span class="forge-gem-preview forge-gem-preview-rare"></span>`;
+        }
+        banner.innerHTML = `🔨 RARE FORGE — Result: ${resultPreview} ${resultLabel} <button class="forge-confirm-btn">⚒ Forge</button> <button class="forge-skip-btn">Skip</button>`;
         banner.querySelector('.forge-confirm-btn').addEventListener('click', () => this._executeRareForge());
         banner.querySelector('.forge-confirm-btn').addEventListener('touchend', e => { e.preventDefault(); this._executeRareForge(); });
       } else {
         const need = 3 - this._rareForgeSelected.length;
-        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} to combine (3× Rare = Legendary!) <button class="forge-skip-btn">Skip</button>`;
+        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} (3× Rare = Legendary · 3× Legendary = <span class="super-legendary-badge">✦+ Super!</span>) <button class="forge-skip-btn">Skip</button>`;
       }
       banner.querySelector('.forge-skip-btn').addEventListener('click', () => this._skipForge());
       banner.querySelector('.forge-skip-btn').addEventListener('touchend', e => { e.preventDefault(); this._skipForge(); });
@@ -191,10 +203,13 @@ class UI {
       const gem = wand.socketedGems[i];
       const isDragging = this._dragState && this._dragState.type === 'wand' && this._dragState.index === i;
       const isRareSelected = this._rareForgeSelected.some(s => s.type === 'wand' && s.index === i);
-      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' :
+      const forgeable = this._forgeMode && gem && (gem.rarity !== 'legendary' || (gem.rarity === 'legendary' && !gem.superLegendary));
+      const superForgeClass = (forgeable && gem.rarity === 'legendary') ? ' forge-selectable-super' : '';
+      const forgeClass = forgeable && gem.rarity !== 'legendary' ? ' forge-selectable' :
                          (this._rareForgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable-rare' + (isRareSelected ? ' forge-selected' : '') :
+                         (this._rareForgeMode && gem && gem.rarity === 'legendary' && !gem.superLegendary) ? ' forge-selectable-legendary-rare' + (isRareSelected ? ' forge-selected' : '') :
                          (this._diceForgeMode && gem && (gem.rarity === 'rare' || gem.rarity === 'legendary')) ? ' forge-selectable-dice' : '';
-      el.className = 'wand-gem-slot' + (isDragging ? ' dragging' : '') + forgeClass;
+      el.className = 'wand-gem-slot' + (isDragging ? ' dragging' : '') + forgeClass + superForgeClass;
       el.dataset.slotType  = 'wand';
       el.dataset.slotIndex = i;
       el.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-socket-label">Empty Socket</div>';
@@ -209,11 +224,14 @@ class UI {
       const gem  = inv[i];
       const isDragging = this._dragState && this._dragState.type === 'inv' && this._dragState.index === i;
       const isRareSelected = this._rareForgeSelected.some(s => s.type === 'inv' && s.index === i);
-      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' :
+      const forgeable2 = this._forgeMode && gem && (gem.rarity !== 'legendary' || (gem.rarity === 'legendary' && !gem.superLegendary));
+      const superForgeClass2 = (forgeable2 && gem.rarity === 'legendary') ? ' forge-selectable-super' : '';
+      const forgeClass = forgeable2 && gem.rarity !== 'legendary' ? ' forge-selectable' :
                          (this._rareForgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable-rare' + (isRareSelected ? ' forge-selected' : '') :
+                         (this._rareForgeMode && gem && gem.rarity === 'legendary' && !gem.superLegendary) ? ' forge-selectable-legendary-rare' + (isRareSelected ? ' forge-selected' : '') :
                          (this._diceForgeMode && gem && (gem.rarity === 'rare' || gem.rarity === 'legendary')) ? ' forge-selectable-dice' : '';
       const slot = document.createElement('div');
-      slot.className = 'inv-slot' + (isDragging ? ' dragging' : '') + forgeClass;
+      slot.className = 'inv-slot' + (isDragging ? ' dragging' : '') + forgeClass + superForgeClass2;
       slot.dataset.slotType  = 'inv';
       slot.dataset.slotIndex = i;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
@@ -227,8 +245,14 @@ class UI {
       const def = MOD_DEFS[mod.type];
       return `<div class="gem-mod-line gem-mod-line-${def.rarity}">${def.format(mod.value)}</div>`;
     }).join('');
-    return `<div class="gem-cell gem-cell-${gem.rarity}">
-      <div class="gem-rarity-tag gem-rarity-${gem.rarity}">${gem.rarity.toUpperCase()}</div>
+    const rarityLabel = gem.superLegendary
+      ? 'LEGENDARY <span class="super-legendary-badge">✦+</span>'
+      : gem.rarity.toUpperCase();
+    const cellClass = gem.superLegendary ? 'gem-cell gem-cell-legendary gem-cell-super' : `gem-cell gem-cell-${gem.rarity}`;
+    const pipClass = gem.superLegendary ? 'gem-corner-pip gem-corner-pip-super' : `gem-corner-pip gem-corner-pip-${gem.rarity}`;
+    return `<div class="${cellClass}">
+      <div class="${pipClass}"></div>
+      <div class="gem-rarity-tag gem-rarity-${gem.rarity}">${rarityLabel}</div>
       ${modLines}
     </div>`;
   }
@@ -263,15 +287,21 @@ class UI {
     // Legendary forge mode
     if (this._forgeMode) {
       const gem = this._getGem({ type, index });
-      if (!gem || gem.rarity === 'legendary') return;
-      this._forgifyGem(gem, { type, index }, (s, v) => this._setGem(s, v));
+      if (!gem) return;
+      if (gem.rarity === 'legendary' && !gem.superLegendary) {
+        // Upgrade existing legendary → super legendary
+        this._forgifySuperLegendary(gem, { type, index });
+      } else if (gem.rarity !== 'legendary') {
+        // Upgrade common/rare → legendary
+        this._forgifyGem(gem, { type, index }, (s, v) => this._setGem(s, v));
+      }
       return;
     }
 
-    // Rare forge mode: select 3 common/rare gems
+    // Rare forge mode: select 3 gems (any non-super-legendary)
     if (this._rareForgeMode) {
       const gem = this._getGem({ type, index });
-      if (!gem || gem.rarity === 'legendary') return;
+      if (!gem || gem.superLegendary) return;
       const slot = { type, index };
       const alreadyIdx = this._rareForgeSelected.findIndex(s => s.type === type && s.index === index);
       if (alreadyIdx !== -1) {
@@ -363,6 +393,19 @@ class UI {
     document.addEventListener('pointerup', onUp);
   }
 
+  _forgifySuperLegendary(gem, slot) {
+    upgradeSuperLegendary(gem);
+    this._setGem(slot, gem);
+    this._forgeMode = false;
+    this.game.inventoryOpen = false;
+    this.inventoryPanel.classList.add('hidden');
+    this.game._reapplyAllBonuses();
+    this.updateSlots();
+    // Big celebration burst for super legendary
+    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+    this.game.particles.explode(this.game.player.x, this.game.player.y, '#ff8800', 20);
+  }
+
   _forgifyGem(gem, slot, setGem) {
     const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
     // Add a legendary mod not already present
@@ -382,19 +425,31 @@ class UI {
 
   _executeRareForge() {
     // Combine 3 selected gems into a new gem, keeping 1 mod from each.
-    // If all 3 inputs are rare, the result is a legendary gem.
+    // 3× Rare → Legendary | 3× Legendary → Super Legendary (2 legendary mods)
     const gems = this._rareForgeSelected.map(s => this._getGem(s));
+    const allLeg  = gems.every(g => g.rarity === 'legendary');
     const allRare = gems.every(g => g.rarity === 'rare');
     const keptMods = gems.map(g => pick(g.mods)).filter(Boolean);
 
-    const newGem = generateGem();
-    if (allRare) {
+    let newGem;
+    if (allLeg) {
+      // Pick 2 unique legendary mods from the inputs if possible
+      const legMods = gems.flatMap(g => g.mods.filter(m => MOD_DEFS[m.type]?.rarity === 'legendary'));
+      const uniqueLegKeys = [...new Set(legMods.map(m => m.type))].slice(0, 2);
+      while (uniqueLegKeys.length < 2) {
+        const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
+        const extra = pick(legendaryKeys.filter(k => !uniqueLegKeys.includes(k)));
+        if (extra) uniqueLegKeys.push(extra);
+        else break;
+      }
+      newGem = generateSuperLegendaryGem(uniqueLegKeys);
+    } else if (allRare) {
       const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
       const [legKey] = weightedPickUnique(legendaryKeys, 1);
-      newGem.rarity = 'legendary';
-      newGem.mods = [{ type: legKey, value: null }, ...keptMods];
+      newGem = generateGem('legendary');
+      newGem.mods = [{ type: legKey, value: null }, ...keptMods.slice(0, 3)];
     } else {
-      newGem.rarity = 'rare';
+      newGem = generateGem('rare');
       newGem.mods = keptMods.slice(0, 3);
     }
 
@@ -411,6 +466,7 @@ class UI {
     this.game._reapplyAllBonuses();
     this.updateSlots();
     this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+    if (allLeg) this.game.particles.explode(this.game.player.x, this.game.player.y, '#ff8800', 25);
   }
 
   _executeDiceForge(gem, slot) {
