@@ -6,7 +6,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Spell Survivors</title>
+  <title>Path of Survival</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -132,14 +132,36 @@
 
     <!-- Start Screen -->
     <div id="start-screen">
+      <!-- Wall torches -->
+      <div class="wall-torch torch-left" aria-hidden="true">
+        <div class="torch-mount"></div>
+        <div class="torch-flames">
+          <div class="tc-flame tc-f1"></div>
+          <div class="tc-flame tc-f2"></div>
+          <div class="tc-flame tc-f3"></div>
+        </div>
+        <div class="torch-glow-pool"></div>
+      </div>
+      <div class="wall-torch torch-right" aria-hidden="true">
+        <div class="torch-mount"></div>
+        <div class="torch-flames">
+          <div class="tc-flame tc-f1"></div>
+          <div class="tc-flame tc-f2"></div>
+          <div class="tc-flame tc-f3"></div>
+        </div>
+        <div class="torch-glow-pool"></div>
+      </div>
+
       <div id="start-panel">
-        <h1 class="game-title">SPELL<br>SURVIVORS</h1>
-        <p class="game-subtitle">A dark fantasy roguelite</p>
+        <div class="start-rune-row" aria-hidden="true">ᚨ · ᚱ · ᚦ · ᚠ · ᚢ · ᚷ · ᚹ · ᚲ</div>
+        <h1 class="game-title">PATH OF<br>SURVIVAL</h1>
+        <p class="game-subtitle">A dark-fantasy roguelite</p>
+        <div class="start-carved-rule"></div>
         <div id="start-tips">
           <p>Auto-attack enemies · Level up · Socket gems into your wand</p>
           <p>Move with joystick or WASD · Tap ⚔ to open inventory</p>
         </div>
-        <button id="start-btn">⚔ Begin Adventure</button>
+        <button id="start-btn">⚔ Enter the Dungeon</button>
         <div class="start-corner-ornament">✦ ——— ✦ ——— ✦</div>
       </div>
     </div>
