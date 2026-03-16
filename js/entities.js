@@ -397,7 +397,7 @@ class HeartPickup {
   }
 }
 
-// ---- XP Magnet Pickup (rare enemy drop) ----
+// ---- Magic Orb Pickup (rare enemy drop — was XP Magnet) ----
 class XPMagnet {
   constructor(x, y) {
     this.x = x; this.y = y;
@@ -411,21 +411,7 @@ class XPMagnet {
   }
 
   draw(ctx, screenX, screenY) {
-    ctx.save();
-    const pulse = 0.6 + 0.4 * Math.sin(this.age * 5);
-    ctx.shadowColor = '#40ff80';
-    ctx.shadowBlur = 18 * pulse;
-    ctx.font = 'bold 20px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.globalAlpha = 0.85 + 0.15 * pulse;
-    ctx.fillText('🧲', screenX, screenY);
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 0.8;
-    ctx.font = 'bold 7px "Courier New"';
-    ctx.fillStyle = '#40ff80';
-    ctx.fillText('XP MAGNET', screenX, screenY + 16);
-    ctx.restore();
+    Sprites.drawMagicOrb(ctx, screenX, screenY, this.age);
   }
 }
 

@@ -330,6 +330,9 @@ class UI {
 
     const startX = e.clientX, startY = e.clientY;
     let dragging = false;
+    let scrolling = false;
+    const invContent = document.getElementById('inventory-content');
+    const startScrollTop = invContent ? invContent.scrollTop : 0;
 
     // Ghost element that follows the pointer
     const ghost = document.createElement('div');
@@ -344,12 +347,26 @@ class UI {
 
     const onMove = (ev) => {
       const dx = ev.clientX - startX, dy = ev.clientY - startY;
-      if (!dragging && Math.sqrt(dx*dx + dy*dy) > 5) {
-        dragging = true;
-        ev.preventDefault();
-        document.body.appendChild(ghost);
-        this._renderInventory(); // mark source slot as dragging
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (!dragging && !scrolling && dist > 6) {
+        if (Math.abs(dy) > Math.abs(dx)) {
+          // Primarily vertical — treat as scroll gesture
+          scrolling = true;
+          this._dragState = null;
+        } else {
+          // Primarily horizontal — treat as drag gesture
+          dragging = true;
+          document.body.appendChild(ghost);
+          this._renderInventory();
+        }
       }
+
+      if (scrolling && invContent) {
+        invContent.scrollTop = startScrollTop - dy;
+        return;
+      }
+
       if (dragging) {
         ghost.style.left = ev.clientX + 'px';
         ghost.style.top  = ev.clientY + 'px';
@@ -373,7 +390,8 @@ class UI {
       document.removeEventListener('pointerup', onUp);
       ghost.remove();
       document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
-      this._dragState = null;
+      if (!scrolling) this._dragState = null;
+      else this._dragState = null;
 
       if (dragging) {
         // Complete drop
