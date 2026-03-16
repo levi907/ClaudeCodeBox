@@ -92,7 +92,7 @@ html, body {
 /* HUD Overlay */
 #hud-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   pointer-events: none;
   z-index: 30;
   padding: 6px;
@@ -178,36 +178,43 @@ html, body {
   white-space: nowrap;
 }
 
-/* Wand HUD button (replaces weapon slots) */
+/* Wand HUD button — fixed to right side */
 #wand-hud-btn {
-  display: inline-flex;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  background: rgba(80, 0, 160, 0.55);
-  border: 1px solid rgba(192, 80, 255, 0.6);
-  border-radius: 6px;
-  padding: 3px 8px;
-  margin-bottom: 3px;
-  font-size: 14px;
+  gap: 6px;
+  background: rgba(80, 0, 160, 0.65);
+  border: 2px solid rgba(192, 80, 255, 0.7);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 26px;
   cursor: pointer;
   pointer-events: all;
   user-select: none;
   -webkit-user-select: none;
-  transition: background 0.12s;
-  max-width: 140px;
+  transition: background 0.12s, box-shadow 0.12s;
+  box-shadow: 0 0 14px rgba(192, 80, 255, 0.35);
+  z-index: 31;
 }
 #wand-hud-btn:hover, #wand-hud-btn:active {
-  background: rgba(120, 0, 220, 0.75);
+  background: rgba(120, 0, 220, 0.85);
+  box-shadow: 0 0 22px rgba(192, 80, 255, 0.6);
 }
 .wand-gem-dot {
   display: inline-block;
-  width: 8px; height: 8px;
+  width: 11px; height: 11px;
   border-radius: 50%;
   vertical-align: middle;
 }
-.gem-dot-common    { background: #6688bb; box-shadow: 0 0 4px #6688bb; }
-.gem-dot-rare      { background: #4466cc; box-shadow: 0 0 5px #88aaff; }
-.gem-dot-legendary { background: #cc7700; box-shadow: 0 0 6px #ffaa33; }
+.gem-dot-common       { background: #6688bb; box-shadow: 0 0 4px #6688bb; }
+.gem-dot-rare         { background: #4466cc; box-shadow: 0 0 5px #88aaff; }
+.gem-dot-legendary    { background: #cc7700; box-shadow: 0 0 6px #ffaa33; }
+.wand-gem-dot-empty   { background: rgba(192,80,255,0.12); border: 1px solid rgba(192,80,255,0.25); }
 
 #relic-slots {
   display: flex;
@@ -377,28 +384,20 @@ html, body {
   background: linear-gradient(160deg, #18003a, #0d0020);
   border: 1px solid rgba(192, 80, 255, 0.5);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 6px 8px;
   text-align: center;
-  width: 120px;
+  width: 72px;
   flex-shrink: 0;
 }
 #wand-icon-wrap {
-  font-size: 28px;
-  margin-bottom: 4px;
-  filter: drop-shadow(0 0 8px rgba(192,80,255,0.8));
+  font-size: 20px;
+  filter: drop-shadow(0 0 6px rgba(192,80,255,0.8));
 }
 #wand-label {
   color: #c8a0ff;
-  font-size: 10px;
-  letter-spacing: 2px;
-  margin-bottom: 6px;
-}
-#wand-stats-readout {
-  color: #7760a0;
-  font-size: 9px;
-  line-height: 1.5;
-  white-space: normal;
-  word-break: break-word;
+  font-size: 7px;
+  letter-spacing: 1px;
+  margin-top: 3px;
 }
 #wand-sockets {
   display: flex;
@@ -701,6 +700,76 @@ html, body {
   border-radius: 8px;
   background: radial-gradient(ellipse at top, rgba(64,255,170,0.07) 0%, transparent 70%);
   pointer-events: none;
+}
+
+/* Forge Confirm Dialog */
+#forge-dialog {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+}
+#forge-dialog-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(4, 0, 16, 0.78);
+  backdrop-filter: blur(3px);
+}
+#forge-dialog-box {
+  position: relative;
+  z-index: 121;
+  background: linear-gradient(160deg, #0d0018, #060010);
+  border: 2px solid rgba(192, 80, 255, 0.5);
+  border-radius: 14px;
+  padding: 24px 28px;
+  text-align: center;
+  max-width: min(340px, 88vw);
+  box-shadow: 0 0 40px rgba(120, 0, 200, 0.4);
+}
+#forge-dialog-icon {
+  font-size: 44px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+#forge-dialog-title {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+#forge-dialog-desc {
+  font-size: 12px;
+  color: #9a80c0;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+#forge-dialog-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+#forge-dialog-claim {
+  background: linear-gradient(135deg, #6a00d4, #a020f0);
+  border-color: rgba(200, 160, 255, 0.6);
+  padding: 9px 24px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+#forge-dialog-skip {
+  background: rgba(40, 20, 60, 0.7);
+  border: 2px solid rgba(120, 80, 160, 0.4);
+  color: #8060a0;
+  padding: 9px 20px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+#forge-dialog-skip:hover, #forge-dialog-skip:active {
+  background: rgba(60, 30, 90, 0.8);
+  color: #b090d0;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Game Over */
