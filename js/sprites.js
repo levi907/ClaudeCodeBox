@@ -1121,6 +1121,87 @@ const Sprites = {
   },
 
   // ======================================================
+  //  WAND ICON — for inventory wand graphic panel
+  // ======================================================
+  drawWandIcon(ctx, x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    const s = size / 32; // scale factor relative to 32px design size
+
+    // Shaft shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 3;
+    ctx.strokeStyle = '#6030a0';
+    ctx.lineWidth = 5 * s;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-10 * s, 12 * s);
+    ctx.lineTo(8 * s, -8 * s);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Shaft main
+    ctx.strokeStyle = '#9050d0';
+    ctx.lineWidth = 3.5 * s;
+    ctx.beginPath();
+    ctx.moveTo(-10 * s, 12 * s);
+    ctx.lineTo(8 * s, -8 * s);
+    ctx.stroke();
+
+    // Shaft gold band
+    ctx.strokeStyle = '#c89840';
+    ctx.lineWidth = 2 * s;
+    ctx.beginPath();
+    ctx.moveTo(-4 * s, 6 * s);
+    ctx.lineTo(-1 * s, 3 * s);
+    ctx.stroke();
+
+    // Shaft highlight
+    ctx.strokeStyle = 'rgba(180,130,255,0.5)';
+    ctx.lineWidth = 1 * s;
+    ctx.beginPath();
+    ctx.moveTo(-9 * s, 10 * s);
+    ctx.lineTo(7 * s, -6 * s);
+    ctx.stroke();
+
+    // Crystal orb glow
+    ctx.shadowColor = '#b060ff';
+    ctx.shadowBlur = 14 * s;
+    const orbGrad = ctx.createRadialGradient(7 * s, -9 * s, 0, 9 * s, -10 * s, 9 * s);
+    orbGrad.addColorStop(0, '#ffffff');
+    orbGrad.addColorStop(0.3, '#d8a0ff');
+    orbGrad.addColorStop(0.7, '#7020c0');
+    orbGrad.addColorStop(1, 'rgba(80,0,160,0)');
+    ctx.beginPath();
+    ctx.arc(9 * s, -10 * s, 9 * s, 0, Math.PI * 2);
+    ctx.fillStyle = orbGrad;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Orb rim
+    ctx.strokeStyle = 'rgba(200,130,255,0.7)';
+    ctx.lineWidth = 1 * s;
+    ctx.beginPath();
+    ctx.arc(9 * s, -10 * s, 8.5 * s, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Gold star rune in orb
+    ctx.fillStyle = 'rgba(240,192,80,0.8)';
+    ctx.font = `bold ${10 * s}px Georgia, serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✦', 9 * s, -10 * s);
+
+    // Orb specular
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(6 * s, -13 * s, 2.5 * s, 1.8 * s, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  },
+
+  // ======================================================
   //  WORLD / BACKGROUND — Stone Dungeon Floor
   // ======================================================
   drawBackground(ctx, camX, camY, width, height) {

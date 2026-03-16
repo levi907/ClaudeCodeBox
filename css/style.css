@@ -160,25 +160,25 @@ html, body {
   padding: 4px 9px;
   border-radius: 5px;
   border: 1px solid var(--gold);
-  box-shadow: 0 0 8px rgba(200,152,64,0.25), inset 0 1px 0 rgba(240,192,80,0.15);
+  box-shadow: 0 0 10px rgba(200,152,64,0.4), inset 0 1px 0 rgba(240,192,80,0.2);
   white-space: nowrap;
   min-width: 46px;
   text-align: center;
-  font-family: var(--font-mono);
-  letter-spacing: 1px;
+  font-family: var(--font-title);
+  letter-spacing: 2px;
 }
 
 /* XP bar — arcane energy */
 #xp-bar-container {
   flex: 1;
   position: relative;
-  height: 18px;
+  height: 22px;
   background: rgba(0,0,0,0.6);
   border-radius: 2px;
-  border: 1px solid rgba(176, 96, 255, 0.35);
+  border: 1px solid rgba(200, 152, 64, 0.3);
   overflow: hidden;
-  /* Notched end decorations via box-shadow */
-  box-shadow: -3px 0 0 rgba(176,96,255,0.4), 3px 0 0 rgba(176,96,255,0.4);
+  /* Gold notch end decorations */
+  box-shadow: -3px 0 0 rgba(200,152,64,0.35), 3px 0 0 rgba(200,152,64,0.35);
 }
 #xp-bar-fill {
   height: 100%;
@@ -202,7 +202,7 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
+  font-size: 11px;
   color: rgba(230,210,255,0.9);
   text-shadow: 0 1px 4px rgba(0,0,0,1);
   white-space: nowrap;
@@ -225,13 +225,13 @@ html, body {
 /* HP bar — blood/vitality */
 #hp-bar-container {
   position: relative;
-  height: 13px;
+  height: 20px;
   background: rgba(0,0,0,0.6);
   border-radius: 2px;
-  border: 1px solid rgba(192, 24, 40, 0.45);
+  border: 1px solid rgba(192, 24, 40, 0.5);
   overflow: hidden;
   margin-bottom: 5px;
-  box-shadow: -3px 0 0 rgba(192,24,40,0.35), 3px 0 0 rgba(192,24,40,0.35);
+  box-shadow: -3px 0 0 rgba(192,24,40,0.45), 3px 0 0 rgba(192,24,40,0.45);
 }
 #hp-bar-fill {
   height: 100%;
@@ -242,13 +242,21 @@ html, body {
   transform-origin: left center;
   transition: transform 0.2s var(--ease-out);
 }
+/* Low HP danger pulse */
+#hp-bar-fill.hp-danger {
+  animation: hpDangerPulse 0.9s ease-in-out infinite;
+}
+@keyframes hpDangerPulse {
+  0%, 100% { filter: brightness(1); }
+  50%       { filter: brightness(1.5) saturate(1.4); }
+}
 #hp-label {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
-  color: rgba(255,200,210,0.9);
+  font-size: 11px;
+  color: rgba(255,200,210,0.95);
   text-shadow: 0 1px 4px rgba(0,0,0,1);
   white-space: nowrap;
   font-family: var(--font-mono);
@@ -274,19 +282,20 @@ html, body {
   pointer-events: all;
   user-select: none;
   -webkit-user-select: none;
-  transition: background 0.12s, box-shadow 0.15s;
+  transition: background 0.12s, box-shadow 0.15s, transform 0.12s var(--ease-out);
   box-shadow:
-    0 0 12px rgba(200,152,64,0.2),
-    0 0 24px rgba(176,96,255,0.2),
-    inset 0 1px 0 rgba(240,192,80,0.15);
+    0 0 16px rgba(200,152,64,0.35),
+    0 0 8px rgba(176,96,255,0.15),
+    inset 0 1px 0 rgba(240,192,80,0.2);
   z-index: 31;
 }
 #wand-hud-btn:hover, #wand-hud-btn:active {
   background: linear-gradient(180deg, rgba(80,0,160,0.9), rgba(50,0,110,0.95));
+  transform: translateY(calc(-50% - 2px));
   box-shadow:
-    0 0 18px rgba(200,152,64,0.4),
-    0 0 32px rgba(176,96,255,0.35),
-    inset 0 1px 0 rgba(240,192,80,0.2);
+    0 0 28px rgba(200,152,64,0.55),
+    0 0 16px rgba(240,192,80,0.3),
+    inset 0 1px 0 rgba(240,192,80,0.3);
 }
 .wand-gem-dot {
   display: inline-block;
@@ -308,17 +317,17 @@ html, body {
 }
 
 .slot-icon {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 5px;
   border: 1px solid rgba(32,160,96,0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   position: relative;
   background: linear-gradient(160deg, rgba(0,20,10,0.8), rgba(0,10,6,0.85));
-  box-shadow: 0 0 6px rgba(32,160,96,0.15), inset 0 1px 0 rgba(50,220,130,0.08);
+  box-shadow: 0 0 8px rgba(32,160,96,0.2), inset 0 1px 0 rgba(50,220,130,0.1);
 }
 .slot-icon .slot-level {
   position: absolute;
@@ -401,7 +410,7 @@ html, body {
   position: relative;
   z-index: 111;
   background: linear-gradient(170deg, #0e0b18 0%, #080612 60%, #060410 100%);
-  border: 1px solid rgba(200, 152, 64, 0.35);
+  border: 1px solid rgba(200, 152, 64, 0.5);
   border-radius: 10px;
   padding: 12px 14px;
   max-width: 96vw;
@@ -410,9 +419,10 @@ html, body {
   overflow-x: hidden;
   width: min(660px, 96vw);
   box-shadow:
-    0 0 50px rgba(80, 0, 160, 0.3),
-    0 0 20px rgba(200,152,64,0.1),
-    inset 0 1px 0 rgba(200,152,64,0.12);
+    0 0 40px rgba(200,152,64,0.15),
+    0 0 80px rgba(80, 0, 160, 0.2),
+    inset 0 1px 0 rgba(200,152,64,0.2),
+    inset 0 -1px 0 rgba(200,152,64,0.06);
   /* Stone-like inner texture via gradient */
   background-image:
     linear-gradient(170deg, #0e0b18 0%, #080612 60%, #060410 100%),
@@ -427,10 +437,10 @@ html, body {
 }
 .inv-title {
   color: var(--gold-bright);
-  font-size: clamp(12px, 2.5vw, 15px);
+  font-size: clamp(13px, 2.5vw, 16px);
   font-weight: bold;
   letter-spacing: 3px;
-  text-shadow: 0 0 10px rgba(240,192,80,0.3);
+  text-shadow: 0 0 14px rgba(240,192,80,0.5), 0 0 30px rgba(200,152,64,0.2);
   font-family: var(--font-title);
 }
 #inventory-close-btn {
@@ -443,9 +453,12 @@ html, body {
   font-size: 13px;
   cursor: pointer;
   pointer-events: all;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s, transform 0.12s;
   letter-spacing: 1px;
-  font-family: var(--font-mono);
+  font-family: var(--font-title);
+}
+#inventory-close-btn:hover {
+  transform: translateY(-1px);
 }
 #inventory-close-btn:hover {
   background: linear-gradient(135deg, rgba(80,0,140,0.8), rgba(40,0,90,0.9));
@@ -599,22 +612,24 @@ html, body {
   background: linear-gradient(160deg, #160038, #0a001e);
   border: 1px solid var(--gold-dim);
   border-radius: 6px;
-  padding: 7px 8px;
+  padding: 4px 8px 7px;
   text-align: center;
-  width: 72px;
+  width: 76px;
   flex-shrink: 0;
-  box-shadow: inset 0 1px 0 rgba(240,192,80,0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(240,192,80,0.1),
+    0 0 14px rgba(130,40,200,0.2);
 }
-#wand-icon-wrap {
-  font-size: 20px;
-  filter: drop-shadow(0 0 7px rgba(176,96,255,0.9));
+#wand-icon-canvas {
+  filter: drop-shadow(0 0 6px rgba(176,96,255,0.7));
 }
 #wand-label {
   color: var(--gold);
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 2px;
   margin-top: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-title);
+  text-shadow: 0 0 8px rgba(200,152,64,0.4);
 }
 #wand-sockets {
   display: flex;
@@ -630,11 +645,11 @@ html, body {
   gap: 4px;
 }
 .wand-socket-label {
-  color: rgba(200,152,64,0.65);
+  color: rgba(200,152,64,0.7);
   font-size: clamp(10px, 1.5vw, 11px);
   letter-spacing: 2px;
   text-align: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-title);
 }
 .wand-gem-slot {
   min-height: 64px;
@@ -648,9 +663,17 @@ html, body {
   padding: 6px;
   background: rgba(30, 0, 60, 0.3);
 }
-.wand-gem-slot { touch-action: none; }
-.inv-slot        { touch-action: none; }
+/* touch-action is set per-slot by JS based on gem presence */
+/* Empty wand socket — faint ✦ rune shows socket is ready */
+.wand-gem-slot:not(:has(.gem-cell))::before {
+  content: '✦';
+  position: absolute;
+  color: rgba(200,152,64,0.18);
+  font-size: 20px;
+  pointer-events: none;
+}
 .wand-gem-slot:hover { border-color: rgba(200,152,64,0.6); cursor: grab; }
+.empty-socket-label { display: none; }
 .wand-gem-slot.selected { border-color: #ffd700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
 .wand-gem-slot.dragging, .inv-slot.dragging { opacity: 0.35; border-style: dashed; }
 .wand-gem-slot.drop-over, .inv-slot.drop-over {
@@ -678,11 +701,11 @@ html, body {
   margin: 10px 0 8px;
 }
 #inventory-section-label {
-  color: rgba(200,152,64,0.55);
-  font-size: 10px;
+  color: rgba(200,152,64,0.7);
+  font-size: 11px;
   letter-spacing: 3px;
   margin-bottom: 6px;
-  font-family: var(--font-mono);
+  font-family: var(--font-title);
   text-transform: uppercase;
 }
 #inventory-grid {
@@ -704,7 +727,15 @@ html, body {
 }
 .inv-slot:hover  { border-color: rgba(200,152,64,0.45); cursor: grab; }
 .inv-slot.selected { border-color: var(--gold); box-shadow: 0 0 10px rgba(200,152,64,0.4); }
-.empty-inv-label { color: rgba(120,90,160,0.3); font-size: 14px; }
+/* Empty slot — faint rune diamond as "deposit gem here" affordance */
+.inv-slot:not(:has(.gem-cell))::before {
+  content: '◈';
+  position: absolute;
+  color: rgba(120,80,180,0.18);
+  font-size: 22px;
+  pointer-events: none;
+}
+.empty-inv-label { display: none; }
 
 /* Gem cell (shown inside socket or inventory slot) */
 .gem-cell {
@@ -782,11 +813,12 @@ html, body {
   font-family: var(--font-title);
 }
 #upgrade-subtitle {
-  color: rgba(180,150,240,0.75);
+  color: rgba(200,165,255,0.8);
   font-size: clamp(10px, 1.8vw, 13px);
   margin-bottom: 16px;
-  letter-spacing: 2px;
-  font-family: var(--font-mono);
+  letter-spacing: 3px;
+  font-family: var(--font-title);
+  text-transform: uppercase;
 }
 #upgrade-cards {
   display: flex;
@@ -866,10 +898,13 @@ html, body {
   display: block;
 }
 .card-name {
-  color: #fff;
-  font-size: clamp(11px, 2vw, 14px);
+  color: var(--gold-bright);
+  font-size: clamp(12px, 2vw, 15px);
   font-weight: bold;
   margin-bottom: 5px;
+  font-family: var(--font-title);
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(240,192,80,0.25);
 }
 .card-type-badge {
   font-size: 9px;
@@ -1069,8 +1104,8 @@ html, body {
   animation: runeFloat 16s ease-in-out infinite reverse;
 }
 @keyframes runeFloat {
-  0%, 100% { opacity: 0.8; transform: translateY(0); }
-  50% { opacity: 1.4; transform: translateY(-6px); }
+  0%, 100% { opacity: 0.6; transform: translateY(0); }
+  50%       { opacity: 1;   transform: translateY(-8px); }
 }
 
 #start-panel {
@@ -1127,9 +1162,9 @@ html, body {
   text-transform: uppercase;
 }
 #start-tips {
-  color: rgba(120,100,160,0.7);
-  font-size: clamp(9px, 1.6vw, 12px);
-  line-height: 2;
+  color: rgba(140,115,185,0.75);
+  font-size: clamp(10px, 1.7vw, 12px);
+  line-height: 1.7;
   margin-bottom: 24px;
   font-family: var(--font-mono);
 }
@@ -1147,8 +1182,8 @@ button {
   color: var(--gold-bright);
   border: 1px solid var(--gold);
   padding: 12px 32px;
-  font-size: clamp(13px, 2.5vw, 17px);
-  font-family: var(--font-mono);
+  font-size: clamp(13px, 2.5vw, 16px);
+  font-family: var(--font-title);
   font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
@@ -1156,16 +1191,16 @@ button {
   text-transform: uppercase;
   transition: background 0.15s var(--ease-out), box-shadow 0.15s, transform 0.12s var(--ease-out);
   box-shadow:
-    0 4px 20px rgba(104,0,200,0.4),
-    0 0 10px rgba(200,152,64,0.15),
-    inset 0 1px 0 rgba(240,192,80,0.15);
+    0 4px 20px rgba(104,0,200,0.35),
+    0 0 14px rgba(200,152,64,0.25),
+    inset 0 1px 0 rgba(240,192,80,0.2);
 }
 button:hover, button:active {
   background: linear-gradient(160deg, #5a00b0, #9000f0);
   box-shadow:
-    0 6px 28px rgba(144,0,240,0.5),
-    0 0 16px rgba(200,152,64,0.3),
-    inset 0 1px 0 rgba(240,192,80,0.2);
+    0 6px 28px rgba(144,0,240,0.45),
+    0 0 22px rgba(200,152,64,0.45),
+    inset 0 1px 0 rgba(240,192,80,0.25);
   transform: translateY(-2px);
 }
 
@@ -1228,12 +1263,14 @@ button:hover, button:active {
 }
 
 #forge-result-title {
-  color: #e0b0ff;
-  font-size: clamp(11px, 3vw, 15px);
+  color: var(--gold-bright);
+  font-size: clamp(12px, 3vw, 16px);
   font-weight: bold;
   letter-spacing: 3px;
   text-transform: uppercase;
   margin-bottom: 14px;
+  font-family: var(--font-title);
+  text-shadow: 0 0 16px rgba(240,192,80,0.5);
 }
 
 #forge-result-gem-anim {

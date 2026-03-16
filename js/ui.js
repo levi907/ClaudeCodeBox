@@ -60,6 +60,7 @@ class UI {
       hpPct > 0.5 ? 'linear-gradient(90deg, #880000, #ff3030)' :
       hpPct > 0.25 ? 'linear-gradient(90deg, #884000, #ff6000)' :
                    'linear-gradient(90deg, #600000, #ff0000)';
+    this.hpFill.classList.toggle('hp-danger', hpPct <= 0.25);
 
     const minutes = Math.floor(t / 60);
     const seconds = Math.floor(t % 60);
@@ -146,6 +147,14 @@ class UI {
   _renderInventory() {
     const wand = this.game.wand;
     const inv  = this.game.inventory;
+
+    // Draw wand icon on canvas
+    const wandCanvas = document.getElementById('wand-icon-canvas');
+    if (wandCanvas) {
+      const wctx = wandCanvas.getContext('2d');
+      wctx.clearRect(0, 0, 56, 56);
+      Sprites.drawWandIcon(wctx, 28, 28, 32);
+    }
 
     // Forge mode banner
     const existingBanner = document.getElementById('forge-banner');
