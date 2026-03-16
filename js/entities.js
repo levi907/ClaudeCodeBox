@@ -316,6 +316,8 @@ class Projectile {
   hitEnemy(enemy) {
     if (this.hitEnemies.has(enemy.id)) return false;
     this.hitEnemies.add(enemy.id);
+    // Spiraling projectiles pierce everything indefinitely
+    if (this.spiraling) return true;
     // Pierce first
     if (this.pierceCount < this.pierce) {
       this.pierceCount++;
@@ -387,5 +389,70 @@ class HeartPickup {
 
   draw(ctx, screenX, screenY) {
     Sprites.drawHeart(ctx, screenX, screenY, 8, this.age * 60);
+  }
+}
+
+// ---- XP Magnet Pickup (rare enemy drop) ----
+class XPMagnet {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.age = 0;
+    this.collected = false;
+  }
+
+  update(dt, playerX, playerY) {
+    this.age += dt;
+    if (dist(this.x, this.y, playerX, playerY) < 22) this.collected = true;
+  }
+
+  draw(ctx, screenX, screenY) {
+    ctx.save();
+    const pulse = 0.6 + 0.4 * Math.sin(this.age * 5);
+    ctx.shadowColor = '#40ff80';
+    ctx.shadowBlur = 18 * pulse;
+    ctx.font = 'bold 20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.85 + 0.15 * pulse;
+    ctx.fillText('🧲', screenX, screenY);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.8;
+    ctx.font = 'bold 7px "Courier New"';
+    ctx.fillStyle = '#40ff80';
+    ctx.fillText('XP MAGNET', screenX, screenY + 16);
+    ctx.restore();
+  }
+}
+
+// ---- Legendary Forge Pickup (dropped by bosses) ----
+class LegendaryForge {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.age = 0;
+    this.collected = false;
+  }
+
+  update(dt, playerX, playerY) {
+    this.age += dt;
+    if (dist(this.x, this.y, playerX, playerY) < 28) this.collected = true;
+  }
+
+  draw(ctx, screenX, screenY) {
+    ctx.save();
+    const pulse = 0.65 + 0.35 * Math.sin(this.age * 4);
+    ctx.shadowColor = '#ff8c00';
+    ctx.shadowBlur = 22 * pulse;
+    ctx.font = 'bold 24px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.9 + 0.1 * pulse;
+    ctx.fillText('⚒', screenX, screenY);
+    // Label
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.85;
+    ctx.font = 'bold 8px "Courier New"';
+    ctx.fillStyle = '#ffaa33';
+    ctx.fillText('LEGENDARY FORGE', screenX, screenY + 18);
+    ctx.restore();
   }
 }

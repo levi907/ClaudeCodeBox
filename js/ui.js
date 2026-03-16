@@ -35,6 +35,7 @@ class UI {
     panel.addEventListener('touchend', closeOnOutside);
 
     this._selectedSlot = null; // { type: 'wand'|'inv', index: N }
+    this._forgeMode = false;
   }
 
   update() {
@@ -89,14 +90,33 @@ class UI {
   }
 
   closeInventory() {
+    if (this._forgeMode) return; // must pick a gem to forge
     this.game.inventoryOpen = false;
     this._selectedSlot = null;
     this.inventoryPanel.classList.add('hidden');
   }
 
+  openLegendaryForge() {
+    this._forgeMode = true;
+    this._selectedSlot = null;
+    this.game.inventoryOpen = true;
+    this._renderInventory();
+    this.inventoryPanel.classList.remove('hidden');
+  }
+
   _renderInventory() {
     const wand = this.game.wand;
     const inv  = this.game.inventory;
+
+    // Forge mode banner
+    const existingBanner = document.getElementById('forge-banner');
+    if (existingBanner) existingBanner.remove();
+    if (this._forgeMode) {
+      const banner = document.createElement('div');
+      banner.id = 'forge-banner';
+      banner.innerHTML = '⚒ LEGENDARY FORGE — Tap a gem to upgrade it to Legendary';
+      document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
+    }
 
     // Wand stats readout
     const ws = wand.computeStats();
@@ -117,7 +137,8 @@ class UI {
       if (!el) continue;
       const gem = wand.socketedGems[i];
       const isSel = this._selectedSlot && this._selectedSlot.type === 'wand' && this._selectedSlot.index === i;
-      el.className = 'wand-gem-slot' + (isSel ? ' selected' : '');
+      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' : '';
+      el.className = 'wand-gem-slot' + (isSel ? ' selected' : '') + forgeClass;
       el.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-socket-label">Empty Socket</div>';
       el.onclick = () => this._handleSlotClick('wand', i);
     }
@@ -129,8 +150,9 @@ class UI {
     for (let i = 0; i < 9; i++) {
       const gem  = inv[i];
       const isSel = this._selectedSlot && this._selectedSlot.type === 'inv' && this._selectedSlot.index === i;
+      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' : '';
       const slot = document.createElement('div');
-      slot.className = 'inv-slot' + (isSel ? ' selected' : '');
+      slot.className = 'inv-slot' + (isSel ? ' selected' : '') + forgeClass;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
       slot.onclick = () => this._handleSlotClick('inv', i);
       grid.appendChild(slot);
@@ -161,6 +183,14 @@ class UI {
       }
     };
 
+    // Forge mode: upgrade selected gem to legendary
+    if (this._forgeMode) {
+      const gem = getGem({ type, index });
+      if (!gem || gem.rarity === 'legendary') return;
+      this._forgifyGem(gem, { type, index }, setGem);
+      return;
+    }
+
     if (!this._selectedSlot) {
       if (getGem({ type, index })) {
         this._selectedSlot = { type, index };
@@ -176,6 +206,23 @@ class UI {
       this._renderInventory();
       this.updateSlots();
     }
+  }
+
+  _forgifyGem(gem, slot, setGem) {
+    const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
+    // Add a legendary mod not already present
+    const missing = legendaryKeys.filter(k => !gem.mods.some(m => m.type === k));
+    const legKey = missing.length ? pick(missing) : pick(legendaryKeys);
+    gem.rarity = 'legendary';
+    gem.mods.unshift({ type: legKey, value: null });
+    if (gem.mods.length > 4) gem.mods.length = 4;
+    setGem(slot, gem);
+    this._forgeMode = false;
+    this.game.inventoryOpen = false;
+    this.inventoryPanel.classList.add('hidden');
+    this.game._reapplyAllBonuses();
+    this.updateSlots();
+    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
   }
 
   showGameOver() {

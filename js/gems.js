@@ -25,6 +25,30 @@ const MOD_DEFS = {
   spiral:           { rarity: 'legendary', label: 'Spiral',          color: '#ff8c00', format: () => 'Projectiles spiral outward' },
   explosive:        { rarity: 'legendary', label: 'Explosive',       color: '#ff8c00', format: () => 'Projectiles explode on contact' },
   virulent_poison:  { rarity: 'legendary', label: 'Virulent Poison', color: '#ff8c00', format: () => 'Poison spreads on enemy death' },
+  thunder_aegis:    { rarity: 'legendary', label: 'Thunder Aegis',   color: '#ff8c00', format: () => 'AOE lightning when you take damage' },
+};
+
+// Drop weight for each mod (higher = more likely to appear)
+const MOD_WEIGHTS = {
+  // Common - balanced, basic stats slightly more common
+  flat_damage:      5,
+  attack_speed:     4,
+  max_hp:           5,
+  move_speed:       3,
+  lifesteal:        3,
+  crit_chance:      3,
+  // Rare - projectile-count and chain mods are more impactful so rarer
+  extra_projectile: 2,
+  pierce:           3,
+  bounce:           2,
+  chain:            2,
+  cooldown_reduce:  4,
+  damage_percent:   4,
+  // Legendary mods - equal chance within legendary tier
+  spiral:           1,
+  explosive:        1,
+  virulent_poison:  1,
+  thunder_aegis:    1,
 };
 
 // Numeric value for each non-legendary mod
@@ -49,11 +73,26 @@ const GEM_COLORS = {
   legendary: { bg: '#22100a', border: '#cc7700', glow: 'rgba(204,119,0,0.6)',   dot: '#ffaa33' },
 };
 
+// Pick `n` unique keys from a list using MOD_WEIGHTS
+function weightedPickUnique(keys, n) {
+  const pool = [...keys];
+  const result = [];
+  while (result.length < n && pool.length > 0) {
+    const total = pool.reduce((s, k) => s + (MOD_WEIGHTS[k] || 1), 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < pool.length; i++) {
+      r -= (MOD_WEIGHTS[pool[i]] || 1);
+      if (r <= 0) { result.push(pool.splice(i, 1)[0]); break; }
+    }
+  }
+  return result;
+}
+
 function generateGem(rarityOverride) {
   let rarity = rarityOverride;
   if (!rarity) {
     const r = Math.random();
-    rarity = r < 0.60 ? 'common' : r < 0.90 ? 'rare' : 'legendary';
+    rarity = r < 0.70 ? 'common' : r < 0.94 ? 'rare' : 'legendary';
   }
 
   const commonKeys   = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'common');
@@ -63,23 +102,21 @@ function generateGem(rarityOverride) {
   const mods = [];
 
   if (rarity === 'common') {
-    // 2 unique common mods
-    for (const k of shuffleArray([...commonKeys]).slice(0, 2)) {
+    for (const k of weightedPickUnique(commonKeys, 2)) {
       mods.push({ type: k, value: MOD_VALUES[k] });
     }
   } else if (rarity === 'rare') {
-    // 3 mods: 1-2 rare + rest common
     const rareCount = Math.random() < 0.5 ? 1 : 2;
-    const pickedRare   = shuffleArray([...rareKeys]).slice(0, rareCount);
-    const pickedCommon = shuffleArray([...commonKeys]).slice(0, 3 - rareCount);
+    const pickedRare   = weightedPickUnique(rareKeys, rareCount);
+    const pickedCommon = weightedPickUnique(commonKeys, 3 - rareCount);
     for (const k of [...pickedRare, ...pickedCommon]) {
       mods.push({ type: k, value: MOD_VALUES[k] });
     }
   } else {
     // Legendary: 1 legendary mod + 1 rare + 2 common  (4 total)
-    const legMod  = pick(legendaryKeys);
-    const rareMod = pick(rareKeys);
-    const comMods = shuffleArray([...commonKeys]).slice(0, 2);
+    const [legMod]  = weightedPickUnique(legendaryKeys, 1);
+    const [rareMod] = weightedPickUnique(rareKeys, 1);
+    const comMods   = weightedPickUnique(commonKeys, 2);
     mods.push({ type: legMod, value: null });
     mods.push({ type: rareMod, value: MOD_VALUES[rareMod] });
     for (const k of comMods) mods.push({ type: k, value: MOD_VALUES[k] });

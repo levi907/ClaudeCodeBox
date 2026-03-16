@@ -22,6 +22,8 @@ class Game {
     this.projectiles = [];
     this.xpOrbs = [];
     this.heartPickups = [];
+    this.legendaryForgePickups = [];
+    this.xpMagnets = [];
     this.wand = null;
     this.inventory = [];  // 9 gem slots
     this.relics = [];
@@ -54,6 +56,8 @@ class Game {
     this.projectiles = [];
     this.xpOrbs = [];
     this.heartPickups = [];
+    this.legendaryForgePickups = [];
+    this.xpMagnets = [];
     this.wand = new Wand();
     this.inventory = new Array(9).fill(null);
     this.relics = [];
@@ -132,12 +136,45 @@ class Game {
         const d = dist(e.x, e.y, this.player.x, this.player.y);
         if (d < e.size + this.player.size * 0.7) {
           this.player.takeDamage(e.damage, this.particles);
+          if (this.player._thunderAegis) this._thunderAegisStrike();
           if (this.player._thorns > 0) {
             e.takeDamage(this.player._thorns);
             if (e.isDead) this.onEnemyDead(e);
           }
           if (this.player.isDead) { this.ui.showGameOver(); return; }
         }
+      }
+    }
+
+    // Enemy-enemy separation (bumping)
+    for (let i = 0; i < this.enemies.length; i++) {
+      for (let j = i + 1; j < this.enemies.length; j++) {
+        const a = this.enemies[i], b = this.enemies[j];
+        const minD = a.size + b.size;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dSq = dx * dx + dy * dy;
+        if (dSq < minD * minD && dSq > 0.0001) {
+          const d = Math.sqrt(dSq);
+          const push = (minD - d) * 0.5;
+          const nx = dx / d, ny = dy / d;
+          a.x -= nx * push; a.y -= ny * push;
+          b.x += nx * push; b.y += ny * push;
+        }
+      }
+    }
+    // Enemy-player bumping (push enemy away, nudge player)
+    for (const e of this.enemies) {
+      const minD = e.size + this.player.size * 0.7;
+      const dx = this.player.x - e.x, dy = this.player.y - e.y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < minD * minD && dSq > 0.0001) {
+        const d = Math.sqrt(dSq);
+        const push = minD - d;
+        const nx = dx / d, ny = dy / d;
+        e.x -= nx * push * 0.6;
+        e.y -= ny * push * 0.6;
+        this.player.x += nx * push * 0.4;
+        this.player.y += ny * push * 0.4;
       }
     }
 
@@ -230,6 +267,38 @@ class Game {
       }
     }
 
+    // XP magnets
+    for (let i = this.xpMagnets.length - 1; i >= 0; i--) {
+      const m = this.xpMagnets[i];
+      m.update(dt, this.player.x, this.player.y);
+      if (m.collected) {
+        this.xpMagnets.splice(i, 1);
+        // Instantly collect all XP orbs and heart pickups
+        const xpMult = this.player._xpMultiplier || 1;
+        for (const orb of this.xpOrbs) {
+          this.player.gainXP(Math.ceil(orb.value * xpMult), this.particles);
+        }
+        for (const h of this.heartPickups) {
+          this.player.heal(h.healAmount);
+        }
+        this.xpOrbs = [];
+        this.heartPickups = [];
+        this.particles.explode(this.player.x, this.player.y, '#40ff80', 20);
+        this.particles.floatText(this.player.x, this.player.y - 30, 'XP COLLECTED!', '#40ff80', 14);
+        this._checkLevelUp();
+      }
+    }
+
+    // Legendary forge pickups
+    for (let i = this.legendaryForgePickups.length - 1; i >= 0; i--) {
+      const f = this.legendaryForgePickups[i];
+      f.update(dt, this.player.x, this.player.y);
+      if (f.collected) {
+        this.legendaryForgePickups.splice(i, 1);
+        this.ui.openLegendaryForge();
+      }
+    }
+
     this.particles.update(dt);
     this.ui.update();
   }
@@ -296,10 +365,14 @@ class Game {
     if (Math.random() < (enemy.isBoss ? 0.8 : 0.04)) {
       this.heartPickups.push(new HeartPickup(enemy.x, enemy.y));
     }
+    if (!enemy.isBoss && Math.random() < 0.02) {
+      this.xpMagnets.push(new XPMagnet(enemy.x, enemy.y));
+    }
 
     if (enemy.isBoss) {
       this.particles.explode(enemy.x, enemy.y, '#ff0000', 40);
       this.particles.levelUpBurst(enemy.x, enemy.y);
+      this.legendaryForgePickups.push(new LegendaryForge(enemy.x, enemy.y));
     } else {
       this.particles.blood(enemy.x, enemy.y, 6);
       this.particles.spark(enemy.x, enemy.y, '#ff4040', 4);
@@ -444,10 +517,25 @@ class Game {
     p.speedMultiplier += ws.moveSpeedBonus;
     p.lifesteal      = Math.min(p.lifesteal + ws.lifestealBonus, 0.8);
     p.critChance     = Math.min(p.critChance + ws.critBonus, 0.95);
+    p._thunderAegis  = ws.thunderAegis;
   }
 
   // Keep legacy alias so old relics code paths don't break
   _reapplyRelics() { this._reapplyAllBonuses(); }
+
+  // Thunder Aegis: AOE lightning burst around player on taking damage
+  _thunderAegisStrike() {
+    const radius = 160;
+    const dmg = Math.round(this.wand.computeStats().damage * 1.5);
+    const targets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < radius);
+    for (const t of targets) {
+      const result = t.takeDamage(dmg);
+      this._lightningArcs.push({ x1: this.player.x, y1: this.player.y, x2: t.x, y2: t.y, age: 0, maxAge: 0.25 });
+      this.particles.floatText(t.x, t.y - 12, `${result.actual}`, '#aaddff', 12);
+      if (t.isDead) this.onEnemyDead(t);
+    }
+    this.particles.explode(this.player.x, this.player.y, '#88ccff', 16);
+  }
 
   // ---- Draw ----
   draw() {
@@ -462,6 +550,12 @@ class Game {
 
     // Heart pickups
     for (const hb of this.heartPickups) hb.draw(ctx, hb.x - cx, hb.y - cy);
+
+    // Legendary forge pickups
+    for (const f of this.legendaryForgePickups) f.draw(ctx, f.x - cx, f.y - cy);
+
+    // XP magnets
+    for (const m of this.xpMagnets) m.draw(ctx, m.x - cx, m.y - cy);
 
     // Enemies
     for (const e of this.enemies) e.draw(ctx, e.x - cx, e.y - cy);
@@ -493,7 +587,7 @@ class Game {
       Sprites.drawLightning(ctx, arc.x1 - cx, arc.y1 - cy, arc.x2 - cx, arc.y2 - cy, alpha);
     }
 
-    this.particles.draw(ctx);
+    this.particles.draw(ctx, cx, cy);
 
     const boss = this.enemies.find(e => e.isBoss && !e.isDead);
     this.ui.drawBossBar(ctx, boss, w, h);

@@ -36,6 +36,7 @@ class Wand {
       explosive: false,
       explosionRadius: 60,
       virulentPoison: false,
+      thunderAegis: false,
     };
 
     for (const gem of this.socketedGems) {
@@ -57,6 +58,7 @@ class Wand {
           case 'spiral':            s.spiral = true; break;
           case 'explosive':         s.explosive = true; break;
           case 'virulent_poison':   s.virulentPoison = true; break;
+          case 'thunder_aegis':     s.thunderAegis = true; break;
         }
       }
     }
@@ -103,7 +105,7 @@ class Wand {
         chainRange: stats.chainRange,
         type: 'bolt',
         color: '#c050ff',
-        lifetime: 2.5,
+        lifetime: stats.spiral ? 9.0 : 2.5,
         isCrit,
         spiraling: stats.spiral,
         explosive: stats.explosive,

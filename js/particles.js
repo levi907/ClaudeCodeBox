@@ -23,9 +23,9 @@ class ParticleSystem {
     }
   }
 
-  draw(ctx) {
+  draw(ctx, cx = 0, cy = 0) {
     for (const p of this.particles) {
-      Sprites.drawParticle(ctx, p);
+      Sprites.drawParticle(ctx, p, cx, cy);
     }
   }
 
