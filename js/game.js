@@ -75,6 +75,7 @@ class Game {
     this._lightningArcs = [];
     this._processingLevelUp = false;
     this._nukeTimer = 0;
+    this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
     this.camera.y = 0;
@@ -450,15 +451,26 @@ class Game {
   }
 
   _checkLevelUp() {
-    if (this.player.pendingLevelUps > 0 && !this._processingLevelUp && !this.upgradeSystem.active) {
-      this._processingLevelUp = true;
+    const hasPending = this.player.pendingLevelUps > 0 || this.player.pendingRelicLevels > 0;
+    if (!hasPending || this._processingLevelUp || this.upgradeSystem.active) return;
+
+    this._processingLevelUp = true;
+    // Relic rewards take priority so the player sees them in order
+    let isRelicReward;
+    if (this.player.pendingRelicLevels > 0) {
+      this.player.pendingRelicLevels--;
+      isRelicReward = true;
+    } else {
       this.player.pendingLevelUps--;
-      const isRelicReward = this.player.level % 5 === 0;
-      this.upgradeSystem.show(isRelicReward).then(() => {
-        this._processingLevelUp = false;
-        if (this.player.pendingLevelUps > 0) this._checkLevelUp();
-      });
+      isRelicReward = false;
     }
+
+    this.upgradeSystem.show(isRelicReward).then(() => {
+      this._processingLevelUp = false;
+      if (this.player.pendingLevelUps > 0 || this.player.pendingRelicLevels > 0) {
+        this._checkLevelUp();
+      }
+    });
   }
 
   _updateSpawning(dt) {
