@@ -596,7 +596,8 @@ const Sprites = {
   },
 
   // -------- Particle Draw --------
-  drawParticle(ctx, p) {
+  drawParticle(ctx, p, cx = 0, cy = 0) {
+    const sx = p.x - cx, sy = p.y - cy;
     ctx.save();
     ctx.globalAlpha = p.alpha;
     if (p.type === 'spark') {
@@ -604,12 +605,12 @@ const Sprites = {
       ctx.shadowBlur = 8;
       ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
       ctx.fill();
     } else if (p.type === 'blood') {
       ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
       ctx.fill();
     } else if (p.type === 'text') {
       ctx.font = `bold ${p.size}px "Courier New"`;
@@ -617,13 +618,13 @@ const Sprites = {
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
       ctx.shadowBlur = 6;
-      ctx.fillText(p.text, p.x, p.y);
+      ctx.fillText(p.text, sx, sy);
     } else if (p.type === 'star') {
       ctx.shadowColor = p.color;
       ctx.shadowBlur = 12;
       ctx.fillStyle = p.color;
       ctx.save();
-      ctx.translate(p.x, p.y);
+      ctx.translate(sx, sy);
       ctx.rotate(p.rotation || 0);
       for (let i = 0; i < 4; i++) {
         ctx.beginPath();
