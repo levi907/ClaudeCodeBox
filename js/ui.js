@@ -26,7 +26,13 @@ class UI {
     this.wandHudBtn.addEventListener('touchend', e => { e.preventDefault(); this.openInventory(); });
 
     document.getElementById('inventory-close-btn').addEventListener('click', () => this.closeInventory());
-    document.getElementById('inventory-backdrop').addEventListener('click', () => this.closeInventory());
+
+    // Close when tapping/clicking anywhere outside the content box
+    const panel = document.getElementById('inventory-panel');
+    const content = document.getElementById('inventory-content');
+    const closeOnOutside = (e) => { if (!content.contains(e.target)) { e.preventDefault(); this.closeInventory(); } };
+    panel.addEventListener('click', closeOnOutside);
+    panel.addEventListener('touchend', closeOnOutside);
 
     this._selectedSlot = null; // { type: 'wand'|'inv', index: N }
   }

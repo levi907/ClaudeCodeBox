@@ -269,11 +269,11 @@ html, body {
   background: linear-gradient(160deg, #0d0018, #060010);
   border: 1px solid rgba(192, 80, 255, 0.4);
   border-radius: 12px;
-  padding: 14px;
-  max-width: 94vw;
-  max-height: 92vh;
+  padding: 10px;
+  max-width: 88vw;
+  max-height: 88vh;
   overflow-y: auto;
-  width: min(580px, 94vw);
+  width: min(460px, 88vw);
   box-shadow: 0 0 40px rgba(120, 0, 200, 0.3);
 }
 #inventory-header {
@@ -352,7 +352,7 @@ html, body {
   text-align: center;
 }
 .wand-gem-slot {
-  min-height: 80px;
+  min-height: 64px;
   border: 1.5px dashed rgba(192, 80, 255, 0.35);
   border-radius: 8px;
   cursor: pointer;
@@ -388,7 +388,7 @@ html, body {
   gap: 6px;
 }
 .inv-slot {
-  min-height: 70px;
+  min-height: 56px;
   border: 1px dashed rgba(100, 80, 140, 0.3);
   border-radius: 6px;
   cursor: pointer;
