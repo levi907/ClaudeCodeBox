@@ -1,12 +1,130 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cube Archetype Balance Visualizer</title>
-  </head>
-  <body class="bg-gray-950 text-gray-100 min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Spell Survivors</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Virtual joystick overlay -->
+    <div id="joystick-zone" class="touch-zone left-zone"></div>
+    <div id="joystick-base" class="joystick-base hidden">
+      <div id="joystick-thumb" class="joystick-thumb"></div>
+    </div>
+
+    <!-- HUD overlay -->
+    <div id="hud-overlay">
+      <div id="top-bar">
+        <div id="level-badge">Lv <span id="level-display">1</span></div>
+        <div id="xp-bar-container">
+          <div id="xp-bar-fill"></div>
+          <span id="xp-label">0 / 100 XP</span>
+        </div>
+        <div id="timer-display">00:00</div>
+      </div>
+      <div id="hp-bar-container">
+        <div id="hp-bar-fill"></div>
+        <span id="hp-label">100 / 100</span>
+      </div>
+      <!-- Wand button (opens inventory) -->
+      <div id="wand-hud-btn" title="Open Inventory">✨</div>
+      <div id="relic-slots"></div>
+      <div id="kill-counter">Kills: <span id="kill-count">0</span></div>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div id="inventory-panel" class="hidden">
+      <div id="inventory-backdrop"></div>
+      <div id="inventory-content">
+        <div id="inventory-header">
+          <span class="inv-title">✨ WAND &amp; INVENTORY</span>
+          <button id="inventory-close-btn">✕</button>
+        </div>
+
+        <!-- Wand section -->
+        <div id="wand-section">
+          <div id="wand-graphic">
+            <div id="wand-icon-wrap">✨</div>
+            <div id="wand-label">ARCANE WAND</div>
+            <div id="wand-stats-readout">No gems socketed</div>
+          </div>
+          <div id="wand-sockets">
+            <div class="wand-socket-wrap">
+              <div class="wand-socket-label">Socket I</div>
+              <div class="wand-gem-slot" id="wand-socket-0">
+                <div class="empty-socket-label">Empty Socket</div>
+              </div>
+            </div>
+            <div class="wand-socket-wrap">
+              <div class="wand-socket-label">Socket II</div>
+              <div class="wand-gem-slot" id="wand-socket-1">
+                <div class="empty-socket-label">Empty Socket</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-divider"></div>
+
+        <!-- 9-slot inventory grid -->
+        <div id="inventory-section-label">Gem Storage</div>
+        <div id="inventory-grid"></div>
+
+        <div id="inv-hint">Tap a gem to select it, then tap a slot to move it</div>
+      </div>
+    </div>
+
+    <!-- Upgrade Draft Screen -->
+    <div id="upgrade-screen" class="hidden">
+      <div id="upgrade-backdrop"></div>
+      <div id="upgrade-panel">
+        <h2 id="upgrade-title">Level Up!</h2>
+        <p id="upgrade-subtitle">Choose an upgrade</p>
+        <div id="upgrade-cards"></div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="hidden">
+      <div id="gameover-panel">
+        <h1>YOU DIED</h1>
+        <div id="gameover-stats"></div>
+        <button id="restart-btn">Play Again</button>
+      </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen">
+      <div id="start-panel">
+        <h1 class="game-title">SPELL<br>SURVIVORS</h1>
+        <p class="game-subtitle">Survive the endless horde</p>
+        <div id="start-tips">
+          <p>Auto-attack enemies • Level up • Socket gems into your wand</p>
+          <p>Move with joystick or WASD • Tap ✨ to open inventory</p>
+        </div>
+        <button id="start-btn">START GAME</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/gems.js"></script>
+  <script src="js/weapons.js"></script>
+  <script src="js/relics.js"></script>
+  <script src="js/upgrade.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
 </html>
