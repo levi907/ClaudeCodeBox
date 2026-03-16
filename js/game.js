@@ -23,10 +23,13 @@ class Game {
     this.xpOrbs = [];
     this.heartPickups = [];
     this.legendaryForgePickups = [];
+    this.rareForgePickups = [];
+    this.diceForgePickups = [];
     this.xpMagnets = [];
     this.wand = null;
     this.inventory = [];  // 9 gem slots
     this.relics = [];
+    this._nukeTimer = 0;
 
     this.camera = { x: 0, y: 0 };
 
@@ -57,6 +60,8 @@ class Game {
     this.xpOrbs = [];
     this.heartPickups = [];
     this.legendaryForgePickups = [];
+    this.rareForgePickups = [];
+    this.diceForgePickups = [];
     this.xpMagnets = [];
     this.wand = new Wand();
     this.inventory = new Array(9).fill(null);
@@ -69,6 +74,7 @@ class Game {
     this._bossSpawnIndex = 0;
     this._lightningArcs = [];
     this._processingLevelUp = false;
+    this._nukeTimer = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
     this.camera.y = 0;
@@ -114,6 +120,23 @@ class Game {
 
     // HP regen from relics
     if (this.player._hpRegen) this.player.heal(this.player._hpRegen * dt);
+
+    // Iron Fortress: low-HP shield
+    if (this.player._fortressShieldDur) {
+      const threshold = this.player._fortressShieldDur >= 4 ? 0.30 : 0.20;
+      if (this.player.hp / this.player.maxHp < threshold && this.player.invincibleTime <= 0) {
+        this.player.invincibleTime = this.player._fortressShieldDur;
+      }
+    }
+
+    // Cataclysm Clock nuke
+    if (this.player._nukeInterval) {
+      this._nukeTimer += dt;
+      if (this._nukeTimer >= this.player._nukeInterval) {
+        this._nukeTimer = 0;
+        this._triggerNuke();
+      }
+    }
 
     // Player movement
     this.player.update(dt, this.input);
@@ -299,6 +322,26 @@ class Game {
       }
     }
 
+    // Rare forge pickups
+    for (let i = this.rareForgePickups.length - 1; i >= 0; i--) {
+      const f = this.rareForgePickups[i];
+      f.update(dt, this.player.x, this.player.y);
+      if (f.collected) {
+        this.rareForgePickups.splice(i, 1);
+        this.ui.openRareForge();
+      }
+    }
+
+    // Dice forge pickups
+    for (let i = this.diceForgePickups.length - 1; i >= 0; i--) {
+      const f = this.diceForgePickups[i];
+      f.update(dt, this.player.x, this.player.y);
+      if (f.collected) {
+        this.diceForgePickups.splice(i, 1);
+        this.ui.openDiceForge();
+      }
+    }
+
     this.particles.update(dt);
     this.ui.update();
   }
@@ -365,8 +408,32 @@ class Game {
     if (Math.random() < (enemy.isBoss ? 0.8 : 0.04)) {
       this.heartPickups.push(new HeartPickup(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.02) {
+    if (!enemy.isBoss && Math.random() < 0.005) {
       this.xpMagnets.push(new XPMagnet(enemy.x, enemy.y));
+    }
+    if (!enemy.isBoss && Math.random() < 0.01) {
+      this.rareForgePickups.push(new RareForge(enemy.x, enemy.y));
+    }
+    if (!enemy.isBoss && Math.random() < 0.005) {
+      this.diceForgePickups.push(new DiceForge(enemy.x, enemy.y));
+    }
+
+    // Soul Vampire: heal on kill
+    if (this.player._killHealPct) {
+      this.player.heal(this.player.maxHp * this.player._killHealPct);
+    }
+
+    // Chain Death: enemies explode damaging nearby foes
+    if (this.player._chainDeathPct && this.player._chainDeathRadius) {
+      const dmg = Math.round(enemy.maxHp * this.player._chainDeathPct);
+      const nearby = this.enemies.filter(e => !e.isDead && e !== enemy &&
+        dist(e.x, e.y, enemy.x, enemy.y) < this.player._chainDeathRadius);
+      for (const n of nearby) {
+        const result = n.takeDamage(dmg);
+        this.particles.floatText(n.x, n.y - 12, `${result.actual}`, '#ff8040', 11);
+        if (n.isDead) this.onEnemyDead(n);
+      }
+      if (nearby.length > 0) this.particles.explode(enemy.x, enemy.y, '#ff6030', 12);
     }
 
     if (enemy.isBoss) {
@@ -474,7 +541,7 @@ class Game {
 
   // Add a gem reward from the draft: auto-socket if slot open, else inventory
   addGemReward(gem) {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       if (!this.wand.socketedGems[i]) {
         this.wand.socketedGems[i] = gem;
         this._reapplyAllBonuses();
@@ -501,12 +568,23 @@ class Game {
     p.lifesteal        = 0;
     p.cooldownReduction = 0;
     p.projectileCountBonus = 0;
-    p.armor            = CONFIG.PLAYER_BASE_ARMOR;
-    p._hpRegen         = 0;
-    p._xpMultiplier    = 1.0;
-    p._thorns          = 0;
-    p._duplicatorLevel = 0;
-    p._critStun        = 0;
+    p.armor               = CONFIG.PLAYER_BASE_ARMOR;
+    p._hpRegen            = 0;
+    p._xpMultiplier       = 1.0;
+    p._thorns             = 0;
+    p._duplicatorLevel    = 0;
+    p._critStun           = 0;
+    p._extraChoices       = 0;
+    p._omniShot           = 0;
+    p._projSizeMult       = 1;
+    p._nukeInterval       = 0;
+    p._nukeRadius         = 0;
+    p._berserkerMaxMult   = 0;
+    p._chainDeathPct      = 0;
+    p._chainDeathRadius   = 0;
+    p._killHealPct        = 0;
+    p._voidPrismChance    = 0;
+    p._fortressShieldDur  = 0;
 
     for (const r of this.relics) r.apply(p);
 
@@ -537,6 +615,21 @@ class Game {
     this.particles.explode(this.player.x, this.player.y, '#88ccff', 16);
   }
 
+  // Cataclysm Clock: massive periodic nuke
+  _triggerNuke() {
+    const radius = this.player._nukeRadius;
+    const dmg = Math.round(this.wand.computeStats().damage * 10);
+    const targets = this.enemies.filter(e => !e.isDead &&
+      dist(e.x, e.y, this.player.x, this.player.y) < radius);
+    for (const t of targets) {
+      t.takeDamage(dmg);
+      if (t.isDead) this.onEnemyDead(t);
+    }
+    this.particles.explode(this.player.x, this.player.y, '#ff4400', 40);
+    this.particles.levelUpBurst(this.player.x, this.player.y);
+    this.particles.floatText(this.player.x, this.player.y - 50, '💥 CATACLYSM!', '#ff6600', 18);
+  }
+
   // ---- Draw ----
   draw() {
     const ctx = this.ctx;
@@ -553,6 +646,12 @@ class Game {
 
     // Legendary forge pickups
     for (const f of this.legendaryForgePickups) f.draw(ctx, f.x - cx, f.y - cy);
+
+    // Rare forge pickups
+    for (const f of this.rareForgePickups) f.draw(ctx, f.x - cx, f.y - cy);
+
+    // Dice forge pickups
+    for (const f of this.diceForgePickups) f.draw(ctx, f.x - cx, f.y - cy);
 
     // XP magnets
     for (const m of this.xpMagnets) m.draw(ctx, m.x - cx, m.y - cy);

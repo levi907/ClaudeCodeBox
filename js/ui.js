@@ -35,7 +35,10 @@ class UI {
     panel.addEventListener('touchend', closeOnOutside);
 
     this._selectedSlot = null; // { type: 'wand'|'inv', index: N }
-    this._forgeMode = false;
+    this._forgeMode = false;       // legendary forge
+    this._rareForgeMode = false;   // rare forge (select 3 gems)
+    this._rareForgeSelected = [];  // selected slots for rare forge
+    this._diceForgeMode = false;   // dice forge (reroll 1 gem)
     this._dragState = null; // active drag
   }
 
@@ -64,16 +67,15 @@ class UI {
   }
 
   updateSlots() {
-    // Wand HUD button: show gem count
+    // Wand HUD button: show gem count (3 slots now)
     const gems = this.game.wand.socketedGems.filter(g => g);
     const gemDots = gems.map(g => `<span class="wand-gem-dot gem-dot-${g.rarity}"></span>`).join('');
     this.wandHudBtn.innerHTML = `✨ ${gemDots}`;
 
     // Relic slots
     this.relicSlots.innerHTML = this.game.relics.map(r =>
-      `<div class="slot-icon" title="${r.def.name} Lv${r.level}" style="border-color:rgba(32,160,96,0.6)">
+      `<div class="slot-icon" title="${r.def.name}" style="border-color:rgba(32,160,96,0.6)">
         ${r.def.icon}
-        <span class="slot-level" style="color:#60ffa0">${r.level}</span>
       </div>`
     ).join('');
 
@@ -91,7 +93,7 @@ class UI {
   }
 
   closeInventory() {
-    if (this._forgeMode) return; // must pick a gem to forge
+    if (this._forgeMode || this._rareForgeMode || this._diceForgeMode) return; // must complete forge
     this.game.inventoryOpen = false;
     this._selectedSlot = null;
     this.inventoryPanel.classList.add('hidden');
@@ -99,6 +101,27 @@ class UI {
 
   openLegendaryForge() {
     this._forgeMode = true;
+    this._selectedSlot = null;
+    this.game.inventoryOpen = true;
+    this._renderInventory();
+    this.inventoryPanel.classList.remove('hidden');
+  }
+
+  openRareForge() {
+    this._forgeMode = false;
+    this._diceForgeMode = false;
+    this._rareForgeMode = true;
+    this._rareForgeSelected = [];
+    this._selectedSlot = null;
+    this.game.inventoryOpen = true;
+    this._renderInventory();
+    this.inventoryPanel.classList.remove('hidden');
+  }
+
+  openDiceForge() {
+    this._forgeMode = false;
+    this._rareForgeMode = false;
+    this._diceForgeMode = true;
     this._selectedSlot = null;
     this.game.inventoryOpen = true;
     this._renderInventory();
@@ -115,7 +138,21 @@ class UI {
     if (this._forgeMode) {
       const banner = document.createElement('div');
       banner.id = 'forge-banner';
+      banner.className = 'forge-banner-legendary';
       banner.innerHTML = '⚒ LEGENDARY FORGE — Tap a gem to upgrade it to Legendary';
+      document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
+    } else if (this._rareForgeMode) {
+      const banner = document.createElement('div');
+      banner.id = 'forge-banner';
+      banner.className = 'forge-banner-rare';
+      const need = 3 - this._rareForgeSelected.length;
+      banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} to combine into a Rare gem`;
+      document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
+    } else if (this._diceForgeMode) {
+      const banner = document.createElement('div');
+      banner.id = 'forge-banner';
+      banner.className = 'forge-banner-dice';
+      banner.innerHTML = '🎲 DICE FORGE — Tap a Rare or Legendary gem to reroll its mods';
       document.getElementById('inventory-header').insertAdjacentElement('afterend', banner);
     }
 
@@ -133,12 +170,15 @@ class UI {
     }
 
     // Wand socket slots
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       const el  = document.getElementById(`wand-socket-${i}`);
       if (!el) continue;
       const gem = wand.socketedGems[i];
       const isDragging = this._dragState && this._dragState.type === 'wand' && this._dragState.index === i;
-      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' : '';
+      const isRareSelected = this._rareForgeSelected.some(s => s.type === 'wand' && s.index === i);
+      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' :
+                         (this._rareForgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable-rare' + (isRareSelected ? ' forge-selected' : '') :
+                         (this._diceForgeMode && gem && (gem.rarity === 'rare' || gem.rarity === 'legendary')) ? ' forge-selectable-dice' : '';
       el.className = 'wand-gem-slot' + (isDragging ? ' dragging' : '') + forgeClass;
       el.dataset.slotType  = 'wand';
       el.dataset.slotIndex = i;
@@ -153,7 +193,10 @@ class UI {
     for (let i = 0; i < 9; i++) {
       const gem  = inv[i];
       const isDragging = this._dragState && this._dragState.type === 'inv' && this._dragState.index === i;
-      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' : '';
+      const isRareSelected = this._rareForgeSelected.some(s => s.type === 'inv' && s.index === i);
+      const forgeClass = (this._forgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable' :
+                         (this._rareForgeMode && gem && gem.rarity !== 'legendary') ? ' forge-selectable-rare' + (isRareSelected ? ' forge-selected' : '') :
+                         (this._diceForgeMode && gem && (gem.rarity === 'rare' || gem.rarity === 'legendary')) ? ' forge-selectable-dice' : '';
       const slot = document.createElement('div');
       slot.className = 'inv-slot' + (isDragging ? ' dragging' : '') + forgeClass;
       slot.dataset.slotType  = 'inv';
@@ -202,11 +245,38 @@ class UI {
   }
 
   _onSlotPointerDown(e, type, index) {
-    // Forge mode: treat as a simple tap
+    // Legendary forge mode
     if (this._forgeMode) {
       const gem = this._getGem({ type, index });
       if (!gem || gem.rarity === 'legendary') return;
       this._forgifyGem(gem, { type, index }, (s, v) => this._setGem(s, v));
+      return;
+    }
+
+    // Rare forge mode: select 3 common/rare gems
+    if (this._rareForgeMode) {
+      const gem = this._getGem({ type, index });
+      if (!gem || gem.rarity === 'legendary') return;
+      const slot = { type, index };
+      const alreadyIdx = this._rareForgeSelected.findIndex(s => s.type === type && s.index === index);
+      if (alreadyIdx !== -1) {
+        this._rareForgeSelected.splice(alreadyIdx, 1);
+      } else {
+        this._rareForgeSelected.push(slot);
+      }
+      if (this._rareForgeSelected.length === 3) {
+        this._executeRareForge();
+      } else {
+        this._renderInventory();
+      }
+      return;
+    }
+
+    // Dice forge mode: reroll a rare/legendary gem
+    if (this._diceForgeMode) {
+      const gem = this._getGem({ type, index });
+      if (!gem || (gem.rarity !== 'rare' && gem.rarity !== 'legendary')) return;
+      this._executeDiceForge(gem, { type, index });
       return;
     }
 
@@ -292,6 +362,43 @@ class UI {
     if (gem.mods.length > 4) gem.mods.length = 4;
     setGem(slot, gem);
     this._forgeMode = false;
+    this.game.inventoryOpen = false;
+    this.inventoryPanel.classList.add('hidden');
+    this.game._reapplyAllBonuses();
+    this.updateSlots();
+    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+  }
+
+  _executeRareForge() {
+    // Combine 3 selected gems into a new rare gem, keeping 1 mod from each
+    const gems = this._rareForgeSelected.map(s => this._getGem(s));
+    const keptMods = gems.map(g => pick(g.mods)).filter(Boolean);
+    const newGem = generateGem();
+    newGem.rarity = 'rare';
+    newGem.mods = keptMods.slice(0, 3);
+
+    // Clear source slots (first selected gets the new gem)
+    for (let i = 1; i < this._rareForgeSelected.length; i++) {
+      this._setGem(this._rareForgeSelected[i], null);
+    }
+    this._setGem(this._rareForgeSelected[0], newGem);
+
+    this._rareForgeMode = false;
+    this._rareForgeSelected = [];
+    this.game.inventoryOpen = false;
+    this.inventoryPanel.classList.add('hidden');
+    this.game._reapplyAllBonuses();
+    this.updateSlots();
+    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+  }
+
+  _executeDiceForge(gem, slot) {
+    // Reroll gem at the same rarity (or legendary stays legendary)
+    const targetRarity = gem.rarity;
+    const newGem = generateGem(targetRarity);
+    this._setGem(slot, newGem);
+
+    this._diceForgeMode = false;
     this.game.inventoryOpen = false;
     this.inventoryPanel.classList.add('hidden');
     this.game._reapplyAllBonuses();
