@@ -52,15 +52,15 @@
       <div id="inventory-backdrop"></div>
       <div id="inventory-content">
         <div id="inventory-header">
-          <span class="inv-title">✨ WAND &amp; INVENTORY</span>
+          <span class="inv-title">⚔ WAND &amp; RELICS</span>
           <button id="inventory-close-btn" aria-label="Close inventory">✕ Close</button>
         </div>
 
         <!-- Wand section -->
         <div id="wand-section">
           <div id="wand-graphic">
-            <div id="wand-icon-wrap">✨</div>
-            <div id="wand-label">ARCANE WAND</div>
+            <canvas id="wand-icon-canvas" width="56" height="56" style="display:block;margin:0 auto"></canvas>
+            <div id="wand-label">Arcane Wand</div>
           </div>
           <div id="wand-sockets">
             <div class="wand-socket-wrap">
@@ -134,12 +134,13 @@
     <div id="start-screen">
       <div id="start-panel">
         <h1 class="game-title">SPELL<br>SURVIVORS</h1>
-        <p class="game-subtitle">Survive the endless horde</p>
+        <p class="game-subtitle">A dark fantasy roguelite</p>
         <div id="start-tips">
-          <p>Auto-attack enemies • Level up • Socket gems into your wand</p>
-          <p>Move with joystick or WASD • Tap ✨ to open inventory</p>
+          <p>Auto-attack enemies · Level up · Socket gems into your wand</p>
+          <p>Move with joystick or WASD · Tap ⚔ to open inventory</p>
         </div>
-        <button id="start-btn">START GAME</button>
+        <button id="start-btn">⚔ Begin Adventure</button>
+        <div class="start-corner-ornament">✦ ——— ✦ ——— ✦</div>
       </div>
     </div>
   </div>

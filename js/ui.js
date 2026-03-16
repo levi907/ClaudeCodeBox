@@ -41,15 +41,43 @@ class UI {
     this._diceForgeMode = false;   // dice forge (reroll 1 gem)
     this._dragState = null; // active drag
 
+    this._lastKills = 0;  // for milestone tracking
+    this._lastLevel = 1;  // for level badge flip
+    this._lastXpPct = 0;  // for XP surge detection
+
+    // Kill milestone element
+    const killEl = document.getElementById('kill-counter');
+    if (killEl) {
+      const ms = document.createElement('div');
+      ms.id = 'kill-milestone';
+      killEl.insertAdjacentElement('afterend', ms);
+    }
   }
 
   update() {
     const player = this.game.player;
     const t = this.game.time;
 
+    // Level badge flip on level-up
+    if (player.level !== this._lastLevel) {
+      this._lastLevel = player.level;
+      const badge = document.getElementById('level-badge');
+      if (badge) {
+        badge.classList.remove('level-up-flip');
+        void badge.offsetWidth;
+        badge.classList.add('level-up-flip');
+      }
+    }
     this.levelDisplay.textContent = player.level;
 
+    // XP surge flash when bar fills
     const xpPct = (player.xp / player.xpToNext);
+    if (xpPct >= 0.99 && this._lastXpPct < 0.99) {
+      this.xpFill.classList.remove('xp-surge');
+      void this.xpFill.offsetWidth;
+      this.xpFill.classList.add('xp-surge');
+    }
+    this._lastXpPct = xpPct;
     this.xpFill.style.transform = `scaleX(${xpPct})`;
     this.xpLabel.textContent = `${player.xp} / ${player.xpToNext} XP`;
 
@@ -60,11 +88,30 @@ class UI {
       hpPct > 0.5 ? 'linear-gradient(90deg, #880000, #ff3030)' :
       hpPct > 0.25 ? 'linear-gradient(90deg, #884000, #ff6000)' :
                    'linear-gradient(90deg, #600000, #ff0000)';
+    this.hpFill.classList.toggle('hp-danger', hpPct <= 0.25);
 
     const minutes = Math.floor(t / 60);
     const seconds = Math.floor(t % 60);
     this.timerDisplay.textContent = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
     this.killCount.textContent = player.kills;
+
+    // Kill milestone notifications
+    const milestones = [10, 25, 50, 100, 200, 300, 500];
+    for (const m of milestones) {
+      if (player.kills >= m && this._lastKills < m) {
+        this._showKillMilestone(m);
+      }
+    }
+    this._lastKills = player.kills;
+  }
+
+  _showKillMilestone(count) {
+    const el = document.getElementById('kill-milestone');
+    if (!el) return;
+    el.textContent = `✦ ${count} SLAIN ✦`;
+    el.classList.remove('milestone-active');
+    void el.offsetWidth;
+    el.classList.add('milestone-active');
   }
 
   updateSlots() {
@@ -146,6 +193,14 @@ class UI {
   _renderInventory() {
     const wand = this.game.wand;
     const inv  = this.game.inventory;
+
+    // Draw wand icon on canvas
+    const wandCanvas = document.getElementById('wand-icon-canvas');
+    if (wandCanvas) {
+      const wctx = wandCanvas.getContext('2d');
+      wctx.clearRect(0, 0, 56, 56);
+      Sprites.drawWandIcon(wctx, 28, 28, 32);
+    }
 
     // Forge mode banner
     const existingBanner = document.getElementById('forge-banner');
@@ -330,6 +385,9 @@ class UI {
 
     const startX = e.clientX, startY = e.clientY;
     let dragging = false;
+    let scrolling = false;
+    const invContent = document.getElementById('inventory-content');
+    const startScrollTop = invContent ? invContent.scrollTop : 0;
 
     // Ghost element that follows the pointer
     const ghost = document.createElement('div');
@@ -344,12 +402,28 @@ class UI {
 
     const onMove = (ev) => {
       const dx = ev.clientX - startX, dy = ev.clientY - startY;
-      if (!dragging && Math.sqrt(dx*dx + dy*dy) > 5) {
-        dragging = true;
-        ev.preventDefault();
-        document.body.appendChild(ghost);
-        this._renderInventory(); // mark source slot as dragging
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (!dragging && !scrolling && dist > 6) {
+        if (Math.abs(dy) > Math.abs(dx)) {
+          // Primarily vertical — treat as scroll gesture
+          scrolling = true;
+          this._dragState = null;
+          document.body.classList.remove('is-dragging');
+        } else {
+          // Primarily horizontal — treat as drag gesture
+          dragging = true;
+          document.body.classList.add('is-dragging');
+          document.body.appendChild(ghost);
+          this._renderInventory();
+        }
       }
+
+      if (scrolling && invContent) {
+        invContent.scrollTop = startScrollTop - dy;
+        return;
+      }
+
       if (dragging) {
         ghost.style.left = ev.clientX + 'px';
         ghost.style.top  = ev.clientY + 'px';
@@ -372,6 +446,7 @@ class UI {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       ghost.remove();
+      document.body.classList.remove('is-dragging');
       document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
       this._dragState = null;
 
@@ -385,6 +460,10 @@ class UI {
           const gemB = this._getGem(to);
           this._setGem({ type, index }, gemB);
           this._setGem(to, gemA);
+          // Socket snap effect when dropping into a wand slot
+          if (to.type === 'wand' && gemA) {
+            this._socketSnapEffect(to.index, gemA);
+          }
           this.updateSlots();
         }
       }
@@ -393,6 +472,25 @@ class UI {
 
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
+  }
+
+  // ---- Socket snap delight effect ----
+  _socketSnapEffect(socketIndex, gem) {
+    const el = document.getElementById(`wand-socket-${socketIndex}`);
+    if (!el) return;
+    // Rune flash overlay
+    const rune = document.createElement('div');
+    rune.className = 'socket-rune-flash';
+    // Rune symbol varies by rarity
+    rune.textContent = gem.superLegendary ? '✦' : gem.rarity === 'legendary' ? '✦' : gem.rarity === 'rare' ? '◈' : '⬡';
+    el.style.position = 'relative';
+    el.appendChild(rune);
+    // CSS snap ring animation
+    el.classList.remove('socket-snap');
+    void el.offsetWidth;
+    el.classList.add('socket-snap');
+    rune.addEventListener('animationend', () => rune.remove(), { once: true });
+    el.addEventListener('animationend', () => el.classList.remove('socket-snap'), { once: true });
   }
 
   // ---- Forge result modal ----
