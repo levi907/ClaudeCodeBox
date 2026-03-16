@@ -40,6 +40,25 @@ class UI {
     this._rareForgeSelected = [];  // selected slots for rare forge
     this._diceForgeMode = false;   // dice forge (reroll 1 gem)
     this._dragState = null; // active drag
+
+    // Forge confirm dialog elements
+    this._forgeDialog        = document.getElementById('forge-dialog');
+    this._forgeDialogIcon    = document.getElementById('forge-dialog-icon');
+    this._forgeDialogTitle   = document.getElementById('forge-dialog-title');
+    this._forgeDialogDesc    = document.getElementById('forge-dialog-desc');
+    this._forgeDialogClaim   = document.getElementById('forge-dialog-claim');
+    this._forgeDialogSkip    = document.getElementById('forge-dialog-skip');
+    this._forgeDialogResolve = null;
+
+    const closeDialog = (claimed) => {
+      this._forgeDialog.classList.add('hidden');
+      this.game.paused = false;
+      if (this._forgeDialogResolve) { this._forgeDialogResolve(claimed); this._forgeDialogResolve = null; }
+    };
+    this._forgeDialogClaim.addEventListener('click',    () => closeDialog(true));
+    this._forgeDialogClaim.addEventListener('touchend', e => { e.preventDefault(); closeDialog(true); });
+    this._forgeDialogSkip.addEventListener('click',     () => closeDialog(false));
+    this._forgeDialogSkip.addEventListener('touchend',  e => { e.preventDefault(); closeDialog(false); });
   }
 
   update() {
@@ -394,6 +413,48 @@ class UI {
     this.game._reapplyAllBonuses();
     this.updateSlots();
     this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+  }
+
+  // Returns a Promise<boolean> — true = claimed, false = skipped
+  showForgeDialog(type) {
+    const meta = {
+      legendary: {
+        icon: '⚒',  color: '#ffaa33',
+        title: 'LEGENDARY FORGE',
+        desc:  'Upgrade one of your gems to Legendary rarity.',
+        claim: 'FORGE IT',
+        borderColor: 'rgba(255,140,0,0.6)',
+      },
+      rare: {
+        icon: '🔨', color: '#40c0ff',
+        title: 'RARE FORGE',
+        desc:  'Combine three gems into a single Rare gem.',
+        claim: 'COMBINE',
+        borderColor: 'rgba(64,192,255,0.6)',
+      },
+      dice: {
+        icon: '🎲', color: '#c080ff',
+        title: 'DICE FORGE',
+        desc:  'Reroll the mods on a Rare or Legendary gem.',
+        claim: 'REROLL',
+        borderColor: 'rgba(192,128,255,0.6)',
+      },
+    };
+    const m = meta[type];
+    this._forgeDialogIcon.textContent  = m.icon;
+    this._forgeDialogIcon.style.color  = m.color;
+    this._forgeDialogTitle.textContent = m.title;
+    this._forgeDialogTitle.style.color = m.color;
+    this._forgeDialogDesc.textContent  = m.desc;
+    this._forgeDialogClaim.textContent = m.claim;
+    document.getElementById('forge-dialog-box').style.borderColor = m.borderColor;
+    document.getElementById('forge-dialog-box').style.boxShadow   =
+      `0 0 40px ${m.color.replace(')', ', 0.35)').replace('rgb', 'rgba')}`;
+
+    this._forgeDialog.classList.remove('hidden');
+    this.game.paused = true;
+
+    return new Promise(resolve => { this._forgeDialogResolve = resolve; });
   }
 
   showGameOver() {

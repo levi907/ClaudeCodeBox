@@ -702,6 +702,76 @@ html, body {
   pointer-events: none;
 }
 
+/* Forge Confirm Dialog */
+#forge-dialog {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+}
+#forge-dialog-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(4, 0, 16, 0.78);
+  backdrop-filter: blur(3px);
+}
+#forge-dialog-box {
+  position: relative;
+  z-index: 121;
+  background: linear-gradient(160deg, #0d0018, #060010);
+  border: 2px solid rgba(192, 80, 255, 0.5);
+  border-radius: 14px;
+  padding: 24px 28px;
+  text-align: center;
+  max-width: min(340px, 88vw);
+  box-shadow: 0 0 40px rgba(120, 0, 200, 0.4);
+}
+#forge-dialog-icon {
+  font-size: 44px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+#forge-dialog-title {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+#forge-dialog-desc {
+  font-size: 12px;
+  color: #9a80c0;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+#forge-dialog-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+#forge-dialog-claim {
+  background: linear-gradient(135deg, #6a00d4, #a020f0);
+  border-color: rgba(200, 160, 255, 0.6);
+  padding: 9px 24px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+#forge-dialog-skip {
+  background: rgba(40, 20, 60, 0.7);
+  border: 2px solid rgba(120, 80, 160, 0.4);
+  color: #8060a0;
+  padding: 9px 20px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+#forge-dialog-skip:hover, #forge-dialog-skip:active {
+  background: rgba(60, 30, 90, 0.8);
+  color: #b090d0;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Game Over */
 #gameover-screen {
   position: absolute;
