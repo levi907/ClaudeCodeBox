@@ -74,9 +74,8 @@ class UI {
 
     // Relic slots
     this.relicSlots.innerHTML = this.game.relics.map(r =>
-      `<div class="slot-icon" title="${r.def.name} Lv${r.level}" style="border-color:rgba(32,160,96,0.6)">
+      `<div class="slot-icon" title="${r.def.name}" style="border-color:rgba(32,160,96,0.6)">
         ${r.def.icon}
-        <span class="slot-level" style="color:#60ffa0">${r.level}</span>
       </div>`
     ).join('');
 
