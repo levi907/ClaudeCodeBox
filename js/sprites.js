@@ -18,7 +18,7 @@ const Sprites = {
   },
 
   // ======================================================
-  //  PLAYER — Arcane Mage
+  //  PLAYER — Grey-Cloaked Dungeon Wizard
   // ======================================================
   player(ctx, x, y, facing, animFrame, flashTime) {
     ctx.save();
@@ -34,25 +34,25 @@ const Sprites = {
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fill();
 
-    // Robe hem — flowing lower section
+    // Cloak hem — flowing grey lower section
     ctx.beginPath();
     ctx.moveTo(-11, 2 + bob);
     ctx.bezierCurveTo(-14, 9 + bob, -11, 15 + bob, -5, 16 + bob);
     ctx.lineTo(5, 16 + bob);
     ctx.bezierCurveTo(11, 15 + bob, 14, 9 + bob, 11, 2 + bob);
     ctx.closePath();
-    ctx.fillStyle = fl ? '#ffffff' : '#280068';
+    ctx.fillStyle = fl ? '#ffffff' : '#282820';
     ctx.fill();
 
-    // Robe body
+    // Cloak body — mid grey worn wool
     ctx.beginPath();
     ctx.ellipse(0, 2 + bob, 9, 11, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#3800a8';
+    ctx.fillStyle = fl ? '#ffffff' : '#484840';
     ctx.fill();
 
     if (!fl) {
-      // Robe edge trim (silver arcane thread)
-      ctx.strokeStyle = '#7050b0';
+      // Cloak edge trim — slightly lighter grey, worn seam
+      ctx.strokeStyle = '#6a6860';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(-11, 2 + bob);
@@ -63,8 +63,8 @@ const Sprites = {
       ctx.bezierCurveTo(14, 9 + bob, 11, 15 + bob, 5, 16 + bob);
       ctx.stroke();
 
-      // Chest arcane sigil (small rune cross)
-      ctx.strokeStyle = 'rgba(160,100,255,0.5)';
+      // Chest rune — faint carved marking, mossy green
+      ctx.strokeStyle = 'rgba(100,140,70,0.45)';
       ctx.lineWidth = 0.8;
       ctx.beginPath();
       ctx.moveTo(-3, 0 + bob); ctx.lineTo(3, 0 + bob);
@@ -72,34 +72,35 @@ const Sprites = {
       ctx.moveTo(-2, -1.5 + bob); ctx.lineTo(2, 2.5 + bob);
       ctx.stroke();
 
-      // Gold belt
-      ctx.strokeStyle = '#b08030';
+      // Leather belt — earth brown
+      ctx.strokeStyle = '#6a3e14';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(-9, 7 + bob); ctx.lineTo(9, 7 + bob);
       ctx.stroke();
-      // Belt buckle
-      ctx.fillStyle = '#d4a840';
+      // Belt buckle — torch amber
+      ctx.fillStyle = '#c07020';
       ctx.fillRect(-2, 5.5 + bob, 4, 3);
     }
 
-    // Head
+    // Head — weathered skin
     ctx.beginPath();
     ctx.ellipse(0, -9 + bob, 7, 7.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#f0c090';
+    ctx.fillStyle = fl ? '#ffffff' : '#e8b878';
     ctx.fill();
     if (!fl) {
-      ctx.strokeStyle = '#c08050';
+      ctx.strokeStyle = '#b07848';
       ctx.lineWidth = 0.8;
       ctx.stroke();
     }
 
-    // Eyes
+    // Eyes — magical glow beneath the grey hood
     if (!fl) {
-      ctx.fillStyle = '#f0e8d0';
+      ctx.fillStyle = '#e8dcc0';
       ctx.beginPath();
       ctx.ellipse(2.5, -9.5 + bob, 2.2, 2.2, 0, 0, Math.PI * 2);
       ctx.fill();
+      // Magical eye — keep the arcane glow as the ONE hint of magic
       ctx.fillStyle = '#9040e0';
       ctx.shadowColor = '#c060ff';
       ctx.shadowBlur = 6;
@@ -109,43 +110,43 @@ const Sprites = {
       ctx.shadowBlur = 0;
     }
 
-    // Hat brim
+    // Hat brim — dark charcoal grey
     ctx.beginPath();
     ctx.ellipse(0, -14 + bob, 10, 3.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#180050';
+    ctx.fillStyle = fl ? '#ffffff' : '#1e1e18';
     ctx.fill();
     if (!fl) {
-      ctx.strokeStyle = '#5030a0';
+      ctx.strokeStyle = '#3a3830';
       ctx.lineWidth = 1;
       ctx.stroke();
     }
 
-    // Hat cone
+    // Hat cone — charcoal, slightly warmer than the brim
     ctx.beginPath();
     ctx.moveTo(-9, -14 + bob);
     ctx.lineTo(2, -28 + bob);
     ctx.lineTo(9, -14 + bob);
     ctx.closePath();
-    ctx.fillStyle = fl ? '#ffffff' : '#200060';
+    ctx.fillStyle = fl ? '#ffffff' : '#242418';
     ctx.fill();
     if (!fl) {
-      ctx.strokeStyle = '#5030a0';
+      ctx.strokeStyle = '#3a3830';
       ctx.lineWidth = 1;
       ctx.stroke();
     }
 
-    // Hat gold band
+    // Hat band — torch amber leather strap
     if (!fl) {
-      ctx.strokeStyle = '#b08030';
+      ctx.strokeStyle = '#8a5018';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(-8.5, -17 + bob);
       ctx.quadraticCurveTo(0, -19.5 + bob, 8.5, -17 + bob);
       ctx.stroke();
-      // Star on hat
-      ctx.fillStyle = '#f0c050';
-      ctx.shadowColor = '#f0d080';
-      ctx.shadowBlur = 6;
+      // Rune pin on hat — torch amber star
+      ctx.fillStyle = '#e09030';
+      ctx.shadowColor = '#c07020';
+      ctx.shadowBlur = 5;
       ctx.font = '7px serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -153,9 +154,9 @@ const Sprites = {
       ctx.shadowBlur = 0;
     }
 
-    // Staff
+    // Staff — dark aged wood
     const staffBob = bob * 0.5;
-    ctx.strokeStyle = fl ? '#ffffff' : '#4a2000';
+    ctx.strokeStyle = fl ? '#ffffff' : '#3a2008';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -163,7 +164,7 @@ const Sprites = {
     ctx.lineTo(14, 14 + staffBob);
     ctx.stroke();
 
-    // Staff crystal orb
+    // Staff crystal orb — arcane purple (magic is here, not in the clothes)
     if (!fl) {
       // Crystal body (faceted)
       ctx.fillStyle = '#c070ff';
