@@ -68,9 +68,12 @@ class UI {
 
   updateSlots() {
     // Wand HUD button: show gem count (3 slots now)
-    const gems = this.game.wand.socketedGems.filter(g => g);
-    const gemDots = gems.map(g => `<span class="wand-gem-dot gem-dot-${g.rarity}"></span>`).join('');
-    this.wandHudBtn.innerHTML = `✨ ${gemDots}`;
+    const dots = this.game.wand.socketedGems
+      .map(g => g
+        ? `<span class="wand-gem-dot gem-dot-${g.rarity}"></span>`
+        : `<span class="wand-gem-dot wand-gem-dot-empty"></span>`)
+      .join('');
+    this.wandHudBtn.innerHTML = `<span style="font-size:22px">✨</span>${dots}`;
 
     // Relic slots
     this.relicSlots.innerHTML = this.game.relics.map(r =>
