@@ -78,10 +78,11 @@ class UI {
 
     // Relic slots
     this.relicSlots.innerHTML = this.game.relics.map(r =>
-      `<div class="slot-icon" title="${r.def.name}" style="border-color:rgba(32,160,96,0.6)">
+      `<div class="slot-icon" data-relic-id="${r.id}" style="border-color:rgba(32,160,96,0.6)">
         ${r.def.icon}
       </div>`
     ).join('');
+    this._bindRelicTooltips();
 
     // Refresh inventory panel if open
     if (this.game.inventoryOpen) this._renderInventory();
@@ -213,6 +214,7 @@ class UI {
       el.dataset.slotType  = 'wand';
       el.dataset.slotIndex = i;
       el.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-socket-label">Empty Socket</div>';
+      el.style.touchAction = gem ? 'none' : 'pan-y';
       el.onpointerdown = (e) => this._onSlotPointerDown(e, 'wand', i);
     }
 
@@ -235,6 +237,8 @@ class UI {
       slot.dataset.slotType  = 'inv';
       slot.dataset.slotIndex = i;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
+      // Allow scroll through empty slots on mobile; disable browser handling on gem slots (drag target)
+      slot.style.touchAction = gem ? 'none' : 'pan-y';
       slot.onpointerdown = (e) => this._onSlotPointerDown(e, 'inv', i);
       grid.appendChild(slot);
     }
@@ -324,9 +328,6 @@ class UI {
     const gem = this._getGem({ type, index });
     if (!gem) return;
 
-    e.preventDefault();
-    e.stopPropagation();
-
     const startX = e.clientX, startY = e.clientY;
     let dragging = false;
 
@@ -345,6 +346,7 @@ class UI {
       const dx = ev.clientX - startX, dy = ev.clientY - startY;
       if (!dragging && Math.sqrt(dx*dx + dy*dy) > 5) {
         dragging = true;
+        ev.preventDefault();
         document.body.appendChild(ghost);
         this._renderInventory(); // mark source slot as dragging
       }
@@ -393,34 +395,107 @@ class UI {
     document.addEventListener('pointerup', onUp);
   }
 
+  // ---- Forge result modal ----
+  _showForgeResult(resultGem, titleText, onConfirm, onCancel) {
+    const modal    = document.getElementById('forge-result-modal');
+    const gemCard  = document.getElementById('forge-result-gem-card');
+    const titleEl  = document.getElementById('forge-result-title');
+    const diamond  = document.getElementById('forge-result-diamond');
+    const particles = document.getElementById('forge-result-particles');
+    const confirmBtn = document.getElementById('forge-result-confirm');
+    const cancelBtn  = document.getElementById('forge-result-cancel');
+
+    titleEl.textContent = titleText;
+
+    // Set diamond rarity color
+    diamond.className = resultGem.superLegendary ? 'diamond-super'
+                      : `diamond-${resultGem.rarity}`;
+    // Restart animation
+    diamond.classList.remove('gem-reveal-anim');
+    void diamond.offsetWidth;
+    diamond.classList.add('gem-reveal-anim');
+
+    // Spawn orbital particles
+    particles.innerHTML = '';
+    const rarityColors = {
+      common: '#6688bb', rare: '#6699ff', legendary: '#ffaa33', super: '#ff8800'
+    };
+    const pColor = resultGem.superLegendary ? rarityColors.super : rarityColors[resultGem.rarity] || '#aa66ff';
+    const count = resultGem.superLegendary ? 14 : resultGem.rarity === 'legendary' ? 10 : 7;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'forge-particle';
+      p.style.background = pColor;
+      p.style.boxShadow = `0 0 4px ${pColor}`;
+      p.style.setProperty('--ang', `${(360 / count) * i}deg`);
+      p.style.setProperty('--r', `${30 + Math.random() * 20}px`);
+      p.style.setProperty('--dur', `${0.7 + Math.random() * 0.4}s`);
+      p.style.setProperty('--delay', `${0.1 + Math.random() * 0.25}s`);
+      particles.appendChild(p);
+      void p.offsetWidth;
+      p.classList.add('p-active');
+    }
+
+    // Build gem card
+    gemCard.innerHTML = this._gemCellHTML(resultGem);
+
+    modal.classList.remove('hidden');
+
+    const cleanup = () => {
+      modal.classList.add('hidden');
+      confirmBtn.onclick = confirmBtn.ontouchend = null;
+      cancelBtn.onclick  = cancelBtn.ontouchend  = null;
+    };
+    confirmBtn.onclick    = () => { cleanup(); onConfirm(); };
+    confirmBtn.ontouchend = (e) => { e.preventDefault(); cleanup(); onConfirm(); };
+    cancelBtn.onclick     = () => { cleanup(); if (onCancel) onCancel(); };
+    cancelBtn.ontouchend  = (e) => { e.preventDefault(); cleanup(); if (onCancel) onCancel(); };
+  }
+
   _forgifySuperLegendary(gem, slot) {
-    upgradeSuperLegendary(gem);
-    this._setGem(slot, gem);
-    this._forgeMode = false;
-    this.game.inventoryOpen = false;
-    this.inventoryPanel.classList.add('hidden');
-    this.game._reapplyAllBonuses();
-    this.updateSlots();
-    // Big celebration burst for super legendary
-    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
-    this.game.particles.explode(this.game.player.x, this.game.player.y, '#ff8800', 20);
+    // Pre-compute result on a clone so the modal shows exactly what will be applied
+    const cloned = { ...gem, mods: gem.mods.map(m => ({ ...m })) };
+    upgradeSuperLegendary(cloned);
+
+    this._showForgeResult(cloned, '✦+ SUPER LEGENDARY FORGE!', () => {
+      // Apply pre-computed result to real gem
+      gem.mods = cloned.mods;
+      gem.superLegendary = cloned.superLegendary;
+      gem.rarity = cloned.rarity;
+      this._setGem(slot, gem);
+      this._forgeMode = false;
+      this.game.inventoryOpen = false;
+      this.inventoryPanel.classList.add('hidden');
+      this.game._reapplyAllBonuses();
+      this.updateSlots();
+      this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+      this.game.particles.explode(this.game.player.x, this.game.player.y, '#ff8800', 20);
+    }, () => {
+      this._renderInventory(); // Cancel — stay in forge mode
+    });
   }
 
   _forgifyGem(gem, slot, setGem) {
     const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
-    // Add a legendary mod not already present
     const missing = legendaryKeys.filter(k => !gem.mods.some(m => m.type === k));
     const legKey = missing.length ? pick(missing) : pick(legendaryKeys);
-    gem.rarity = 'legendary';
-    gem.mods.unshift({ type: legKey, value: null });
-    if (gem.mods.length > 4) gem.mods.length = 4;
-    setGem(slot, gem);
-    this._forgeMode = false;
-    this.game.inventoryOpen = false;
-    this.inventoryPanel.classList.add('hidden');
-    this.game._reapplyAllBonuses();
-    this.updateSlots();
-    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+    // Build result on a preview object first
+    const resultMods = [{ type: legKey, value: null }, ...gem.mods.slice(0, 3)];
+    const resultGem = { ...gem, rarity: 'legendary', mods: resultMods };
+
+    this._showForgeResult(resultGem, '⚒ LEGENDARY FORGE RESULT', () => {
+      gem.rarity = 'legendary';
+      gem.mods = resultMods.slice();
+      setGem(slot, gem);
+      this._forgeMode = false;
+      this.game.inventoryOpen = false;
+      this.inventoryPanel.classList.add('hidden');
+      this.game._reapplyAllBonuses();
+      this.updateSlots();
+      this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+    }, () => {
+      this._renderInventory(); // Cancel — stay in forge mode
+    });
   }
 
   _executeRareForge() {
@@ -433,7 +508,6 @@ class UI {
 
     let newGem;
     if (allLeg) {
-      // Pick 2 unique legendary mods from the inputs if possible
       const legMods = gems.flatMap(g => g.mods.filter(m => MOD_DEFS[m.type]?.rarity === 'legendary'));
       const uniqueLegKeys = [...new Set(legMods.map(m => m.type))].slice(0, 2);
       while (uniqueLegKeys.length < 2) {
@@ -453,34 +527,92 @@ class UI {
       newGem.mods = keptMods.slice(0, 3);
     }
 
-    // Clear source slots (first selected gets the new gem)
-    for (let i = 1; i < this._rareForgeSelected.length; i++) {
-      this._setGem(this._rareForgeSelected[i], null);
-    }
-    this._setGem(this._rareForgeSelected[0], newGem);
+    const title = allLeg ? '✦+ SUPER LEGENDARY FORGE!'
+                : allRare ? '✦ LEGENDARY FORGE RESULT'
+                : '🔨 RARE FORGE RESULT';
 
-    this._rareForgeMode = false;
-    this._rareForgeSelected = [];
-    this.game.inventoryOpen = false;
-    this.inventoryPanel.classList.add('hidden');
-    this.game._reapplyAllBonuses();
-    this.updateSlots();
-    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
-    if (allLeg) this.game.particles.explode(this.game.player.x, this.game.player.y, '#ff8800', 25);
+    this._showForgeResult(newGem, title, () => {
+      // Apply: clear source slots, put new gem in first selected
+      for (let i = 1; i < this._rareForgeSelected.length; i++) {
+        this._setGem(this._rareForgeSelected[i], null);
+      }
+      this._setGem(this._rareForgeSelected[0], newGem);
+      this._rareForgeMode = false;
+      this._rareForgeSelected = [];
+      this.game.inventoryOpen = false;
+      this.inventoryPanel.classList.add('hidden');
+      this.game._reapplyAllBonuses();
+      this.updateSlots();
+      this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+      if (allLeg) this.game.particles.explode(this.game.player.x, this.game.player.y, '#ff8800', 25);
+    }, () => {
+      this._renderInventory(); // Cancel — stay in rare forge mode
+    });
   }
 
   _executeDiceForge(gem, slot) {
-    // Reroll gem at the same rarity (or legendary stays legendary)
     const targetRarity = gem.rarity;
     const newGem = generateGem(targetRarity);
-    this._setGem(slot, newGem);
 
-    this._diceForgeMode = false;
-    this.game.inventoryOpen = false;
-    this.inventoryPanel.classList.add('hidden');
-    this.game._reapplyAllBonuses();
-    this.updateSlots();
-    this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+    this._showForgeResult(newGem, '🎲 REROLL RESULT', () => {
+      this._setGem(slot, newGem);
+      this._diceForgeMode = false;
+      this.game.inventoryOpen = false;
+      this.inventoryPanel.classList.add('hidden');
+      this.game._reapplyAllBonuses();
+      this.updateSlots();
+      this.game.particles.levelUpBurst(this.game.player.x, this.game.player.y);
+    }, () => {
+      this._renderInventory(); // Cancel — stay in dice forge mode
+    });
+  }
+
+  _bindRelicTooltips() {
+    const tooltip  = document.getElementById('relic-tooltip');
+    const tipIcon  = document.getElementById('relic-tooltip-icon');
+    const tipName  = document.getElementById('relic-tooltip-name');
+    const tipDesc  = document.getElementById('relic-tooltip-desc');
+
+    const show = (el) => {
+      const id  = el.dataset.relicId;
+      const def = RELIC_DEFS[id];
+      if (!def) return;
+      tipIcon.textContent = def.icon;
+      tipName.textContent = def.name;
+      tipDesc.textContent = def.desc;
+      tooltip.classList.remove('hidden');
+      this._positionRelicTooltip(el);
+    };
+    const hide = () => tooltip.classList.add('hidden');
+
+    this.relicSlots.querySelectorAll('.slot-icon[data-relic-id]').forEach(el => {
+      el.addEventListener('mouseenter', () => show(el));
+      el.addEventListener('mouseleave', hide);
+      el.addEventListener('touchstart', (e) => { e.stopPropagation(); show(el); }, { passive: true });
+      el.addEventListener('touchend',   (e) => { e.stopPropagation(); setTimeout(hide, 1200); }, { passive: true });
+    });
+  }
+
+  _positionRelicTooltip(anchor) {
+    const tooltip   = document.getElementById('relic-tooltip');
+    const container = document.getElementById('game-container');
+    const aRect  = anchor.getBoundingClientRect();
+    const cRect  = container.getBoundingClientRect();
+
+    // Position above the icon, centered horizontally
+    const tipW   = tooltip.offsetWidth  || 200;
+    const tipH   = tooltip.offsetHeight || 70;
+    const margin = 6;
+
+    let left = aRect.left - cRect.left + aRect.width / 2 - tipW / 2;
+    let top  = aRect.top  - cRect.top  - tipH - margin;
+
+    // Clamp within container
+    left = Math.max(4, Math.min(left, cRect.width  - tipW - 4));
+    top  = Math.max(4, Math.min(top,  cRect.height - tipH - 4));
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top  = top  + 'px';
   }
 
   showGameOver() {
