@@ -225,6 +225,11 @@ class Game {
           const dmg = isCrit ? p.damage * 2 : p.damage;
           const result = e.takeDamage(dmg, isCrit);
 
+          // Giant's Wand knockback
+          if (this.player._giantsKnockback) {
+            e.knockback(p.x, p.y, this.player._giantsKnockback);
+          }
+
           // Lifesteal
           if (this.player.lifesteal > 0) this.player.heal(result.actual * this.player.lifesteal);
 
@@ -406,16 +411,16 @@ class Game {
     const orbs = enemy.dropXP();
     for (const o of orbs) this.xpOrbs.push(new XPOrb(o.x, o.y, o.value, o.size));
 
-    if (Math.random() < (enemy.isBoss ? 0.001 : 0.001)) {
+    if (Math.random() < (enemy.isBoss ? 0.001 : 0.003)) {
       this.heartPickups.push(new HeartPickup(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.001) {
+    if (!enemy.isBoss && Math.random() < 0.003) {
       this.xpMagnets.push(new XPMagnet(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.001) {
+    if (!enemy.isBoss && Math.random() < 0.003) {
       this.rareForgePickups.push(new RareForge(enemy.x, enemy.y));
     }
-    if (!enemy.isBoss && Math.random() < 0.001) {
+    if (!enemy.isBoss && Math.random() < 0.003) {
       this.diceForgePickups.push(new DiceForge(enemy.x, enemy.y));
     }
 
@@ -440,7 +445,12 @@ class Game {
     if (enemy.isBoss) {
       this.particles.explode(enemy.x, enemy.y, '#ff0000', 40);
       this.particles.levelUpBurst(enemy.x, enemy.y);
-      this.legendaryForgePickups.push(new LegendaryForge(enemy.x, enemy.y));
+      const lf = new LegendaryForge(enemy.x, enemy.y);
+      this.legendaryForgePickups.push(lf);
+      // Dramatic entrance burst for legendary forge
+      this.particles.explode(enemy.x, enemy.y, '#ff8800', 24);
+      this.particles.spark(enemy.x, enemy.y, '#ffcc44', 16);
+      this.particles.floatText(enemy.x, enemy.y - 50, '⚒ LEGENDARY FORGE!', '#ffcc44', 18);
     } else {
       this.particles.blood(enemy.x, enemy.y, 6);
       this.particles.spark(enemy.x, enemy.y, '#ff4040', 4);

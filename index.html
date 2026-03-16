@@ -11,7 +11,8 @@
 </head>
 <body>
   <div id="game-container">
-    <canvas id="game-canvas"></canvas>
+    <canvas id="game-canvas" aria-hidden="true"></canvas>
+    <div id="screen-flash" aria-hidden="true"></div>
 
     <!-- Virtual joystick overlay -->
     <div id="joystick-zone" class="touch-zone left-zone"></div>
@@ -34,7 +35,7 @@
         <span id="hp-label">100 / 100</span>
       </div>
       <!-- Wand button (opens inventory) -->
-      <div id="wand-hud-btn" title="Open Inventory">✨</div>
+      <div id="wand-hud-btn" role="button" aria-label="Open wand inventory" title="Open Inventory">✨</div>
       <div id="relic-slots"></div>
       <div id="kill-counter">Kills: <span id="kill-count">0</span></div>
     </div>
@@ -45,7 +46,7 @@
       <div id="inventory-content">
         <div id="inventory-header">
           <span class="inv-title">✨ WAND &amp; INVENTORY</span>
-          <button id="inventory-close-btn">✕</button>
+          <button id="inventory-close-btn" aria-label="Close inventory">✕ Close</button>
         </div>
 
         <!-- Wand section -->

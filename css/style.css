@@ -1,3 +1,21 @@
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --color-purple:      #c050ff;
+  --color-purple-dim:  rgba(192, 80, 255, 0.4);
+  --color-purple-bg:   rgba(80, 0, 160, 0.65);
+  --color-purple-dark: #0a0010;
+  --color-rare:        #40c0ff;
+  --color-legendary:   #ffaa33;
+  --color-common:      #6688bb;
+  --color-hp:          #ff3030;
+  --color-bg:          #050008;
+  --font-ui:           ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono:         'Courier New', Courier, monospace;
+  --ease-out:          cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Force landscape on mobile */
 @media screen and (orientation: portrait) {
   body::before {
@@ -23,6 +41,11 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Restrict user-select to game interactive surfaces only */
+#game-canvas, .touch-zone, .joystick-base, .joystick-thumb,
+.wand-gem-slot, .inv-slot, #wand-hud-btn, #hud-overlay {
   user-select: none;
   -webkit-user-select: none;
 }
@@ -31,8 +54,8 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #000;
-  font-family: 'Courier New', Courier, monospace;
+  background: var(--color-bg);
+  font-family: var(--font-ui);
 }
 
 #game-container {
@@ -129,19 +152,23 @@ html, body {
 }
 #xp-bar-fill {
   height: 100%;
-  width: 0%;
+  width: 100%;
   background: linear-gradient(90deg, #6a00d4, #c050ff);
   border-radius: 9px;
-  transition: width 0.3s ease;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s var(--ease-out);
 }
 #xp-label {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
-  color: #ddd;
+  font-size: 11px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
   white-space: nowrap;
+  font-family: var(--font-mono);
 }
 
 #timer-display {
@@ -166,16 +193,20 @@ html, body {
   width: 100%;
   background: linear-gradient(90deg, #880000, #ff3030);
   border-radius: 7px;
-  transition: width 0.2s ease;
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform 0.2s var(--ease-out);
 }
 #hp-label {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 10px;
+  font-size: 11px;
   color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
   white-space: nowrap;
+  font-family: var(--font-mono);
 }
 
 /* Wand HUD button — fixed to right side */
@@ -247,11 +278,12 @@ html, body {
 
 #kill-counter {
   position: absolute;
-  top: 6px;
-  right: 8px;
-  color: rgba(255,255,255,0.6);
+  bottom: 6px;
+  left: 8px;
+  color: rgba(255,255,255,0.55);
   font-size: 11px;
   pointer-events: none;
+  font-family: var(--font-mono);
 }
 
 /* ============================================================
@@ -302,21 +334,37 @@ html, body {
   border: 1px solid rgba(192, 80, 255, 0.4);
   color: #c8a0ff;
   border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 13px;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: 14px;
   cursor: pointer;
   pointer-events: all;
+  transition: background 0.12s;
 }
 #inventory-close-btn:hover { background: rgba(120, 0, 220, 0.7); }
 
 /* Forge banners */
 #forge-banner {
+  position: relative;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 1px;
-  padding: 6px 10px;
-  text-align: center;
+  padding: 8px 12px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  text-align: left;
   margin-bottom: 10px;
+  overflow: visible;
+}
+#forge-banner::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 7px;
+  pointer-events: none;
   animation: forgePulse 1.4s ease-in-out infinite;
 }
 #forge-banner.forge-banner-legendary {
@@ -324,31 +372,36 @@ html, body {
   border: 1px solid rgba(255,140,0,0.6);
   color: #ffaa33;
 }
+#forge-banner.forge-banner-legendary::before { box-shadow: 0 0 16px rgba(255,140,0,0.9); }
 #forge-banner.forge-banner-rare {
   background: linear-gradient(90deg, rgba(0,80,180,0.35), rgba(64,192,255,0.2));
   border: 1px solid rgba(64,192,255,0.6);
   color: #40c0ff;
 }
+#forge-banner.forge-banner-rare::before { box-shadow: 0 0 16px rgba(64,192,255,0.9); }
 #forge-banner.forge-banner-dice {
   background: linear-gradient(90deg, rgba(120,0,180,0.35), rgba(192,128,255,0.2));
   border: 1px solid rgba(192,128,255,0.6);
   color: #c080ff;
 }
+#forge-banner.forge-banner-dice::before { box-shadow: 0 0 16px rgba(192,128,255,0.9); }
 @keyframes forgePulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(255,140,0,0.4); }
-  50%       { box-shadow: 0 0 18px rgba(255,140,0,0.8); }
+  0%, 100% { opacity: 0.2; }
+  50%       { opacity: 1; }
 }
 .forge-skip-btn {
   background: rgba(40, 20, 60, 0.7);
   border: 1px solid rgba(120, 80, 160, 0.5);
   color: #9070b0;
-  padding: 3px 10px;
-  font-size: 9px;
+  padding: 8px 14px;
+  min-height: 36px;
+  font-size: 12px;
   letter-spacing: 1px;
   border-radius: 4px;
   cursor: pointer;
-  margin-left: 8px;
-  vertical-align: middle;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  transition: background 0.12s, color 0.12s;
   animation: none;
 }
 .forge-skip-btn:hover, .forge-skip-btn:active {
@@ -361,15 +414,16 @@ html, body {
   background: rgba(0, 60, 160, 0.65);
   border: 1px solid rgba(64, 192, 255, 0.7);
   color: #60d0ff;
-  padding: 3px 10px;
-  font-size: 9px;
+  padding: 8px 14px;
+  min-height: 36px;
+  font-size: 12px;
   letter-spacing: 1px;
   border-radius: 4px;
   cursor: pointer;
-  margin-left: 8px;
-  vertical-align: middle;
-  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
   font-weight: bold;
+  transition: background 0.12s, box-shadow 0.12s, color 0.12s;
   animation: none;
 }
 .forge-confirm-btn:hover, .forge-confirm-btn:active {
@@ -447,9 +501,10 @@ html, body {
 }
 #wand-label {
   color: #c8a0ff;
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 1px;
   margin-top: 3px;
+  font-family: var(--font-mono);
 }
 #wand-sockets {
   display: flex;
@@ -465,10 +520,11 @@ html, body {
   gap: 4px;
 }
 .wand-socket-label {
-  color: rgba(192, 80, 255, 0.6);
-  font-size: 9px;
+  color: rgba(192, 80, 255, 0.7);
+  font-size: clamp(10px, 1.5vw, 12px);
   letter-spacing: 1px;
   text-align: center;
+  font-family: var(--font-mono);
 }
 .wand-gem-slot {
   min-height: 64px;
@@ -501,8 +557,8 @@ html, body {
   cursor: grabbing;
 }
 .empty-socket-label {
-  color: rgba(192, 80, 255, 0.3);
-  font-size: 10px;
+  color: rgba(192, 80, 255, 0.4);
+  font-size: 11px;
   text-align: center;
 }
 
@@ -512,10 +568,11 @@ html, body {
   margin: 10px 0 8px;
 }
 #inventory-section-label {
-  color: rgba(192, 80, 255, 0.5);
-  font-size: 9px;
+  color: rgba(192, 80, 255, 0.6);
+  font-size: 11px;
   letter-spacing: 2px;
   margin-bottom: 6px;
+  font-family: var(--font-mono);
 }
 #inventory-grid {
   display: grid;
@@ -551,10 +608,11 @@ html, body {
 .gem-cell-legendary { background: rgba(204,119,0,0.10);     border: 1px solid rgba(204,119,0,0.5);   }
 
 .gem-rarity-tag {
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1px;
   font-weight: bold;
   margin-bottom: 3px;
+  font-family: var(--font-mono);
 }
 .gem-rarity-common    { color: #6688bb; }
 .gem-rarity-rare      { color: #6699ff; }
@@ -572,8 +630,8 @@ html, body {
 .gem-mod-line-legendary { color: #ff8c00; }
 
 #inv-hint {
-  color: rgba(120, 100, 160, 0.5);
-  font-size: 9px;
+  color: rgba(150, 120, 190, 0.6);
+  font-size: 11px;
   text-align: center;
   margin-top: 8px;
 }
@@ -621,6 +679,7 @@ html, body {
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
+  overflow: visible;
 }
 .upgrade-card {
   background: linear-gradient(160deg, #1a0030, #0d001a);
@@ -710,20 +769,75 @@ html, body {
   font-size: clamp(9px, 1.6vw, 11px);
   line-height: 1.4;
 }
-.card-level-bar {
-  display: flex;
-  gap: 3px;
-  margin-top: 8px;
-  justify-content: center;
+/* .card-level-bar and .level-pip removed — unused */
+
+/* ============================================================
+   SUPER LEGENDARY
+   ============================================================ */
+.super-legendary-badge {
+  display: inline-block;
+  color: #ff8800;
+  font-weight: bold;
+  font-size: 1em;
+  text-shadow: 0 0 8px rgba(255,136,0,0.9);
+  animation: superBadgePulse 1.8s ease-in-out infinite;
 }
-.level-pip {
-  width: 12px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.2);
+@keyframes superBadgePulse {
+  0%, 100% { text-shadow: 0 0 6px rgba(255,136,0,0.7); }
+  50%       { text-shadow: 0 0 16px rgba(255,200,0,1), 0 0 30px rgba(255,100,0,0.6); }
 }
-.level-pip.filled { background: #ffd700; border-color: #ffd700; }
+.gem-cell-super {
+  border-color: rgba(255,100,0,0.7) !important;
+  box-shadow: inset 0 0 10px rgba(255,100,0,0.15), 0 0 8px rgba(255,100,0,0.4);
+}
+.forge-selectable-super {
+  border-color: rgba(255,140,0,0.85) !important;
+  box-shadow: 0 0 14px rgba(255,140,0,0.6);
+  cursor: pointer;
+}
+.forge-selectable-super:hover {
+  border-color: #ff8c00 !important;
+  box-shadow: 0 0 22px rgba(255,140,0,1);
+}
+.forge-selectable-legendary-rare {
+  border-color: rgba(255,170,50,0.7) !important;
+  box-shadow: 0 0 10px rgba(255,170,50,0.45);
+  cursor: pointer;
+}
+
+/* Gem corner diamond */
+.gem-cell {
+  position: relative;
+}
+.gem-corner-pip {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border-radius: 1px;
+}
+.gem-corner-pip-common    { background: #6688bb; box-shadow: 0 0 4px #6688bb; }
+.gem-corner-pip-rare      { background: #6699ff; box-shadow: 0 0 5px #88aaff; }
+.gem-corner-pip-legendary { background: #ffaa33; box-shadow: 0 0 6px #ffaa33; }
+.gem-corner-pip-super     { background: #ff8800; box-shadow: 0 0 8px #ff8800; animation: superBadgePulse 1.8s ease-in-out infinite; }
+
+/* Upgrade screen: super legendary card & diamond */
+.rarity-gem-super {
+  border-color: #ff6600 !important;
+  background: linear-gradient(160deg, #2a0800, #180400) !important;
+  box-shadow: 0 0 18px rgba(255,100,0,0.35);
+}
+.rarity-gem-super:hover, .rarity-gem-super:active {
+  border-color: #ff8800 !important;
+  box-shadow: 0 8px 32px rgba(255,100,0,0.7) !important;
+}
+.gem-diamond-super {
+  background: radial-gradient(circle at 35% 35%, #ffcc66, #cc4400) !important;
+  box-shadow: 0 0 20px rgba(255,120,0,1) !important;
+  animation: superBadgePulse 1.8s ease-in-out infinite;
+}
 
 /* Relic Reward special styling */
 #upgrade-screen.relic-reward #upgrade-backdrop {
@@ -780,10 +894,11 @@ html, body {
   margin-bottom: 16px;
 }
 #gameover-stats {
-  color: #ccc;
-  font-size: clamp(11px, 2vw, 14px);
+  color: #c8a0ff;
+  font-size: clamp(12px, 2vw, 14px);
   line-height: 2;
   margin-bottom: 20px;
+  font-family: var(--font-mono);
 }
 #gameover-stats .stat-line { color: #c8a0ff; }
 
@@ -829,12 +944,12 @@ button {
   border: 2px solid rgba(200, 160, 255, 0.5);
   padding: 12px 32px;
   font-size: clamp(14px, 2.5vw, 18px);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
   letter-spacing: 2px;
-  transition: all 0.15s;
+  transition: background 0.15s var(--ease-out), box-shadow 0.15s, transform 0.15s var(--ease-out);
   box-shadow: 0 4px 20px rgba(160, 32, 240, 0.4);
 }
 button:hover, button:active {
@@ -854,4 +969,26 @@ button:hover, button:active {
   opacity: 0;
   background: #ff0000;
   transition: opacity 0.1s;
+}
+
+/* ============================================================
+   PANEL ENTRY / EXIT ANIMATIONS
+   ============================================================ */
+#inventory-panel:not(.hidden) #inventory-content,
+#upgrade-screen:not(.hidden) #upgrade-panel {
+  animation: panelEnter 0.18s var(--ease-out) both;
+}
+@keyframes panelEnter {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
