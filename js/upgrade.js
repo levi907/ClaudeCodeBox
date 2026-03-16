@@ -102,6 +102,11 @@ class UpgradeSystem {
         el.addEventListener('touchend', e => { e.preventDefault(); this._pick(i); }, { once: true, passive: false });
       });
 
+      // Stagger-deal the cards in like a tarot reading
+      this.cardsEl.classList.remove('cards-deal');
+      void this.cardsEl.offsetWidth;
+      this.cardsEl.classList.add('cards-deal');
+
       this.screen.classList.remove('hidden');
       this.active = true;
     });
