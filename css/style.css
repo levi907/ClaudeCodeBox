@@ -209,6 +209,30 @@ html, body {
   letter-spacing: 0.5px;
 }
 
+/* Fullscreen button */
+#fullscreen-btn {
+  background: none;
+  border: 1px solid rgba(192,112,32,0.35);
+  color: var(--gold);
+  font-size: 16px;
+  padding: 2px 7px;
+  min-height: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: all;
+  letter-spacing: 0;
+  box-shadow: none;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: border-color 0.12s, color 0.12s;
+}
+#fullscreen-btn:hover, #fullscreen-btn:active {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  transform: none;
+  box-shadow: none;
+}
+
 /* Timer */
 #timer-display {
   color: var(--gold-bright);
