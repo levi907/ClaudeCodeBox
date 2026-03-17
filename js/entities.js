@@ -143,7 +143,7 @@ const ENEMY_DEFS = {
   },
   boss: {
     name: 'BOSS',
-    hp: 2000, speed: 40, damage: 40, armor: 5,
+    hp: 600, speed: 40, damage: 40, armor: 5,
     xpDrop: [80, 120],
     size: 40,
     score: 20,
@@ -197,7 +197,7 @@ class Enemy {
 
     if (this.poisoned > 0) {
       this.poisoned -= dt;
-      this.hp -= 3 * dt;
+      this.hp -= (this.virulentlyPoisoned ? 12 : 3) * dt;
       if (this.hp <= 0) this.isDead = true;
     }
 
@@ -211,13 +211,13 @@ class Enemy {
 
     if (this.decaying > 0) {
       this.decaying -= dt;
-      this.hp -= this.maxHp * 0.03 * dt;
+      this.hp -= this.maxHp * 0.12 * dt;
       if (this.hp <= 0) this.isDead = true;
     }
   }
 
   takeDamage(dmg, isCrit = false) {
-    const curseMult = this.cursed > 0 ? 1.25 : 1;
+    const curseMult = this.cursed > 0 ? 1.75 : 1;
     const actual = Math.max(1, Math.round(dmg * curseMult) - this.armor);
     this.hp -= actual;
     if (this.hp <= 0) {
