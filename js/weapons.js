@@ -15,7 +15,7 @@ class Wand {
   computeStats() {
     const s = {
       // Base wand fire stats
-      damage: 20,
+      damage: 15,
       cooldown: 1.0,
       projectiles: 1,
       pierce: 0,
@@ -39,7 +39,6 @@ class Wand {
       // Rare gem flags
       multicastChance: 0,
       bleed: false,
-      poisonChance: 0,
 
       // Legendary effects (original)
       spiral: false,
@@ -100,7 +99,6 @@ class Wand {
           case 'thorns':            s.thornsBonus += mod.value; break;
           case 'multicast':         s.multicastChance += mod.value; break;
           case 'bleed':             s.bleed = true; break;
-          case 'poison_chance':     s.poisonChance += mod.value; break;
           case 'attract':           s.xpRangeBonus += mod.value; break;
           case 'magnetism':         s.xpRangeBonus += mod.value; break;
           case 'spiral':            s.spiral = true; break;
@@ -135,18 +133,18 @@ class Wand {
       }
     }
     // Single-target legendary mods: add pierce so their effects spread through packs
-    if (s.spiral)          s.pierce += 3;
-    if (s.virulentPoison)  s.pierce += 3;
-    if (s.thunderAegis)    s.pierce += 2;
-    if (s.reaper)          s.pierce += 3;
-    if (s.lifeLeech)       s.pierce += 3;
-    if (s.doubleTap)       s.pierce += 3;
-    if (s.curse)           s.pierce += 3;
-    if (s.decay)           s.pierce += 3;
-    if (s.bloodFrenzy)     s.pierce += 2;
-    if (s.unstableCore)    s.pierce += 3;
-    if (s.mirrorShot)      s.pierce += 2;
-    if (s.shockwave)       s.pierce += 2;
+    if (s.spiral)          s.pierce += 4;
+    if (s.virulentPoison)  s.pierce += 4;
+    if (s.thunderAegis)    s.pierce += 3;
+    if (s.reaper)          s.pierce += 4;
+    if (s.lifeLeech)       s.pierce += 4;
+    if (s.doubleTap)       s.pierce += 4;
+    if (s.curse)           s.pierce += 4;
+    if (s.decay)           s.pierce += 4;
+    if (s.bloodFrenzy)     s.pierce += 3;
+    if (s.unstableCore)    s.pierce += 4;
+    if (s.mirrorShot)      s.pierce += 3;
+    if (s.shockwave)       s.pierce += 3;
 
     return s;
   }
@@ -226,7 +224,6 @@ class Wand {
         frostNova: stats.frostNova,
         curse: stats.curse,
         decay: stats.decay,
-        poisonChance: stats.poisonChance,
       }));
     };
 

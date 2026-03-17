@@ -90,8 +90,6 @@ class Game {
     this._bloodFrenzyTimer = 0;
     this._sigils = [];
     this.player.pendingRelicLevels = 0;
-    this._bossesKilled = 0;
-    this._spawnCapReached = false;
     this.inventoryOpen = false;
     this.camera.x = 0;
     this.camera.y = 0;
@@ -102,17 +100,6 @@ class Game {
 
   start() {
     this.init();
-    // Spawn one of each enemy type near the player for kill testing
-    const testTypes = ['zombie', 'bat', 'golem', 'wraith', 'boss'];
-    testTypes.forEach((type, i) => {
-      const a = (Math.PI * 2 * i) / testTypes.length;
-      const r = 220;
-      this.enemies.push(new Enemy(
-        this.player.x + Math.cos(a) * r,
-        this.player.y + Math.sin(a) * r,
-        type, 1.0
-      ));
-    });
     this.running = true;
     this._lastTime = performance.now();
     this._loop();
@@ -147,7 +134,7 @@ class Game {
     this.time += dt;
     this.frame++;
 
-    // Victory condition: clear all bosses, or survive 6 minutes
+    // Victory condition: survive 6 minutes
     if (this.time >= 360) {
       this.running = false;
       this.ui.showWin(this.player, this.relics);
@@ -447,13 +434,6 @@ class Game {
             e.bleed = Math.max(e.bleed, 3.0);
           }
 
-          // Stackable % HP poison
-          if (p.poisonChance && Math.random() < p.poisonChance) {
-            e.poisonStacks = Math.min((e.poisonStacks || 0) + 1, 8);
-            e.poisonStackTimer = 4.0;
-            this.particles.spark(e.x, e.y, '#40ff80', 3);
-          }
-
           // Blood Pact: shots apply bleed
           if (this.player._bloodPactBleed) {
             e.bleed = Math.max(e.bleed, 3.0);
@@ -719,13 +699,11 @@ class Game {
       }
     }
 
-    // Shockwave: push enemies in 280px away on kill, deal 80% damage (max 6 targets)
+    // Shockwave: push all enemies in 280px away on kill AND deal 150% damage
     if (this.player._shockwaveGem) {
       const ws = this.wand.computeStats();
-      const shockDmg = Math.round(ws.damage * this.player.damageMultiplier * 0.8);
-      const shockTargets = this.enemies
-        .filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 280)
-        .slice(0, 6);
+      const shockDmg = Math.round(ws.damage * this.player.damageMultiplier * 1.5);
+      const shockTargets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 280);
       for (const st of shockTargets) {
         st.knockback(enemy.x, enemy.y, 500);
         st.takeDamage(shockDmg);
@@ -775,7 +753,6 @@ class Game {
     }
 
     if (enemy.isBoss) {
-      this._bossesKilled++;
       this.particles.explode(enemy.x, enemy.y, '#ff0000', 40);
       this.particles.levelUpBurst(enemy.x, enemy.y);
       const lf = new LegendaryForge(enemy.x, enemy.y);
@@ -784,13 +761,6 @@ class Game {
       this.particles.explode(enemy.x, enemy.y, '#ff8800', 24);
       this.particles.spark(enemy.x, enemy.y, '#ffcc44', 16);
       this.particles.floatText(enemy.x, enemy.y - 50, '⚒ LEGENDARY FORGE!', '#ffcc44', 18);
-      // Win condition: all bosses cleared + spawn cap never hit
-      if (this._bossesKilled >= CONFIG.BOSS_SPAWN_MINUTES.length &&
-          this._bossSpawnIndex >= CONFIG.BOSS_SPAWN_MINUTES.length) {
-        this.running = false;
-        this.ui.showWin(this.player, this.relics);
-        return;
-      }
     } else {
       this.particles.blood(enemy.x, enemy.y, 6);
       this.particles.spark(enemy.x, enemy.y, '#ff4040', 4);
@@ -845,10 +815,7 @@ class Game {
 
   _spawnEnemyWave() {
     const MAX_ENEMIES = 150;
-    if (this.enemies.length >= MAX_ENEMIES) {
-      this._spawnCapReached = true;
-      return;
-    }
+    if (this.enemies.length >= MAX_ENEMIES) return;
     const minutes = this.time / 60;
     const count = Math.min(1 + Math.floor(minutes * CONFIG.ENEMY_WAVE_GROWTH), CONFIG.ENEMY_MAX_WAVE);
     const diff = getDifficultyMult(this.time);

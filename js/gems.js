@@ -15,7 +15,7 @@ const MOD_DEFS = {
   armor:           { rarity: 'common',    label: '+Armor',        color: '#aabbcc', format: v => `+${v} Armor` },
   hp_regen:        { rarity: 'common',    label: '+HP Regen',     color: '#aabbcc', format: v => `+${v} HP/s` },
   proj_size:       { rarity: 'common',    label: '+Proj Size',    color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Proj Size` },
-  attract:         { rarity: 'common',    label: '+Pickup Range', color: '#aabbcc', format: () => `Increased Pickup Radius` },
+  attract:         { rarity: 'common',    label: '+Pickup Range', color: '#aabbcc', format: v => `+${v}px Pickup Range` },
 
   // --- Rare mods (gold) - advanced upgrades ---
   extra_projectile: { rarity: 'rare',     label: '+Projectiles',  color: '#ffd700', format: v => `+${v} Projectile` },
@@ -27,8 +27,7 @@ const MOD_DEFS = {
   multicast:        { rarity: 'rare',     label: 'Multicast',     color: '#ffd700', format: v => `${Math.round(v * 100)}% chance to fire twice` },
   thorns:           { rarity: 'rare',     label: '+Thorns',       color: '#ffd700', format: v => `Reflect ${v} damage on hit` },
   bleed:            { rarity: 'rare',     label: 'Bleed',         color: '#ffd700', format: () => `Hits cause 5 dmg/s bleed for 3s` },
-  poison_chance:    { rarity: 'rare',     label: '+Poison Chance',color: '#80ff40', format: v => `+${Math.round(v * 100)}% Chance to Poison on Hit` },
-  magnetism:        { rarity: 'rare',     label: '++Pickup Range',color: '#ffd700', format: () => `Greatly Increased Pickup Radius` },
+  magnetism:        { rarity: 'rare',     label: '++Pickup Range',color: '#ffd700', format: v => `+${v}px Pickup Range` },
 
   // --- Legendary mods (orange) - unique game-changing effects ---
   spiral:           { rarity: 'legendary', label: 'Spiral',           color: '#ff8c00', format: () => 'Projectiles spiral outward' },
@@ -43,12 +42,12 @@ const MOD_DEFS = {
   bounty:           { rarity: 'legendary', label: 'Bounty',           color: '#ff8c00', format: () => '+70% XP from all kills' },
   phase_shot:       { rarity: 'legendary', label: 'Phase Shot',       color: '#ff8c00', format: () => 'Projectiles pierce through all enemies' },
   double_tap:       { rarity: 'legendary', label: 'Double Tap',       color: '#ff8c00', format: () => 'Each shot fires a second bolt (−15% dmg)' },
-  overload:         { rarity: 'legendary', label: 'Overload',         color: '#ff8c00', format: () => 'Critical hits explode with a burst radius' },
+  overload:         { rarity: 'legendary', label: 'Overload',         color: '#ff8c00', format: () => 'Critical hits explode in 55px AoE' },
   frost_nova:       { rarity: 'legendary', label: 'Frost Nova',       color: '#ff8c00', format: () => '20% hit chance: freeze nearby enemies 2s' },
   curse:            { rarity: 'legendary', label: 'Curse',            color: '#ff8c00', format: () => 'Cursed enemies take 25% more damage for 5s' },
   decay:            { rarity: 'legendary', label: 'Decay',            color: '#ff8c00', format: () => 'Enemies lose 3% max HP/s for 6s after hit' },
   soul_burst:       { rarity: 'legendary', label: 'Soul Burst',       color: '#ff8c00', format: () => 'On kill: fire 3 soul bolts at nearby foes' },
-  shockwave:        { rarity: 'legendary', label: 'Shockwave',        color: '#ff8c00', format: () => 'On kill: shockwave pushes nearby enemies away (80% dmg)' },
+  shockwave:        { rarity: 'legendary', label: 'Shockwave',        color: '#ff8c00', format: () => 'On kill: push all enemies in 220px away' },
   combustion:       { rarity: 'legendary', label: 'Combustion',       color: '#ff8c00', format: () => 'Poisoned enemies explode on death (150% HP)' },
   blood_frenzy:     { rarity: 'legendary', label: 'Blood Frenzy',     color: '#ff8c00', format: () => 'Kills grant +10% dmg for 3s (max 5 stacks)' },
   storm_call:       { rarity: 'legendary', label: 'Storm Call',       color: '#ff8c00', format: () => 'Every 9s: lightning strikes 5 enemies (6× dmg)' },
@@ -57,7 +56,7 @@ const MOD_DEFS = {
   arcane_surge:     { rarity: 'legendary', label: 'Arcane Surge',     color: '#ff8c00', format: () => 'Every 10 kills: auto-fire 6 homing bolts' },
   unstable_core:    { rarity: 'legendary', label: 'Unstable Core',    color: '#ff8c00', format: () => '8% per shot: deal 8× damage' },
   mirror_shot:      { rarity: 'legendary', label: 'Mirror Shot',      color: '#ff8c00', format: () => '25% chance: fire 3 spread copies of your shot' },
-  sigil:            { rarity: 'legendary', label: 'Sigil',            color: '#ff8c00', format: () => 'Every 18s: place a damaging sigil for 7s' },
+  sigil:            { rarity: 'legendary', label: 'Sigil',            color: '#ff8c00', format: () => 'Every 18s: place sigil (25 dmg/s, 7s, 140px)' },
   warp_bolt:        { rarity: 'legendary', label: 'Warp Bolt',        color: '#ff8c00', format: () => 'Every 10s: fire a massive 5× damage bolt' },
   void_pull:        { rarity: 'legendary', label: 'Void Pull',        color: '#ff8c00', format: () => 'Massively increased pickup range' },
 };
@@ -85,7 +84,6 @@ const MOD_WEIGHTS = {
   multicast:        3,
   thorns:           2,
   bleed:            3,
-  poison_chance:    3,
   magnetism:        2,
   // Legendary mods — equal chance within legendary tier
   spiral:           1,
@@ -138,7 +136,6 @@ const MOD_VALUES = {
   multicast:         0.35,
   thorns:            8,
   bleed:             1,   // flag-like
-  poison_chance:     0.10, // +10% chance to poison per stack
   attract:           50,  // +50px pickup range
   magnetism:         130, // +130px pickup range
 };

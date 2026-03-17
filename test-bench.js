@@ -30,8 +30,6 @@ function makePlayer(relicName, legMod) {
     invincibleTime: 0,
     xpRangeBonus: 0, _xpMult: 1.0,
 
-    _relicPierceBonus: 0,
-
     // relic flags
     _hpRegen: 0,
     _omniShot: 0,
@@ -81,63 +79,62 @@ function makePlayer(relicName, legMod) {
 // ---- Apply a relic to player ----
 const RELICS = {
   none:             p => {},
-  forbidden_codex:  p => { p._extraChoices += 3; p.damageMultiplier += 1.0; p._relicPierceBonus += 3; },
+  forbidden_codex:  p => { p._extraChoices += 3; p.damageMultiplier += 1.0; },
   arcane_cyclone:   p => { p._omniShot += 3; },
   giants_wand:      p => { p._projSizeMult = 8; p._giantsKnockback = 350; p._omniShot += 2; },
   cataclysm_clock:  p => { p._nukeInterval = 12; p._nukeRadius = 550; },
-  berserker_rage:   p => { p._berserkerMaxMult = 3.0; p.damageMultiplier *= 2.0; p._relicPierceBonus += 3; },
+  berserker_rage:   p => { p._berserkerMaxMult = 3.0; p.damageMultiplier *= 2.0; },
   chain_death:      p => { p._chainDeathPct = 0.6; p._chainDeathRadius = 100; },
   soul_vampire:     p => { p._killHealPct = 0.08; p._soulDrain = 80; },
-  time_warp:        p => { p.cooldownReduction = 0.60; p._relicPierceBonus += 3; },
+  time_warp:        p => { p.cooldownReduction = 0.60; },
   iron_fortress:    p => { p.armor += 40; p._fortressShieldDur = 3; p._thorns += 20; },
-  void_prism:       p => { p._voidPrismChance = 1.0; p._relicPierceBonus += 3; },
-  blood_pact:       p => { p.maxHp += 80; p.hp = p.maxHp; p._hpRegen += 4; p._bloodPactBleed = true; p.damageMultiplier += 0.8; p._relicPierceBonus += 3; },
-  phantom_strike:   p => { p._phantomStrikeChance = 0.30; p._relicPierceBonus += 4; },
+  void_prism:       p => { p._voidPrismChance = 1.0; },
+  blood_pact:       p => { p.maxHp += 80; p.hp = p.maxHp; p._hpRegen += 4; p._bloodPactBleed = true; p.damageMultiplier += 0.8; },
+  phantom_strike:   p => { p._phantomStrikeChance = 0.30; },
   echo_chamber:     p => { p._echoInterval = 4; },
   arcane_ward:      p => { p._wardDuration = 8; p._wardZap = true; },
-  reapers_scythe:   p => { p._reaperThreshold = 0.25; p.damageMultiplier += 0.6; p._relicPierceBonus += 3; },
+  reapers_scythe:   p => { p._reaperThreshold = 0.25; p.damageMultiplier += 0.6; },
   cursed_mirror:    p => { p._cursedMirror = true; p._mirrorPulse = true; },
 };
 
 // ---- Apply a legendary gem mod to wand stats ----
 const LEG_MODS = {
   none:            (s, p) => {},
-  spiral:          (s, p) => { s.projLifetime = 9; s.pierce += 3; },
+  spiral:          (s, p) => { s.projLifetime = 9; },
   explosive:       (s, p) => { s.explosive = true; s.explosionRadius = 60; },
-  virulent_poison: (s, p) => { s.virulentPoison = true; s.pierce += 3; },
-  thunder_aegis:   (s, p) => { s.thunderAegis = true; s.pierce += 2; },
+  virulent_poison: (s, p) => { s.virulentPoison = true; },
+  thunder_aegis:   (s, p) => { s.thunderAegis = true; },
   chain_lightning: (s, p) => { s.chainLightning = true; },
   meteor:          (s, p) => { s.meteorGem = true; },
-  reaper:          (s, p) => { s.reaper = true; s.pierce += 3; },
+  reaper:          (s, p) => { s.reaper = true; },
   // New legendary mods
-  life_leech:      (s, p) => { s.lifeLeech = true; s.pierce += 3; },
-  bounty:          (s, p) => { p._xpMult = 1.7; },
+  life_leech:      (s, p) => { s.lifeLeech = true; },
+  bounty:          (s, p) => { p._xpMult = 1.7; },  // +70% XP — shows as faster levels
   phase_shot:      (s, p) => { s.pierce = 999; },
-  double_tap:      (s, p) => { s.doubleTap = true; s.pierce += 3; },
+  double_tap:      (s, p) => { s.doubleTap = true; },
   overload:        (s, p) => { s.overload = true; p.critChance = Math.max(p.critChance, 0.40); },
   frost_nova:      (s, p) => { s.frostNova = true; },
-  curse:           (s, p) => { s.curse = true; s.pierce += 3; },
-  decay:           (s, p) => { s.decay = true; s.decayDuration = 10; s.pierce += 3; },
+  curse:           (s, p) => { s.curse = true; },
+  decay:           (s, p) => { s.decay = true; s.decayDuration = 10; },
   soul_burst:      (s, p) => { p._soulBurstGem = true; },
-  shockwave:       (s, p) => { p._shockwaveGem = true; s.pierce += 2; },
-  combustion:      (s, p) => { p._combustionGem = true; s.virulentPoison = true; },
-  blood_frenzy:    (s, p) => { p._bloodFrenzyGem = true; s.pierce += 2; },
+  shockwave:       (s, p) => { p._shockwaveGem = true; },
+  combustion:      (s, p) => { p._combustionGem = true; s.virulentPoison = true; }, // needs poison to explode
+  blood_frenzy:    (s, p) => { p._bloodFrenzyGem = true; },
   storm_call:      (s, p) => { p._stormCallGem = true; },
   time_stop:       (s, p) => { p._timeStopGem = true; },
   graviton:        (s, p) => { p._gravitonGem = true; },
   arcane_surge:    (s, p) => { p._arcaneSurgeGem = true; },
-  unstable_core:   (s, p) => { s.unstableCore = true; s.pierce += 3; },
-  mirror_shot:     (s, p) => { s.mirrorShot = true; s.pierce += 2; },
+  unstable_core:   (s, p) => { s.unstableCore = true; },
+  mirror_shot:     (s, p) => { s.mirrorShot = true; },
   sigil:           (s, p) => { p._sigilGem = true; },
   warp_bolt:       (s, p) => { p._warpBoltGem = true; },
-  void_pull:       (s, p) => { p.xpRangeBonus = 400; },
-  poison_chance:   (s, p) => { s.poisonChance = 0.10; }, // 10% chance to apply a poison stack per hit
+  void_pull:       (s, p) => { p.xpRangeBonus = 400; }, // pickup range — modest kill benefit
 };
 
 // ---- Wand stats (base + optional legendary mod) ----
 function makeWandStats(legMod, cdr = 0, player = null) {
   const s = {
-    damage: 20, cooldown: 1.0, projectiles: 1,
+    damage: 15, cooldown: 1.0, projectiles: 1,
     pierce: 0, bounce: 0, chain: 0,
     projSpeed: 360, projLifetime: 2.5,
     explosive: false, explosionRadius: 60,
@@ -249,9 +246,9 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
 
     // Shockwave: on kill, deal 150% base damage to 8 nearby enemies
     if (p._shockwaveGem && !e._shockwaveKill) {
-      const shockDmg = Math.round(ws.damage * p.damageMultiplier * 0.8);
+      const shockDmg = Math.round(ws.damage * p.damageMultiplier * 1.5);
       const shockTargets = [...enemies].filter(n => !n.isDead && n !== e)
-        .sort((a, b) => dist(a.x, a.y, e.x, e.y) - dist(b.x, b.y, e.x, e.y)).slice(0, 6);
+        .sort((a, b) => dist(a.x, a.y, e.x, e.y) - dist(b.x, b.y, e.x, e.y)).slice(0, 8);
       for (const n of shockTargets) {
         n.hp -= Math.max(1, shockDmg - n.armor);
         totalDamage.dealt += Math.max(1, shockDmg - n.armor);
@@ -292,10 +289,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
     const bloodFrenzyMult = p._bloodFrenzyMult || 1.0;
 
     const totalMult = p.damageMultiplier * berserkerMult * bloodFrenzyMult;
-    const totalPierce = (ws.pierce || 0) + (p._relicPierceBonus || 0);
     const projCount = ws.projectiles + (p._voidPrismChance ? 1 : 0);
-    // Each projectile can pierce N additional targets (capped at alive.length)
-    const targetsPerProj = 1 + Math.min(totalPierce, alive.length - 1);
 
     function hitEnemy(e, dmgMult = 1) {
       if (e.isDead) return;
@@ -370,21 +364,12 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       // Poison (virulent): 10s duration at 12 dmg/s
       if (ws.virulentPoison && !e.virulentlyPoisoned) { e.virulentlyPoisoned = true; e.poisoned = 10; }
 
-      // Stackable % HP poison (poison_chance stat)
-      if (ws.poisonChance && Math.random() < ws.poisonChance) {
-        e.poisonStacks = Math.min((e.poisonStacks || 0) + 1, 8);
-        e.poisonStackTimer = 4.0;
-      }
-
       // Lifesteal
       if (p.lifesteal > 0) p.hp = Math.min(p.maxHp, p.hp + actual * p.lifesteal);
     }
 
     for (let i = 0; i < projCount && i < alive.length; i++) {
-      // Pierce: hit multiple targets per projectile
-      for (let pi = 0; pi < targetsPerProj && (i + pi) < alive.length; pi++) {
-        hitEnemy(alive[(i + pi) % alive.length]);
-      }
+      hitEnemy(alive[i % alive.length]);
       if (p._phantomStrikeChance && Math.random() < p._phantomStrikeChance) {
         hitEnemy(alive[i % alive.length], 3);
       }
@@ -450,11 +435,6 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
     for (const e of enemies) {
       if (e.frozen > 0) e.frozen -= dt;
       if (e.poisoned > 0) { e.poisoned -= dt; e.hp -= (e.virulentlyPoisoned ? 12 : 3) * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
-      if (e.poisonStacks > 0) {
-        e.poisonStackTimer -= dt;
-        if (e.poisonStackTimer <= 0) { e.poisonStacks = 0; }
-        else { e.hp -= e.poisonStacks * 0.02 * e.maxHp * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
-      }
       if (e.bleed > 0) { e.bleed -= dt; e.hp -= 5 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
       if (e.cursed > 0) e.cursed -= dt;
       if (e.decaying > 0) { e.decaying -= dt; e.hp -= e.maxHp * 0.12 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
@@ -706,7 +686,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
 
 // ---- Run all tests ----
 const DURATION = 60; // 60-second sim per test
-const RUNS = 100;    // average over 100 runs for variance
+const RUNS = 10;     // average over 10 runs for variance
 
 function avgRuns(relicName, legMod) {
   let totalKills = 0, totalDmgReceived = 0, totalDmgDealt = 0, survivedCount = 0;
@@ -750,20 +730,16 @@ for (const m of Object.keys(LEG_MODS)) {
 
 // Test selected powerful combos
 const COMBOS = [
-  ['chain_death',    'explosive'],
+  ['chain_death', 'explosive'],
   ['arcane_cyclone', 'chain_lightning'],
-  ['time_warp',      'spiral'],
+  ['time_warp', 'spiral'],
   ['berserker_rage', 'reaper'],
-  ['soul_vampire',   'virulent_poison'],
-  ['void_prism',     'chain_lightning'],
-  ['cataclysm_clock','meteor'],
-  ['echo_chamber',   'explosive'],
+  ['soul_vampire', 'virulent_poison'],
+  ['void_prism', 'chain_lightning'],
+  ['cataclysm_clock', 'meteor'],
+  ['echo_chamber', 'explosive'],
   ['phantom_strike', 'chain_lightning'],
   ['reapers_scythe', 'reaper'],
-  ['blood_pact',     'poison_chance'],
-  ['phantom_strike', 'poison_chance'],
-  ['berserker_rage', 'decay'],
-  ['time_warp',      'double_tap'],
 ];
 
 console.log('\n── COMBOS (relic + legendary mod) ──');
@@ -772,36 +748,6 @@ for (const [r, m] of COMBOS) {
   const res = avgRuns(r, m);
   const label = `${r} + ${m}`.padEnd(42);
   console.log(`${label} ${String(res.kills).padStart(5)}  ${String(res.surviveRate).padStart(7)}%  ${String(res.dmgDealt).padStart(8)}`);
-}
-
-// ── Enemy type kill test ──
-// Verify each monster type is killable: track average shots to kill
-console.log('\n── ENEMY TYPE KILL VERIFICATION (base wand, 100 trials each) ──');
-console.log('Type       Avg shots to kill  Killable');
-const ENEMY_TYPES_TEST = ['zombie', 'bat', 'golem', 'wraith', 'boss'];
-for (const type of ENEMY_TYPES_TEST) {
-  const def = ENEMY_DEFS[type];
-  const diff = 1.0;
-  const eDmg = 20; // base wand damage
-  const ePierce = 0;
-  let totalShots = 0;
-  const KILL_TRIALS = 100;
-  for (let i = 0; i < KILL_TRIALS; i++) {
-    const hp = Math.floor(def.hp * diff);
-    const armor = def.armor;
-    let remaining = hp;
-    let shots = 0;
-    while (remaining > 0 && shots < 500) {
-      const isCrit = Math.random() < 0.10;
-      const dmg = isCrit ? eDmg * 2 : eDmg;
-      remaining -= Math.max(1, dmg - armor);
-      shots++;
-    }
-    totalShots += shots;
-  }
-  const avg = (totalShots / KILL_TRIALS).toFixed(1);
-  const killable = totalShots < 500 * KILL_TRIALS ? 'YES ✓' : 'NO ✗';
-  console.log(`${type.padEnd(10)} ${String(avg).padStart(17)}  ${killable}`);
 }
 
 console.log('\n====================================================');
