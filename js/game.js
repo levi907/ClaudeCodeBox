@@ -77,6 +77,15 @@ class Game {
     this._nukeTimer = 0;
     this._meteorTimer = 0;
     this._wardTimer = 999;  // starts ready (8s+)
+    this._stormTimer = 0;
+    this._timeStopTimer = 0;
+    this._gravitonTimer = 0;
+    this._sigilTimer = 0;
+    this._warpBoltTimer = 0;
+    this._arcaneKillCount = 0;
+    this._bloodFrenzyStacks = 0;
+    this._bloodFrenzyTimer = 0;
+    this._sigils = [];
     this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
@@ -159,6 +168,84 @@ class Game {
         this._meteorTimer = 0;
         this._triggerMeteors();
       }
+    }
+
+    // Storm Call: lightning strikes 5 enemies every 9s
+    if (this.player._stormCallGem) {
+      this._stormTimer += dt;
+      if (this._stormTimer >= 9) {
+        this._stormTimer = 0;
+        this._triggerStormCall();
+      }
+    }
+
+    // Time Stop: freeze all enemies for 1.5s every 15s
+    if (this.player._timeStopGem) {
+      this._timeStopTimer += dt;
+      if (this._timeStopTimer >= 15) {
+        this._timeStopTimer = 0;
+        for (const e of this.enemies) e.frozen = Math.max(e.frozen, 1.5);
+        this.particles.explode(this.player.x, this.player.y, '#88ccff', 20);
+        this.particles.floatText(this.player.x, this.player.y - 40, '⏰ TIME STOP', '#88ccff', 15);
+      }
+    }
+
+    // Graviton: pull all enemies toward player every 16s
+    if (this.player._gravitonGem) {
+      this._gravitonTimer += dt;
+      if (this._gravitonTimer >= 16) {
+        this._gravitonTimer = 0;
+        for (const e of this.enemies) {
+          e.x += (this.player.x - e.x) * 0.7;
+          e.y += (this.player.y - e.y) * 0.7;
+        }
+        this.particles.explode(this.player.x, this.player.y, '#cc44ff', 20);
+        this.particles.floatText(this.player.x, this.player.y - 40, '🌌 GRAVITON', '#cc44ff', 15);
+      }
+    }
+
+    // Sigil: place damage zone every 18s
+    if (this.player._sigilGem) {
+      this._sigilTimer += dt;
+      if (this._sigilTimer >= 18) {
+        this._sigilTimer = 0;
+        this._sigils.push({ x: this.player.x, y: this.player.y, age: 0, duration: 7, radius: 140 });
+        this.particles.floatText(this.player.x, this.player.y - 30, '✦ SIGIL', '#ff44cc', 13);
+      }
+      // Update active sigils
+      for (let i = this._sigils.length - 1; i >= 0; i--) {
+        const sig = this._sigils[i];
+        sig.age += dt;
+        if (sig.age >= sig.duration) { this._sigils.splice(i, 1); continue; }
+        const sigDmg = 15 * dt;
+        for (const e of this.enemies) {
+          if (!e.isDead && dist(e.x, e.y, sig.x, sig.y) < sig.radius) {
+            e.hp -= sigDmg;
+            if (e.hp <= 0) { e.isDead = true; this.onEnemyDead(e); }
+          }
+        }
+      }
+    }
+
+    // Warp Bolt: fire massive bolt every 10s
+    if (this.player._warpBoltGem) {
+      this._warpBoltTimer += dt;
+      if (this._warpBoltTimer >= 10) {
+        this._warpBoltTimer = 0;
+        this._fireWarpBolt();
+      }
+    }
+
+    // Blood Frenzy: decay stacks
+    if (this._bloodFrenzyStacks > 0) {
+      this._bloodFrenzyTimer -= dt;
+      if (this._bloodFrenzyTimer <= 0) {
+        this._bloodFrenzyStacks = 0;
+        this._bloodFrenzyTimer = 0;
+      }
+      this.player._bloodFrenzyMult = 1 + 0.1 * this._bloodFrenzyStacks;
+    } else {
+      this.player._bloodFrenzyMult = 1.0;
     }
 
     // Reaper's Scythe: execute low-HP enemies each frame
@@ -296,6 +383,46 @@ class Game {
           // Bleed application
           if (p.bleed) {
             e.bleed = Math.max(e.bleed, 3.0);
+          }
+
+          // Life Leech: heal 12% of damage dealt
+          if (p.lifeLeech) {
+            this.player.heal(result.actual * 0.12);
+          }
+
+          // Overload: crit hits explode in 55px AoE
+          if (p.overload && isCrit) {
+            const overloadDmg = Math.round(p.damage * 0.5);
+            for (const t of this.enemies) {
+              if (!t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 55) {
+                const tr = t.takeDamage(overloadDmg);
+                this.particles.floatText(t.x, t.y - 10, `${tr.actual}`, '#ffcc00', 10);
+                if (t.isDead) this.onEnemyDead(t);
+              }
+            }
+            this.particles.spark(e.x, e.y, '#ffcc00', 8);
+          }
+
+          // Frost Nova: 20% chance freeze enemies in 150px for 2s
+          if (p.frostNova && Math.random() < 0.20) {
+            for (const t of this.enemies) {
+              if (!t.isDead && dist(t.x, t.y, e.x, e.y) < 150) {
+                t.frozen = Math.max(t.frozen, 2.0);
+              }
+            }
+            this.particles.spark(e.x, e.y, '#88ddff', 10);
+          }
+
+          // Curse: target takes 25% more damage for 5s
+          if (p.curse) {
+            e.cursed = Math.max(e.cursed, 5.0);
+            this.particles.spark(e.x, e.y, '#cc44ff', 4);
+          }
+
+          // Decay: target loses 3% maxHp/s for 6s
+          if (p.decay) {
+            e.decaying = Math.max(e.decaying, 6.0);
+            this.particles.spark(e.x, e.y, '#44cc44', 4);
           }
 
           // Chain Lightning: arc to 3 nearby enemies for 60% damage
@@ -506,6 +633,55 @@ class Game {
       this.player.heal(this.player.maxHp * this.player._killHealPct);
     }
 
+    // Soul Burst: fire 3 soul bolts at nearby enemies
+    if (this.player._soulBurstGem) {
+      const soulTargets = this.enemies
+        .filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 350)
+        .slice(0, 3);
+      const ws = this.wand.computeStats();
+      for (const st of soulTargets) {
+        const a = angle(enemy.x, enemy.y, st.x, st.y);
+        this.spawnProjectile(new Projectile({
+          x: enemy.x, y: enemy.y,
+          vx: Math.cos(a) * 400, vy: Math.sin(a) * 400,
+          damage: Math.round(ws.damage * this.player.damageMultiplier * 0.8),
+          size: 8, pierce: 0, bounce: 0, chain: 0,
+          type: 'bolt', color: '#cc88ff', lifetime: 1.5,
+        }));
+      }
+    }
+
+    // Shockwave: push all enemies in 220px away on kill
+    if (this.player._shockwaveGem) {
+      const shockTargets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 220);
+      for (const st of shockTargets) st.knockback(enemy.x, enemy.y, 500);
+      if (shockTargets.length > 0) this.particles.explode(enemy.x, enemy.y, '#aaddff', 10);
+    }
+
+    // Combustion: poisoned enemies explode on death (no cascade)
+    if (this.player._combustionGem && enemy.poisoned > 0 && !enemy._combustionKill) {
+      const combDmg = Math.round(enemy.maxHp * 0.6);
+      const nearby = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 90);
+      for (const n of nearby) {
+        n.takeDamage(combDmg);
+        if (n.isDead) { n._combustionKill = true; this.onEnemyDead(n); }
+      }
+      this.particles.explode(enemy.x, enemy.y, '#80ff40', 20);
+      this.particles.floatText(enemy.x, enemy.y - 20, '💥 COMBUSTION', '#80ff40', 13);
+    }
+
+    // Blood Frenzy: +10% dmg per kill for 3s (max 5 stacks)
+    if (this.player._bloodFrenzyGem) {
+      this._bloodFrenzyStacks = Math.min(5, this._bloodFrenzyStacks + 1);
+      this._bloodFrenzyTimer = 3;
+    }
+
+    // Arcane Surge: every 10 kills fire 6 homing bolts
+    if (this.player._arcaneSurgeGem) {
+      this._arcaneKillCount++;
+      if (this._arcaneKillCount % 10 === 0) this._triggerArcaneSurge(enemy);
+    }
+
     // Chain Death: enemies explode damaging nearby foes (no cascade — only first-order kills)
     if (this.player._chainDeathPct && this.player._chainDeathRadius && !enemy._chainKill) {
       const dmg = Math.round(enemy.maxHp * this.player._chainDeathPct);
@@ -695,6 +871,17 @@ class Game {
     p._wardDuration       = 0;
     p._reaperThreshold    = 0;
     p._cursedMirror       = false;
+    p._soulBurstGem       = false;
+    p._shockwaveGem       = false;
+    p._combustionGem      = false;
+    p._bloodFrenzyGem     = false;
+    p._arcaneSurgeGem     = false;
+    p._stormCallGem       = false;
+    p._timeStopGem        = false;
+    p._gravitonGem        = false;
+    p._sigilGem           = false;
+    p._warpBoltGem        = false;
+    p._bloodFrenzyMult    = 1.0;
 
     for (const r of this.relics) r.apply(p);
 
@@ -713,6 +900,25 @@ class Game {
     p._meteorGem      = ws.meteor;
     // Reaper as gem stacks with Reaper's Scythe relic
     if (ws.reaper && !p._reaperThreshold) p._reaperThreshold = 0.20;
+
+    // New legendary gem flags
+    p._soulBurstGem   = ws.soulBurst;
+    p._shockwaveGem   = ws.shockwave;
+    p._combustionGem  = ws.combustion;
+    p._bloodFrenzyGem = ws.bloodFrenzy;
+    p._arcaneSurgeGem = ws.arcaneSurge;
+    p._stormCallGem   = ws.stormCall;
+    p._timeStopGem    = ws.timeStop;
+    p._gravitonGem    = ws.graviton;
+    p._sigilGem       = ws.sigil;
+    p._warpBoltGem    = ws.warpBolt;
+
+    // Bounty: +70% XP from kills
+    if (ws.bounty) p._xpMultiplier *= 1.7;
+
+    // Pickup range from attract/magnetism gems and void_pull
+    p.xpRangeBonus += ws.xpRangeBonus;
+    if (ws.voidPull) p.xpRangeBonus += 400;
   }
 
   // Keep legacy alias so old relics code paths don't break
@@ -747,12 +953,12 @@ class Game {
     this.particles.floatText(this.player.x, this.player.y - 50, '💥 CATACLYSM!', '#ff6600', 18);
   }
 
-  // Meteor gem: drop 3 meteors on random enemies
+  // Meteor gem: drop 1 meteor on a random enemy
   _triggerMeteors() {
-    const dmg = Math.round(this.wand.computeStats().damage * 12);
-    const radius = 110;
+    const dmg = Math.round(this.wand.computeStats().damage * this.player.damageMultiplier * 6);
+    const radius = 80;
     const targets = [...this.enemies].filter(e => !e.isDead)
-      .sort(() => Math.random() - 0.5).slice(0, 3);
+      .sort(() => Math.random() - 0.5).slice(0, 1);
     for (const t of targets) {
       // AoE at target position
       const nearby = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, t.x, t.y) < radius);
@@ -765,6 +971,65 @@ class Game {
     }
   }
 
+  // Storm Call: lightning strikes 5 random enemies for 6× base damage
+  _triggerStormCall() {
+    const ws = this.wand.computeStats();
+    const dmg = Math.round(ws.damage * this.player.damageMultiplier * 6);
+    const targets = [...this.enemies].filter(e => !e.isDead)
+      .sort(() => Math.random() - 0.5).slice(0, 5);
+    for (const t of targets) {
+      const result = t.takeDamage(dmg);
+      this._lightningArcs.push({ x1: this.player.x, y1: this.player.y, x2: t.x, y2: t.y, age: 0, maxAge: 0.3 });
+      this.particles.floatText(t.x, t.y - 12, `${result.actual}`, '#aaddff', 12);
+      if (t.isDead) this.onEnemyDead(t);
+    }
+    this.particles.explode(this.player.x, this.player.y, '#aaddff', 14);
+    this.particles.floatText(this.player.x, this.player.y - 40, '⚡ STORM CALL', '#aaddff', 14);
+  }
+
+  // Warp Bolt: fire a massive 5× damage bolt at nearest enemy
+  _fireWarpBolt() {
+    const targets = this.getNearestEnemies(1);
+    if (targets.length === 0) return;
+    const t = targets[0];
+    const ws = this.wand.computeStats();
+    const dmg = Math.round(ws.damage * this.player.damageMultiplier * 5);
+    const a = angle(this.player.x, this.player.y, t.x, t.y);
+    this.spawnProjectile(new Projectile({
+      x: this.player.x, y: this.player.y,
+      vx: Math.cos(a) * ws.projSpeed * 1.5,
+      vy: Math.sin(a) * ws.projSpeed * 1.5,
+      damage: dmg,
+      size: 18, pierce: 3, bounce: 0, chain: 0,
+      type: 'bolt', color: '#ff6600', lifetime: 3.0,
+      explosive: true, explosionRadius: 80,
+    }));
+    this.particles.floatText(this.player.x, this.player.y - 30, '⚡ WARP BOLT', '#ff6600', 13);
+  }
+
+  // Arcane Surge: fire 6 homing bolts from kill location
+  _triggerArcaneSurge(fromEnemy) {
+    const ws = this.wand.computeStats();
+    const dmg = Math.round(ws.damage * this.player.damageMultiplier * 1.5);
+    const targets = [...this.enemies].filter(e => !e.isDead)
+      .sort((a, b) => distSq(fromEnemy.x, fromEnemy.y, a.x, a.y) - distSq(fromEnemy.x, fromEnemy.y, b.x, b.y))
+      .slice(0, 6);
+    if (targets.length === 0) return;
+    for (let i = 0; i < 6; i++) {
+      const tgt = targets[i % targets.length];
+      const a = angle(this.player.x, this.player.y, tgt.x, tgt.y) + rng(-0.3, 0.3);
+      this.spawnProjectile(new Projectile({
+        x: this.player.x, y: this.player.y,
+        vx: Math.cos(a) * ws.projSpeed,
+        vy: Math.sin(a) * ws.projSpeed,
+        damage: dmg,
+        size: 9, pierce: 1, bounce: 0, chain: 0,
+        type: 'bolt', color: '#ff44ff', lifetime: 2.5,
+      }));
+    }
+    this.particles.floatText(this.player.x, this.player.y - 35, '✦ ARCANE SURGE', '#ff44ff', 14);
+  }
+
   // ---- Draw ----
   draw() {
     const ctx = this.ctx;
@@ -772,6 +1037,25 @@ class Game {
     const cx = this.camera.x, cy = this.camera.y;
 
     Sprites.drawBackground(ctx, cx, cy, w, h);
+
+    // Sigils
+    for (const sig of this._sigils) {
+      const fade = 1 - sig.age / sig.duration;
+      ctx.save();
+      ctx.globalAlpha = 0.25 * fade;
+      ctx.strokeStyle = '#ff44cc';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(sig.x - cx, sig.y - cy, sig.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.12 * fade;
+      ctx.fillStyle = '#ff44cc';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
 
     // XP orbs
     for (const orb of this.xpOrbs) orb.draw(ctx, orb.x - cx, orb.y - cy);

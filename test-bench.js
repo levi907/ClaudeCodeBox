@@ -25,9 +25,10 @@ function makePlayer(relicName, legMod) {
   return {
     hp: 100, maxHp: 100, armor: 0,
     damageMultiplier: 1.0, speedMultiplier: 1.0,
-    critChance: 0, lifesteal: 0, cooldownReduction: 0,
+    critChance: 0.10, lifesteal: 0, cooldownReduction: 0,
     kills: 0, isDead: false,
     invincibleTime: 0,
+    xpRangeBonus: 0, _xpMult: 1.0,
 
     // relic flags
     _hpRegen: 0,
@@ -50,7 +51,20 @@ function makePlayer(relicName, legMod) {
     // gem flags
     _meteorGem: false,
     _thunderAegis: false,
-    _meteorInterval: 9,
+    // New legendary mod gem flags
+    _soulBurstGem: false,
+    _shockwaveGem: false,
+    _combustionGem: false,
+    _bloodFrenzyGem: false,
+    _stormCallGem: false,
+    _timeStopGem: false,
+    _gravitonGem: false,
+    _sigilGem: false,
+    _warpBoltGem: false,
+    _arcaneSurgeGem: false,
+    _bloodFrenzyStacks: 0,
+    _bloodFrenzyTimer: 0,
+    _arcaneKillCount: 0,
 
     relicName, legMod,
   };
@@ -79,27 +93,52 @@ const RELICS = {
 
 // ---- Apply a legendary gem mod to wand stats ----
 const LEG_MODS = {
-  none:            s => {},
-  spiral:          s => { s.projLifetime = 9; },   // longer range
-  explosive:       s => { s.explosive = true; s.explosionRadius = 60; },
-  virulent_poison: s => { s.virulentPoison = true; },
-  thunder_aegis:   s => { s.thunderAegis = true; },
-  chain_lightning: s => { s.chainLightning = true; },
-  meteor:          s => { s.meteor = true; },
-  reaper:          s => { s.reaper = true; },
+  none:            (s, p) => {},
+  spiral:          (s, p) => { s.projLifetime = 9; },
+  explosive:       (s, p) => { s.explosive = true; s.explosionRadius = 60; },
+  virulent_poison: (s, p) => { s.virulentPoison = true; },
+  thunder_aegis:   (s, p) => { s.thunderAegis = true; },
+  chain_lightning: (s, p) => { s.chainLightning = true; },
+  meteor:          (s, p) => { s.meteorGem = true; },
+  reaper:          (s, p) => { s.reaper = true; },
+  // New legendary mods
+  life_leech:      (s, p) => { s.lifeLeech = true; },
+  bounty:          (s, p) => { p._xpMult = 1.7; },  // +70% XP — shows as faster levels
+  phase_shot:      (s, p) => { s.pierce = 999; },
+  double_tap:      (s, p) => { s.doubleTap = true; },
+  overload:        (s, p) => { s.overload = true; },
+  frost_nova:      (s, p) => { s.frostNova = true; },
+  curse:           (s, p) => { s.curse = true; },
+  decay:           (s, p) => { s.decay = true; },
+  soul_burst:      (s, p) => { p._soulBurstGem = true; },
+  shockwave:       (s, p) => { p._shockwaveGem = true; },
+  combustion:      (s, p) => { p._combustionGem = true; s.virulentPoison = true; }, // needs poison to explode
+  blood_frenzy:    (s, p) => { p._bloodFrenzyGem = true; },
+  storm_call:      (s, p) => { p._stormCallGem = true; },
+  time_stop:       (s, p) => { p._timeStopGem = true; },
+  graviton:        (s, p) => { p._gravitonGem = true; },
+  arcane_surge:    (s, p) => { p._arcaneSurgeGem = true; },
+  unstable_core:   (s, p) => { s.unstableCore = true; },
+  mirror_shot:     (s, p) => { s.mirrorShot = true; },
+  sigil:           (s, p) => { p._sigilGem = true; },
+  warp_bolt:       (s, p) => { p._warpBoltGem = true; },
+  void_pull:       (s, p) => { p.xpRangeBonus = 400; }, // pickup range — modest kill benefit
 };
 
 // ---- Wand stats (base + optional legendary mod) ----
-function makeWandStats(legMod, cdr = 0) {
+function makeWandStats(legMod, cdr = 0, player = null) {
   const s = {
     damage: 15, cooldown: 1.0, projectiles: 1,
     pierce: 0, bounce: 0, chain: 0,
     projSpeed: 360, projLifetime: 2.5,
     explosive: false, explosionRadius: 60,
     virulentPoison: false, thunderAegis: false,
-    chainLightning: false, meteor: false, reaper: false,
+    chainLightning: false, meteorGem: false, reaper: false,
+    lifeLeech: false, doubleTap: false, overload: false,
+    frostNova: false, curse: false, decay: false,
+    unstableCore: false, mirrorShot: false,
   };
-  if (legMod && LEG_MODS[legMod]) LEG_MODS[legMod](s);
+  if (legMod && LEG_MODS[legMod]) LEG_MODS[legMod](s, player || {});
   s.effectiveCd = s.cooldown * (1 - Math.min(0.8, cdr));
   return s;
 }
@@ -110,7 +149,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
   const p = makePlayer(relicName, legMod);
   RELICS[relicName](p);
 
-  const ws = makeWandStats(legMod, p.cooldownReduction);
+  const ws = makeWandStats(legMod, p.cooldownReduction, p);
 
   // Enemy pool — rolling respawn from wave timer
   let enemies = [];
@@ -124,6 +163,12 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
   let meteorTimer = 0;
   let wardTimer = 999;
   let shotCount = 0;
+  let stormTimer = 0;
+  let timeStopTimer = 0;
+  let gravitonTimer = 0;
+  let sigilTimer = 0;
+  let sigilList = [];
+  let warpBoltTimer = 0;
 
   const totalDamage = { dealt: 0 };
   const damageReceived = { total: 0 };
@@ -168,6 +213,50 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
         if (n.hp <= 0) { n._chainKill = true; n.isDead = true; onEnemyDead(n); }
       }
     }
+
+    // Soul Burst: fire 3 bolts at nearby enemies (simulate as 3 hits)
+    if (p._soulBurstGem) {
+      const alive = enemies.filter(e2 => !e2.isDead);
+      const boltDmg = Math.round(ws.damage * p.damageMultiplier * 0.8);
+      for (let i = 0; i < Math.min(3, alive.length); i++) {
+        const actual = Math.max(1, boltDmg - alive[i].armor);
+        alive[i].hp -= actual;
+        totalDamage.dealt += actual;
+        if (alive[i].hp <= 0) { alive[i].isDead = true; onEnemyDead(alive[i]); }
+      }
+    }
+
+    // Combustion: poisoned enemies explode (no cascade)
+    if (p._combustionGem && e.poisoned > 0 && !e._combustionKill) {
+      const combDmg = Math.round(e.maxHp * 0.6);
+      const nearby = enemies.filter(n => !n.isDead && dist(n.x, n.y, e.x, e.y) < 120);
+      for (const n of nearby) {
+        const ca = Math.max(1, combDmg - n.armor);
+        n.hp -= ca; totalDamage.dealt += ca;
+        if (n.hp <= 0) { n._combustionKill = true; n.isDead = true; onEnemyDead(n); }
+      }
+    }
+
+    // Blood Frenzy: +10% dmg per kill for 3s (max 5 stacks)
+    if (p._bloodFrenzyGem) {
+      p._bloodFrenzyStacks = Math.min(5, p._bloodFrenzyStacks + 1);
+      p._bloodFrenzyTimer = 3;
+    }
+
+    // Arcane Surge: every 10 kills fire 6 bolts
+    if (p._arcaneSurgeGem) {
+      p._arcaneKillCount++;
+      if (p._arcaneKillCount % 10 === 0) {
+        const alive = enemies.filter(e2 => !e2.isDead);
+        const surgeDmg = Math.round(ws.damage * p.damageMultiplier * 1.5);
+        for (let i = 0; i < Math.min(6, alive.length); i++) {
+          const actual = Math.max(1, surgeDmg - alive[i].armor);
+          alive[i].hp -= actual;
+          totalDamage.dealt += actual;
+          if (alive[i].hp <= 0) { alive[i].isDead = true; onEnemyDead(alive[i]); }
+        }
+      }
+    }
   }
 
   function fireShot() {
@@ -178,16 +267,49 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
 
     let berserkerMult = 1.0;
     if (p._berserkerMaxMult) berserkerMult = 1 + p._berserkerMaxMult * (1 - p.hp / p.maxHp);
+    const bloodFrenzyMult = p._bloodFrenzyMult || 1.0;
 
-    const totalMult = p.damageMultiplier * berserkerMult;
+    const totalMult = p.damageMultiplier * berserkerMult * bloodFrenzyMult;
     const projCount = ws.projectiles + (p._voidPrismChance ? 1 : 0);
 
     function hitEnemy(e, dmgMult = 1) {
       if (e.isDead) return;
-      let dmg = Math.round(ws.damage * totalMult * dmgMult);
-      const actual = Math.max(1, dmg - e.armor);
+      let finalMult = dmgMult;
+      // Unstable Core: 8% chance 8× damage
+      if (ws.unstableCore && Math.random() < 0.08) finalMult *= 8;
+      let dmg = Math.round(ws.damage * totalMult * finalMult);
+      const isCrit = Math.random() < p.critChance;
+      if (isCrit) dmg *= 2;
+      // Curse: +25% if cursed
+      const curseMult = e.cursed > 0 ? 1.25 : 1;
+      const actual = Math.max(1, Math.round(dmg * curseMult) - e.armor);
       e.hp -= actual;
       totalDamage.dealt += actual;
+
+      // Life Leech
+      if (ws.lifeLeech) p.hp = Math.min(p.maxHp, p.hp + actual * 0.12);
+
+      // Overload: crit hits AoE
+      if (ws.overload && isCrit) {
+        const oaDmg = Math.round(ws.damage * totalMult * 0.5);
+        for (const t of alive.filter(t => !t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 55)) {
+          const oa = Math.max(1, oaDmg - t.armor);
+          t.hp -= oa; totalDamage.dealt += oa;
+          if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
+        }
+      }
+
+      // Frost Nova: 20% chance freeze nearby
+      if (ws.frostNova && Math.random() < 0.20) {
+        for (const t of alive.filter(t => !t.isDead && dist(t.x, t.y, e.x, e.y) < 150)) t.frozen = Math.max(t.frozen || 0, 2);
+      }
+
+      // Curse mod: apply curse status
+      if (ws.curse) e.cursed = Math.max(e.cursed || 0, 5);
+
+      // Decay mod: apply decay
+      if (ws.decay) e.decaying = Math.max(e.decaying || 0, 6);
+
       if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); return; }
 
       // Reaper (gem)
@@ -217,7 +339,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
         }
       }
 
-      // Poison
+      // Poison (virulent)
       if (ws.virulentPoison && !e.virulentlyPoisoned) { e.virulentlyPoisoned = true; e.poisoned = 6; }
 
       // Lifesteal
@@ -228,6 +350,14 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       hitEnemy(alive[i % alive.length]);
       if (p._phantomStrikeChance && Math.random() < p._phantomStrikeChance) {
         hitEnemy(alive[i % alive.length], 3);
+      }
+      // Double Tap: second shot at 85% damage
+      if (ws.doubleTap && i < alive.length) {
+        hitEnemy(alive[i % alive.length], 0.85);
+      }
+      // Mirror Shot: 25% chance fire 3 spread copies at 70%
+      if (ws.mirrorShot && Math.random() < 0.25) {
+        for (let m = 0; m < 3; m++) hitEnemy(alive[i % alive.length], 0.7);
       }
     }
 
@@ -281,8 +411,11 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
 
     // Update enemy DoTs
     for (const e of enemies) {
+      if (e.frozen > 0) e.frozen -= dt;
       if (e.poisoned > 0) { e.poisoned -= dt; e.hp -= 3 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
       if (e.bleed > 0) { e.bleed -= dt; e.hp -= 5 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
+      if (e.cursed > 0) e.cursed -= dt;
+      if (e.decaying > 0) { e.decaying -= dt; e.hp -= e.maxHp * 0.03 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
     }
     enemies = enemies.filter(e => !e.isDead);
 
@@ -316,6 +449,87 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       fireShot();
     }
 
+    // Blood Frenzy decay
+    if (p._bloodFrenzyStacks > 0) {
+      p._bloodFrenzyTimer -= dt;
+      if (p._bloodFrenzyTimer <= 0) { p._bloodFrenzyStacks = 0; p._bloodFrenzyTimer = 0; }
+    }
+    // Blood frenzy multiplier applied to damageMultiplier dynamically
+    p._bloodFrenzyMult = 1 + 0.1 * p._bloodFrenzyStacks;
+
+    // Storm Call: lightning strikes 5 enemies every 9s
+    if (p._stormCallGem) {
+      stormTimer += dt;
+      if (stormTimer >= 9) {
+        stormTimer = 0;
+        const stormDmg = Math.round(ws.damage * p.damageMultiplier * 6);
+        const stormTargets = [...enemies].filter(e=>!e.isDead).sort(()=>Math.random()-0.5).slice(0,5);
+        for (const t of stormTargets) {
+          const sa = Math.max(1, stormDmg - t.armor);
+          t.hp -= sa; totalDamage.dealt += sa;
+          if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
+        }
+      }
+    }
+
+    // Time Stop: freeze all enemies every 15s
+    if (p._timeStopGem) {
+      timeStopTimer += dt;
+      if (timeStopTimer >= 15) {
+        timeStopTimer = 0;
+        for (const e of enemies) e.frozen = Math.max(e.frozen || 0, 1.5);
+      }
+    }
+
+    // Graviton: pull all enemies toward center every 16s
+    if (p._gravitonGem) {
+      gravitonTimer += dt;
+      if (gravitonTimer >= 16) {
+        gravitonTimer = 0;
+        for (const e of enemies) {
+          e.x *= 0.6; e.y *= 0.6; // pull 40% closer
+        }
+      }
+    }
+
+    // Sigil: place damage zone every 18s
+    if (p._sigilGem) {
+      sigilTimer += dt;
+      if (sigilTimer >= 18) {
+        sigilTimer = 0;
+        sigilList.push({ age: 0, duration: 7 });
+      }
+      for (let si = sigilList.length - 1; si >= 0; si--) {
+        sigilList[si].age += dt;
+        if (sigilList[si].age >= sigilList[si].duration) { sigilList.splice(si, 1); continue; }
+        // Damage enemies in 140px radius. In real gameplay enemies cluster around player.
+        // Simulate by hitting enemies within 200px of origin.
+        for (const e of enemies) {
+          if (!e.isDead && dist(e.x, e.y, 0, 0) < 200) {
+            e.hp -= 15 * dt;
+            totalDamage.dealt += 25 * dt;
+            if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
+          }
+        }
+      }
+    }
+
+    // Warp Bolt: fire massive bolt every 10s
+    if (p._warpBoltGem) {
+      warpBoltTimer += dt;
+      if (warpBoltTimer >= 10) {
+        warpBoltTimer = 0;
+        const wbDmg = Math.round(ws.damage * p.damageMultiplier * 5);
+        const wbTargets = [...enemies].filter(e=>!e.isDead)
+          .sort((a,b)=>dist(a.x,a.y,0,0)-dist(b.x,b.y,0,0)).slice(0, 4);
+        for (const t of wbTargets) {
+          const wa = Math.max(1, wbDmg - t.armor);
+          t.hp -= wa; totalDamage.dealt += wa;
+          if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
+        }
+      }
+    }
+
     // Cataclysm Clock nuke
     if (p._nukeInterval) {
       nukeTimer += dt;
@@ -339,15 +553,15 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       }
     }
 
-    // Meteor gem
-    if (p._meteorGem) {
+    // Meteor gem (1 meteor, 6× dmg, 80px radius)
+    if (ws.meteorGem) {
       meteorTimer += dt;
       if (meteorTimer >= 9) {
         meteorTimer = 0;
-        const dmg = ws.damage * 12;
-        const targets = [...enemies].filter(e=>!e.isDead).sort(()=>Math.random()-0.5).slice(0,3);
+        const dmg = Math.round(ws.damage * p.damageMultiplier * 6);
+        const targets = [...enemies].filter(e=>!e.isDead).sort(()=>Math.random()-0.5).slice(0,1);
         for (const t of targets) {
-          const nearby = enemies.filter(n=>!n.isDead && dist(n.x,n.y,t.x,t.y)<110);
+          const nearby = enemies.filter(n=>!n.isDead && dist(n.x,n.y,t.x,t.y)<80);
           for (const n of nearby) { n.hp -= Math.max(1,dmg-n.armor); if(n.hp<=0){n.isDead=true;onEnemyDead(n);} }
         }
       }
