@@ -368,24 +368,7 @@ class Game {
       }
     }
 
-    // Enemy-enemy separation (bumping) — skip when too many enemies to avoid O(n²) cost
-    if (this.enemies.length <= 120) {
-      for (let i = 0; i < this.enemies.length; i++) {
-        for (let j = i + 1; j < this.enemies.length; j++) {
-          const a = this.enemies[i], b = this.enemies[j];
-          const minD = a.size + b.size;
-          const dx = b.x - a.x, dy = b.y - a.y;
-          const dSq = dx * dx + dy * dy;
-          if (dSq < minD * minD && dSq > 0.0001) {
-            const d = Math.sqrt(dSq);
-            const push = (minD - d) * 0.5;
-            const nx = dx / d, ny = dy / d;
-            a.x -= nx * push; a.y -= ny * push;
-            b.x += nx * push; b.y += ny * push;
-          }
-        }
-      }
-    }
+    // Enemy-enemy separation disabled (was causing O(n²) lag)
     // Enemy-player bumping (push enemy away, nudge player)
     for (const e of this.enemies) {
       const minD = e.size + this.player.size * 0.7;
