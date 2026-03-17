@@ -143,7 +143,7 @@ const ENEMY_DEFS = {
   },
   boss: {
     name: 'BOSS',
-    hp: 1200, speed: 40, damage: 40, armor: 5,
+    hp: 2000, speed: 40, damage: 40, armor: 5,
     xpDrop: [80, 120],
     size: 40,
     score: 20,

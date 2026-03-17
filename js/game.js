@@ -743,7 +743,7 @@ class Game {
     this._spawnTimer += dt;
     this._spawnInterval = Math.max(
       CONFIG.ENEMY_SPAWN_INTERVAL_MIN,
-      CONFIG.ENEMY_SPAWN_INTERVAL_START - this.time * 0.01
+      CONFIG.ENEMY_SPAWN_INTERVAL_START - this.time * CONFIG.ENEMY_SPAWN_RAMP_RATE
     );
     if (this._spawnTimer >= this._spawnInterval) {
       this._spawnTimer = 0;
@@ -763,34 +763,29 @@ class Game {
     const MAX_ENEMIES = 150;
     if (this.enemies.length >= MAX_ENEMIES) return;
     const minutes = this.time / 60;
-    const count = Math.min(1 + Math.floor(minutes * 0.5), 6);
+    const count = Math.min(1 + Math.floor(minutes * CONFIG.ENEMY_WAVE_GROWTH), CONFIG.ENEMY_MAX_WAVE);
+    const diff = getDifficultyMult(this.time);
     for (let i = 0; i < count; i++) {
       if (this.enemies.length >= MAX_ENEMIES) break;
       const type = this._pickEnemyType(minutes);
       const { x, y } = this._spawnPosition();
-      const diff = 1 + minutes * CONFIG.DIFFICULTY_RAMP;
       this.enemies.push(new Enemy(x, y, type, diff));
     }
   }
 
   _pickEnemyType(minutes) {
-    const roll = Math.random();
-    if (minutes < 1) return 'zombie';
-    if (minutes < 2) return roll < 0.6 ? 'zombie' : 'bat';
-    if (minutes < 4) {
-      if (roll < 0.4) return 'zombie';
-      if (roll < 0.7) return 'bat';
-      return 'golem';
-    }
-    if (roll < 0.3) return 'zombie';
-    if (roll < 0.5) return 'bat';
-    if (roll < 0.7) return 'golem';
-    return 'wraith';
+    const r = Math.random();
+    if (minutes < 1)  return 'zombie';
+    if (minutes < 2)  return r < 0.55 ? 'zombie' : 'bat';
+    if (minutes < 3)  return r < 0.30 ? 'zombie' : r < 0.60 ? 'bat'  : 'golem';
+    if (minutes < 4)  return r < 0.15 ? 'zombie' : r < 0.35 ? 'bat'  : r < 0.65 ? 'golem' : 'wraith';
+    if (minutes < 5)  return r < 0.10 ? 'zombie' : r < 0.25 ? 'bat'  : r < 0.60 ? 'golem' : 'wraith';
+    return r < 0.05 ? 'zombie' : r < 0.20 ? 'bat' : r < 0.55 ? 'golem' : 'wraith';
   }
 
   _spawnBoss() {
     const { x, y } = this._spawnPosition();
-    const diff = 1 + (this.time / 60) * CONFIG.DIFFICULTY_RAMP * 2;
+    const diff = getDifficultyMult(this.time, true);
     const boss = new Enemy(x, y, 'boss', diff);
     this.enemies.push(boss);
     this.particles.floatText(this.player.x, this.player.y - 40, '⚠ BOSS APPROACHING ⚠', '#ff3030', 18);

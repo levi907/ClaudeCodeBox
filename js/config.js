@@ -21,9 +21,18 @@ const CONFIG = {
 
   // Enemy
   ENEMY_SPAWN_MARGIN: 80,   // pixels beyond screen edge
-  ENEMY_SPAWN_INTERVAL_START: 1.2,  // seconds
-  ENEMY_SPAWN_INTERVAL_MIN: 0.3,
-  BOSS_SPAWN_MINUTES: [1.5, 3, 4.5, 6],
+  ENEMY_SPAWN_INTERVAL_START: 1.4,  // seconds (starts slower for gentle early game)
+  ENEMY_SPAWN_INTERVAL_MIN: 0.35,
+  ENEMY_SPAWN_RAMP_RATE: 0.009,     // seconds reduction per second elapsed
+  ENEMY_WAVE_GROWTH: 0.9,           // extra enemies per wave per minute elapsed
+  ENEMY_MAX_WAVE: 10,               // cap on enemies per wave
+  BOSS_SPAWN_MINUTES: [2, 3.5, 5],  // 3 bosses; game ends at 6 min
+
+  // Difficulty curve — piecewise multiplier: gentle → moderate → brutal
+  // mult = 1 + p1*min (0–2min), then +p2*(min-2) (2–4min), then +p3*(min-4) (4–6min)
+  DIFF_P1: 0.07,   // +7%/min early
+  DIFF_P2: 0.20,   // +20%/min mid
+  DIFF_P3: 0.45,   // +45%/min late
 
   // World
   TILE_SIZE: 64,
@@ -34,13 +43,22 @@ const CONFIG = {
   MAX_RELICS: 6,
   MAX_ITEM_LEVEL: 5,
 
-  // Difficulty
-  DIFFICULTY_RAMP: 0.12,   // enemy stat multiplier per minute
 };
 
 // ============================================================
 //  Utility Functions
 // ============================================================
+
+// Piecewise difficulty multiplier at a given elapsed time in seconds
+function getDifficultyMult(timeSec, bossMult = false) {
+  const m = timeSec / 60;
+  const p1 = CONFIG.DIFF_P1 * (bossMult ? 1.8 : 1);
+  const p2 = CONFIG.DIFF_P2 * (bossMult ? 1.8 : 1);
+  const p3 = CONFIG.DIFF_P3 * (bossMult ? 1.8 : 1);
+  if (m <= 2) return 1 + m * p1;
+  if (m <= 4) return (1 + 2*p1) + (m-2) * p2;
+  return (1 + 2*p1 + 2*p2) + (m-4) * p3;
+}
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
