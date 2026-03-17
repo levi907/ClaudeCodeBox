@@ -246,7 +246,7 @@ class Game {
         this._bloodFrenzyStacks = 0;
         this._bloodFrenzyTimer = 0;
       }
-      this.player._bloodFrenzyMult = 1 + 0.1 * this._bloodFrenzyStacks;
+      this.player._bloodFrenzyMult = 1 + 0.15 * this._bloodFrenzyStacks;
     } else {
       this.player._bloodFrenzyMult = 1.0;
     }
@@ -257,11 +257,17 @@ class Game {
       if (this._soulDrainTimer >= 1) {
         this._soulDrainTimer = 0;
         const drainDmg = 12;
+        let drainCount = 0;
         for (const e of this.enemies) {
           if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < this.player._soulDrain) {
             e.takeDamage(drainDmg);
             if (e.isDead) this.onEnemyDead(e);
+            drainCount++;
           }
+        }
+        if (drainCount > 0) {
+          this.particles.spark(this.player.x, this.player.y, '#40cc80', 6);
+          this.particles.floatText(this.player.x, this.player.y - 24, `🧛 DRAIN ×${drainCount}`, '#40cc80', 11);
         }
       }
     }
@@ -342,6 +348,7 @@ class Game {
             if (this.player._thunderAegis) this._thunderAegisStrike();
             if (this.player._thorns > 0) {
               e.takeDamage(this.player._thorns);
+              this.particles.spark(this.player.x, this.player.y, '#ff3300', 5);
               if (e.isDead) this.onEnemyDead(e);
             }
             // Cursed Mirror: reflect damage to nearby enemies
@@ -362,7 +369,7 @@ class Game {
     }
 
     // Enemy-enemy separation (bumping) — skip when too many enemies to avoid O(n²) cost
-    if (this.enemies.length <= 80) {
+    if (this.enemies.length <= 120) {
       for (let i = 0; i < this.enemies.length; i++) {
         for (let j = i + 1; j < this.enemies.length; j++) {
           const a = this.enemies[i], b = this.enemies[j];
@@ -413,6 +420,12 @@ class Game {
         if (d < p.size + e.size) {
           if (!p.hitEnemy(e)) continue;
 
+          // Curse: apply before damage so the applying hit benefits
+          if (p.curse) {
+            e.cursed = Math.max(e.cursed, 8.0);
+            this.particles.spark(e.x, e.y, '#cc44ff', 4);
+          }
+
           // Damage
           const isCrit = p.isCrit || (Math.random() < this.player.critChance);
           const dmg = isCrit ? p.damage * 2 : p.damage;
@@ -429,7 +442,7 @@ class Game {
           // Virulent poison application
           if (p.virulentPoison && !e.virulentlyPoisoned) {
             e.virulentlyPoisoned = true;
-            e.poisoned = 6.0;
+            e.poisoned = 10.0;
             this.particles.spark(e.x, e.y, '#80ff40', 5);
           }
 
@@ -448,11 +461,11 @@ class Game {
             this.player.heal(result.actual * 0.12);
           }
 
-          // Overload: crit hits explode in 55px AoE
+          // Overload: crit hits explode in 150px AoE
           if (p.overload && isCrit) {
-            const overloadDmg = Math.round(p.damage * 0.5);
+            const overloadDmg = Math.round(p.damage * 0.8);
             for (const t of this.enemies) {
-              if (!t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 55) {
+              if (!t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 150) {
                 const tr = t.takeDamage(overloadDmg);
                 this.particles.floatText(t.x, t.y - 10, `${tr.actual}`, '#ffcc00', 10);
                 if (t.isDead) this.onEnemyDead(t);
@@ -471,15 +484,9 @@ class Game {
             this.particles.spark(e.x, e.y, '#88ddff', 10);
           }
 
-          // Curse: target takes 25% more damage for 5s
-          if (p.curse) {
-            e.cursed = Math.max(e.cursed, 5.0);
-            this.particles.spark(e.x, e.y, '#cc44ff', 4);
-          }
-
-          // Decay: target loses 3% maxHp/s for 6s
+          // Decay: target loses 12% maxHp/s for 10s
           if (p.decay) {
-            e.decaying = Math.max(e.decaying, 6.0);
+            e.decaying = Math.max(e.decaying, 10.0); // 12% maxHp/s for 10s
             this.particles.spark(e.x, e.y, '#44cc44', 4);
           }
 
@@ -497,8 +504,8 @@ class Game {
             }
           }
 
-          // Reaper (gem): execute enemies below 20% HP
-          if (p.reaper && !e.isDead && e.hp < e.maxHp * 0.20) {
+          // Reaper (gem): execute enemies below 40% HP
+          if (p.reaper && !e.isDead && e.hp < e.maxHp * 0.40) {
             e.takeDamage(99999);
           }
 
@@ -709,11 +716,17 @@ class Game {
       }
     }
 
-    // Shockwave: push all enemies in 220px away on kill
+    // Shockwave: push all enemies in 280px away on kill AND deal 150% damage
     if (this.player._shockwaveGem) {
-      const shockTargets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 220);
-      for (const st of shockTargets) st.knockback(enemy.x, enemy.y, 500);
-      if (shockTargets.length > 0) this.particles.explode(enemy.x, enemy.y, '#aaddff', 10);
+      const ws = this.wand.computeStats();
+      const shockDmg = Math.round(ws.damage * this.player.damageMultiplier * 1.5);
+      const shockTargets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 280);
+      for (const st of shockTargets) {
+        st.knockback(enemy.x, enemy.y, 500);
+        st.takeDamage(shockDmg);
+        if (st.isDead) { st._shockwaveKill = true; this.onEnemyDead(st); }
+      }
+      if (shockTargets.length > 0) this.particles.explode(enemy.x, enemy.y, '#aaddff', 12);
     }
 
     // Combustion: poisoned enemies explode on death (no cascade)
@@ -728,16 +741,16 @@ class Game {
       this.particles.floatText(enemy.x, enemy.y - 20, '💥 COMBUSTION', '#80ff40', 13);
     }
 
-    // Blood Frenzy: +10% dmg per kill for 3s (max 5 stacks)
+    // Blood Frenzy: +15% dmg per kill for 5s (max 8 stacks)
     if (this.player._bloodFrenzyGem) {
-      this._bloodFrenzyStacks = Math.min(5, this._bloodFrenzyStacks + 1);
-      this._bloodFrenzyTimer = 3;
+      this._bloodFrenzyStacks = Math.min(8, this._bloodFrenzyStacks + 1);
+      this._bloodFrenzyTimer = 5;
     }
 
-    // Arcane Surge: every 10 kills fire 6 homing bolts
+    // Arcane Surge: every 5 kills fire 10 homing bolts
     if (this.player._arcaneSurgeGem) {
       this._arcaneKillCount++;
-      if (this._arcaneKillCount % 10 === 0) this._triggerArcaneSurge(enemy);
+      if (this._arcaneKillCount % 5 === 0) this._triggerArcaneSurge(enemy);
     }
 
     // Chain Death: enemies explode damaging nearby foes (no cascade — only first-order kills)
@@ -956,7 +969,7 @@ class Game {
     p._thunderAegis   = ws.thunderAegis;
     p._meteorGem      = ws.meteor;
     // Reaper as gem stacks with Reaper's Scythe relic
-    if (ws.reaper && !p._reaperThreshold) p._reaperThreshold = 0.20;
+    if (ws.reaper && !p._reaperThreshold) p._reaperThreshold = 0.40;
 
     // New legendary gem flags
     p._soulBurstGem   = ws.soulBurst;
@@ -1064,15 +1077,15 @@ class Game {
     this.particles.floatText(this.player.x, this.player.y - 30, '⚡ WARP BOLT', '#ff6600', 13);
   }
 
-  // Arcane Surge: fire 6 homing bolts from kill location
+  // Arcane Surge: fire 8 homing bolts from kill location
   _triggerArcaneSurge(fromEnemy) {
     const ws = this.wand.computeStats();
     const dmg = Math.round(ws.damage * this.player.damageMultiplier * 1.5);
     const targets = [...this.enemies].filter(e => !e.isDead)
       .sort((a, b) => distSq(fromEnemy.x, fromEnemy.y, a.x, a.y) - distSq(fromEnemy.x, fromEnemy.y, b.x, b.y))
-      .slice(0, 6);
+      .slice(0, 10);
     if (targets.length === 0) return;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 10; i++) {
       const tgt = targets[i % targets.length];
       const a = angle(this.player.x, this.player.y, tgt.x, tgt.y) + rng(-0.3, 0.3);
       this.spawnProjectile(new Projectile({
@@ -1166,6 +1179,7 @@ class Game {
 
     const boss = this.enemies.find(e => e.isBoss && !e.isDead);
     this.ui.drawBossBar(ctx, boss, w, h);
+    this.ui.drawAbilityCooldowns(ctx, this, w, h);
 
     this._drawVignette(ctx, w, h);
   }

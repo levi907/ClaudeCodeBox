@@ -770,6 +770,77 @@ class UI {
     winScreen.classList.remove('hidden');
   }
 
+  drawAbilityCooldowns(ctx, game, width, height) {
+    const p = game.player;
+    const abilities = [];
+
+    if (p._nukeInterval)  abilities.push({ icon: '💥', timer: game._nukeTimer,        max: p._nukeInterval,    color: '#ff4400', label: 'CATACLYSM' });
+    if (p._wardZap)       abilities.push({ icon: '⚡', timer: game._wardZapTimer,      max: p._wardDuration,    color: '#4488ff', label: 'WARD ZAP' });
+    if (p._mirrorPulse)   abilities.push({ icon: '🪞', timer: game._mirrorPulseTimer,  max: 6,                  color: '#ff44aa', label: 'MIRROR' });
+    if (p._meteorGem)     abilities.push({ icon: '☄',  timer: game._meteorTimer,       max: 9,                  color: '#ff8800', label: 'METEOR' });
+    if (p._stormCallGem)  abilities.push({ icon: '⛈',  timer: game._stormTimer,        max: 9,                  color: '#aaddff', label: 'STORM' });
+    if (p._timeStopGem)   abilities.push({ icon: '⏰', timer: game._timeStopTimer,     max: 15,                 color: '#88ccff', label: 'TIMESTOP' });
+    if (p._gravitonGem)   abilities.push({ icon: '🌌', timer: game._gravitonTimer,     max: 16,                 color: '#cc44ff', label: 'GRAVITON' });
+    if (p._sigilGem)      abilities.push({ icon: '✦',  timer: game._sigilTimer,        max: 18,                 color: '#ff44cc', label: 'SIGIL' });
+    if (p._warpBoltGem)   abilities.push({ icon: '🔥', timer: game._warpBoltTimer,     max: 10,                 color: '#ff6600', label: 'WARPBOLT' });
+
+    if (abilities.length === 0) return;
+
+    const sz = 40, pad = 6, startX = width - pad;
+    const baseY = height - (game.enemies.some(e => e.isBoss && !e.isDead) ? 80 : 22) - sz - pad;
+
+    for (let i = 0; i < abilities.length; i++) {
+      const ab = abilities[i];
+      const cx = startX - sz / 2 - i * (sz + pad);
+      const cy = baseY + sz / 2;
+      const pct = Math.min(1, ab.timer / ab.max);
+      const ready = pct >= 0.999;
+
+      ctx.save();
+      // Dark background
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = '#0a0a18';
+      ctx.beginPath(); ctx.arc(cx, cy, sz / 2, 0, Math.PI * 2); ctx.fill();
+
+      // Cooldown pie fill
+      ctx.globalAlpha = ready ? 0.9 : 0.45;
+      ctx.fillStyle = ab.color;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, sz / 2, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Border ring
+      ctx.globalAlpha = ready ? 1 : 0.6;
+      ctx.strokeStyle = ready ? ab.color : '#334455';
+      ctx.lineWidth = ready ? 2.5 : 1.5;
+      if (ready) { ctx.shadowColor = ab.color; ctx.shadowBlur = 10; }
+      ctx.beginPath(); ctx.arc(cx, cy, sz / 2, 0, Math.PI * 2); ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Icon
+      ctx.globalAlpha = 1;
+      ctx.font = `${Math.round(sz * 0.42)}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(ab.icon, cx, cy);
+
+      // Timer text / READY label
+      ctx.font = '9px "Courier New"';
+      ctx.textBaseline = 'top';
+      if (ready) {
+        ctx.fillStyle = ab.color;
+        ctx.shadowColor = ab.color; ctx.shadowBlur = 4;
+        ctx.fillText('READY', cx, cy + sz / 2 + 2);
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.fillStyle = '#99aacc';
+        ctx.fillText(`${(ab.max - ab.timer).toFixed(0)}s`, cx, cy + sz / 2 + 2);
+      }
+      ctx.restore();
+    }
+  }
+
   drawBossBar(ctx, boss, width, height) {
     if (!boss || boss.isDead) return;
     const barW = width * 0.6, barH = 16;

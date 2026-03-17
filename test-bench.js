@@ -112,10 +112,10 @@ const LEG_MODS = {
   bounty:          (s, p) => { p._xpMult = 1.7; },  // +70% XP — shows as faster levels
   phase_shot:      (s, p) => { s.pierce = 999; },
   double_tap:      (s, p) => { s.doubleTap = true; },
-  overload:        (s, p) => { s.overload = true; },
+  overload:        (s, p) => { s.overload = true; p.critChance = Math.max(p.critChance, 0.40); },
   frost_nova:      (s, p) => { s.frostNova = true; },
   curse:           (s, p) => { s.curse = true; },
-  decay:           (s, p) => { s.decay = true; },
+  decay:           (s, p) => { s.decay = true; s.decayDuration = 10; },
   soul_burst:      (s, p) => { p._soulBurstGem = true; },
   shockwave:       (s, p) => { p._shockwaveGem = true; },
   combustion:      (s, p) => { p._combustionGem = true; s.virulentPoison = true; }, // needs poison to explode
@@ -175,6 +175,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
   let sigilTimer = 0;
   let sigilList = [];
   let warpBoltTimer = 0;
+  let thunderAegisTimer = 0;
 
   const totalDamage = { dealt: 0 };
   const damageReceived = { total: 0 };
@@ -243,19 +244,31 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       }
     }
 
-    // Blood Frenzy: +10% dmg per kill for 3s (max 5 stacks)
-    if (p._bloodFrenzyGem) {
-      p._bloodFrenzyStacks = Math.min(5, p._bloodFrenzyStacks + 1);
-      p._bloodFrenzyTimer = 3;
+    // Shockwave: on kill, deal 150% base damage to 8 nearby enemies
+    if (p._shockwaveGem && !e._shockwaveKill) {
+      const shockDmg = Math.round(ws.damage * p.damageMultiplier * 1.5);
+      const shockTargets = [...enemies].filter(n => !n.isDead && n !== e)
+        .sort((a, b) => dist(a.x, a.y, e.x, e.y) - dist(b.x, b.y, e.x, e.y)).slice(0, 8);
+      for (const n of shockTargets) {
+        n.hp -= Math.max(1, shockDmg - n.armor);
+        totalDamage.dealt += Math.max(1, shockDmg - n.armor);
+        if (n.hp <= 0) { n._shockwaveKill = true; n.isDead = true; onEnemyDead(n); }
+      }
     }
 
-    // Arcane Surge: every 10 kills fire 6 bolts
+    // Blood Frenzy: +15% dmg per kill for 5s (max 8 stacks)
+    if (p._bloodFrenzyGem) {
+      p._bloodFrenzyStacks = Math.min(8, p._bloodFrenzyStacks + 1);
+      p._bloodFrenzyTimer = 5;
+    }
+
+    // Arcane Surge: every 5 kills fire 10 bolts
     if (p._arcaneSurgeGem) {
       p._arcaneKillCount++;
-      if (p._arcaneKillCount % 10 === 0) {
+      if (p._arcaneKillCount % 5 === 0) {
         const alive = enemies.filter(e2 => !e2.isDead);
         const surgeDmg = Math.round(ws.damage * p.damageMultiplier * 1.5);
-        for (let i = 0; i < Math.min(6, alive.length); i++) {
+        for (let i = 0; i < Math.min(10, alive.length); i++) {
           const actual = Math.max(1, surgeDmg - alive[i].armor);
           alive[i].hp -= actual;
           totalDamage.dealt += actual;
@@ -281,13 +294,14 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
     function hitEnemy(e, dmgMult = 1) {
       if (e.isDead) return;
       let finalMult = dmgMult;
-      // Unstable Core: 8% chance 8× damage
-      if (ws.unstableCore && Math.random() < 0.08) finalMult *= 8;
+      // Unstable Core: 18% chance 10× damage
+      if (ws.unstableCore && Math.random() < 0.18) finalMult *= 10;
       let dmg = Math.round(ws.damage * totalMult * finalMult);
       const isCrit = Math.random() < p.critChance;
       if (isCrit) dmg *= 2;
-      // Curse: +25% if cursed
-      const curseMult = e.cursed > 0 ? 1.25 : 1;
+      // Curse: apply first so the applying hit also benefits (+75% damage)
+      if (ws.curse) e.cursed = Math.max(e.cursed || 0, 8);
+      const curseMult = e.cursed > 0 ? 1.75 : 1;
       const actual = Math.max(1, Math.round(dmg * curseMult) - e.armor);
       e.hp -= actual;
       totalDamage.dealt += actual;
@@ -295,10 +309,12 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       // Life Leech
       if (ws.lifeLeech) p.hp = Math.min(p.maxHp, p.hp + actual * 0.12);
 
-      // Overload: crit hits AoE
+      // Overload: crit hits target 2 closest enemies for 60% AoE damage
       if (ws.overload && isCrit) {
-        const oaDmg = Math.round(ws.damage * totalMult * 0.5);
-        for (const t of alive.filter(t => !t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 55)) {
+        const oaDmg = Math.round(ws.damage * totalMult * 0.8);
+        const oaTargets = [...alive].filter(t => !t.isDead && t !== e)
+          .sort((a, b) => dist(a.x, a.y, e.x, e.y) - dist(b.x, b.y, e.x, e.y)).slice(0, 3);
+        for (const t of oaTargets) {
           const oa = Math.max(1, oaDmg - t.armor);
           t.hp -= oa; totalDamage.dealt += oa;
           if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
@@ -310,16 +326,13 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
         for (const t of alive.filter(t => !t.isDead && dist(t.x, t.y, e.x, e.y) < 150)) t.frozen = Math.max(t.frozen || 0, 2);
       }
 
-      // Curse mod: apply curse status
-      if (ws.curse) e.cursed = Math.max(e.cursed || 0, 5);
-
-      // Decay mod: apply decay
-      if (ws.decay) e.decaying = Math.max(e.decaying || 0, 6);
+      // Decay mod: apply decay (10s at 12% maxHp/s)
+      if (ws.decay) e.decaying = Math.max(e.decaying || 0, ws.decayDuration || 10);
 
       if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); return; }
 
-      // Reaper (gem)
-      if (ws.reaper && e.hp < e.maxHp * 0.20) {
+      // Reaper (gem): execute at 40% HP
+      if (ws.reaper && e.hp < e.maxHp * 0.40) {
         e.isDead = true; onEnemyDead(e); return;
       }
 
@@ -348,8 +361,8 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       // Blood Pact: shots apply bleed
       if (p._bloodPactBleed) e.bleed = Math.max(e.bleed || 0, 3);
 
-      // Poison (virulent)
-      if (ws.virulentPoison && !e.virulentlyPoisoned) { e.virulentlyPoisoned = true; e.poisoned = 6; }
+      // Poison (virulent): 10s duration at 12 dmg/s
+      if (ws.virulentPoison && !e.virulentlyPoisoned) { e.virulentlyPoisoned = true; e.poisoned = 10; }
 
       // Lifesteal
       if (p.lifesteal > 0) p.hp = Math.min(p.maxHp, p.hp + actual * p.lifesteal);
@@ -364,8 +377,8 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       if (ws.doubleTap && i < alive.length) {
         hitEnemy(alive[i % alive.length], 0.85);
       }
-      // Mirror Shot: 25% chance fire 3 spread copies at 70%
-      if (ws.mirrorShot && Math.random() < 0.25) {
+      // Mirror Shot: 40% chance fire 3 spread copies at 70%
+      if (ws.mirrorShot && Math.random() < 0.40) {
         for (let m = 0; m < 3; m++) hitEnemy(alive[i % alive.length], 0.7);
       }
     }
@@ -421,10 +434,10 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
     // Update enemy DoTs
     for (const e of enemies) {
       if (e.frozen > 0) e.frozen -= dt;
-      if (e.poisoned > 0) { e.poisoned -= dt; e.hp -= 3 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
+      if (e.poisoned > 0) { e.poisoned -= dt; e.hp -= (e.virulentlyPoisoned ? 12 : 3) * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
       if (e.bleed > 0) { e.bleed -= dt; e.hp -= 5 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
       if (e.cursed > 0) e.cursed -= dt;
-      if (e.decaying > 0) { e.decaying -= dt; e.hp -= e.maxHp * 0.03 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
+      if (e.decaying > 0) { e.decaying -= dt; e.hp -= e.maxHp * 0.12 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
     }
     enemies = enemies.filter(e => !e.isDead);
 
@@ -464,7 +477,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       if (p._bloodFrenzyTimer <= 0) { p._bloodFrenzyStacks = 0; p._bloodFrenzyTimer = 0; }
     }
     // Blood frenzy multiplier applied to damageMultiplier dynamically
-    p._bloodFrenzyMult = 1 + 0.1 * p._bloodFrenzyStacks;
+    p._bloodFrenzyMult = 1 + 0.15 * p._bloodFrenzyStacks;
 
     // Storm Call: lightning strikes 5 enemies every 9s
     if (p._stormCallGem) {
@@ -511,14 +524,13 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       for (let si = sigilList.length - 1; si >= 0; si--) {
         sigilList[si].age += dt;
         if (sigilList[si].age >= sigilList[si].duration) { sigilList.splice(si, 1); continue; }
-        // Damage enemies in 140px radius. In real gameplay enemies cluster around player.
-        // Simulate by hitting enemies within 200px of origin.
-        for (const e of enemies) {
-          if (!e.isDead && dist(e.x, e.y, 0, 0) < 200) {
-            e.hp -= 15 * dt;
-            totalDamage.dealt += 25 * dt;
-            if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
-          }
+        // Damage 8 closest enemies (models enemies clustering around player in real gameplay)
+        const sigilTargets = [...enemies].filter(e=>!e.isDead)
+          .sort((a,b)=>dist(a.x,a.y,0,0)-dist(b.x,b.y,0,0)).slice(0, 8);
+        for (const e of sigilTargets) {
+          e.hp -= 15 * dt;
+          totalDamage.dealt += 15 * dt;
+          if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
         }
       }
     }
@@ -625,6 +637,22 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       for (const e of enemies) {
         if (!e.isDead && e.hp > 0 && e.hp < e.maxHp * p._reaperThreshold) {
           e.isDead = true; onEnemyDead(e);
+        }
+      }
+    }
+
+    // Thunder Aegis: periodic burst every 8s to 8 nearest enemies for 1.5× damage
+    if (ws.thunderAegis) {
+      thunderAegisTimer += dt;
+      if (thunderAegisTimer >= 8) {
+        thunderAegisTimer = 0;
+        const taDmg = Math.round(ws.damage * p.damageMultiplier * 1.5);
+        const taTargets = [...enemies].filter(e=>!e.isDead)
+          .sort((a,b)=>dist(a.x,a.y,0,0)-dist(b.x,b.y,0,0)).slice(0, 8);
+        for (const t of taTargets) {
+          const ta = Math.max(1, taDmg - t.armor);
+          t.hp -= ta; totalDamage.dealt += ta;
+          if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
         }
       }
     }
