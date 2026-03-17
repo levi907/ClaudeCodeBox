@@ -18,7 +18,7 @@ const Sprites = {
   },
 
   // ======================================================
-  //  PLAYER — Grey-Cloaked Dungeon Wizard
+  //  PLAYER — Original purple-robed wizard
   // ======================================================
   player(ctx, x, y, facing, animFrame, flashTime) {
     ctx.save();
@@ -26,170 +26,93 @@ const Sprites = {
     if (facing < 0) ctx.scale(-1, 1);
 
     const bob = Math.sin(animFrame * 0.15) * 1.5;
-    const fl = flashTime > 0;
 
-    // Ground shadow
+    // Shadow
     ctx.beginPath();
-    ctx.ellipse(0, 15 + bob, 11, 4, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.ellipse(0, 11 + bob, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fill();
 
-    // Cloak hem — flowing grey lower section
+    // Cape / robe
     ctx.beginPath();
-    ctx.moveTo(-11, 2 + bob);
-    ctx.bezierCurveTo(-14, 9 + bob, -11, 15 + bob, -5, 16 + bob);
-    ctx.lineTo(5, 16 + bob);
-    ctx.bezierCurveTo(11, 15 + bob, 14, 9 + bob, 11, 2 + bob);
+    ctx.moveTo(-10, -2 + bob);
+    ctx.quadraticCurveTo(-12, 8 + bob, -8, 13 + bob);
+    ctx.lineTo(8, 13 + bob);
+    ctx.quadraticCurveTo(12, 8 + bob, 10, -2 + bob);
     ctx.closePath();
-    ctx.fillStyle = fl ? '#ffffff' : '#282820';
+    ctx.fillStyle = flashTime > 0 ? '#ffffff' : '#3a00a0';
     ctx.fill();
-
-    // Cloak body — mid grey worn wool
-    ctx.beginPath();
-    ctx.ellipse(0, 2 + bob, 9, 11, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#484840';
-    ctx.fill();
-
-    if (!fl) {
-      // Cloak edge trim — slightly lighter grey, worn seam
-      ctx.strokeStyle = '#6a6860';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(-11, 2 + bob);
-      ctx.bezierCurveTo(-14, 9 + bob, -11, 15 + bob, -5, 16 + bob);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(11, 2 + bob);
-      ctx.bezierCurveTo(14, 9 + bob, 11, 15 + bob, 5, 16 + bob);
-      ctx.stroke();
-
-      // Chest rune — faint carved marking, mossy green
-      ctx.strokeStyle = 'rgba(100,140,70,0.45)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(-3, 0 + bob); ctx.lineTo(3, 0 + bob);
-      ctx.moveTo(0, -3 + bob); ctx.lineTo(0, 4 + bob);
-      ctx.moveTo(-2, -1.5 + bob); ctx.lineTo(2, 2.5 + bob);
-      ctx.stroke();
-
-      // Leather belt — earth brown
-      ctx.strokeStyle = '#6a3e14';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-9, 7 + bob); ctx.lineTo(9, 7 + bob);
-      ctx.stroke();
-      // Belt buckle — torch amber
-      ctx.fillStyle = '#c07020';
-      ctx.fillRect(-2, 5.5 + bob, 4, 3);
-    }
-
-    // Head — weathered skin
-    ctx.beginPath();
-    ctx.ellipse(0, -9 + bob, 7, 7.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#e8b878';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#b07848';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-
-    // Eyes — magical glow beneath the grey hood
-    if (!fl) {
-      ctx.fillStyle = '#e8dcc0';
-      ctx.beginPath();
-      ctx.ellipse(2.5, -9.5 + bob, 2.2, 2.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#9040e0';
-      ctx.shadowColor = '#c060ff';
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.ellipse(2.8, -9.8 + bob, 1.3, 1.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-
-    // Hat brim — dark charcoal grey
-    ctx.beginPath();
-    ctx.ellipse(0, -14 + bob, 10, 3.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#1e1e18';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#3a3830';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    // Hat cone — charcoal, slightly warmer than the brim
-    ctx.beginPath();
-    ctx.moveTo(-9, -14 + bob);
-    ctx.lineTo(2, -28 + bob);
-    ctx.lineTo(9, -14 + bob);
-    ctx.closePath();
-    ctx.fillStyle = fl ? '#ffffff' : '#242418';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#3a3830';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    // Hat band — torch amber leather strap
-    if (!fl) {
-      ctx.strokeStyle = '#8a5018';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-8.5, -17 + bob);
-      ctx.quadraticCurveTo(0, -19.5 + bob, 8.5, -17 + bob);
-      ctx.stroke();
-      // Rune pin on hat — torch amber star
-      ctx.fillStyle = '#e09030';
-      ctx.shadowColor = '#c07020';
-      ctx.shadowBlur = 5;
-      ctx.font = '7px serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('★', 0, -22 + bob);
-      ctx.shadowBlur = 0;
-    }
-
-    // Staff — dark aged wood
-    const staffBob = bob * 0.5;
-    ctx.strokeStyle = fl ? '#ffffff' : '#3a2008';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(10, -3 + staffBob);
-    ctx.lineTo(14, 14 + staffBob);
+    ctx.strokeStyle = flashTime > 0 ? '#ffffff' : '#6a30f0';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Staff crystal orb — arcane purple
-    if (!fl) {
-      ctx.fillStyle = '#c070ff';
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(0, 1 + bob, 8, 10, 0, 0, Math.PI * 2);
+    ctx.fillStyle = flashTime > 0 ? '#ffffff' : '#4a00c0';
+    ctx.fill();
+
+    // Head
+    ctx.beginPath();
+    ctx.ellipse(0, -8 + bob, 7, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = flashTime > 0 ? '#ffffff' : '#f5c8a0';
+    ctx.fill();
+    ctx.strokeStyle = flashTime > 0 ? '#ffffff' : '#c8905a';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Eyes
+    if (flashTime <= 0) {
+      ctx.fillStyle = '#200060';
       ctx.beginPath();
-      ctx.moveTo(10, -8 + staffBob);
-      ctx.lineTo(14, -5 + staffBob);
-      ctx.lineTo(13, 0 + staffBob);
-      ctx.lineTo(8, -2 + staffBob);
-      ctx.closePath();
+      ctx.ellipse(2.5, -8.5 + bob, 1.5, 2, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowColor = '#a030ff';
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(180,60,255,0.55)';
+      ctx.fillStyle = '#c050ff';
       ctx.beginPath();
-      ctx.ellipse(11, -5 + staffBob, 4.5, 5, -0.3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(9.5, -7 + staffBob, 1.5, 2, -0.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.beginPath();
-      ctx.arc(11, -5 + staffBob, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
+      ctx.ellipse(2.5, -9 + bob, 0.7, 0.7, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Hat
+    ctx.beginPath();
+    ctx.moveTo(-8, -12 + bob);
+    ctx.lineTo(8, -12 + bob);
+    ctx.lineTo(3, -24 + bob);
+    ctx.lineTo(-3, -24 + bob);
+    ctx.closePath();
+    ctx.fillStyle = flashTime > 0 ? '#ffffff' : '#1a0060';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, -12 + bob, 9, 3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = flashTime > 0 ? '#ffffff' : '#2a0090';
+    ctx.fill();
+
+    // Hat star
+    if (flashTime <= 0) {
+      ctx.fillStyle = '#ffd700';
+      ctx.font = '8px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', 0, -18 + bob);
+    }
+
+    // Staff
+    const staffBob = bob * 0.5;
+    ctx.strokeStyle = flashTime > 0 ? '#ffffff' : '#8B4513';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(9, -5 + staffBob);
+    ctx.lineTo(13, 13 + staffBob);
+    ctx.stroke();
+    // Staff orb
+    ctx.beginPath();
+    ctx.arc(9, -7 + staffBob, 4, 0, Math.PI * 2);
+    ctx.fillStyle = flashTime > 0 ? '#ffffff' : '#c050ff';
+    ctx.fill();
+    ctx.shadowColor = '#c050ff';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
     ctx.restore();
   },

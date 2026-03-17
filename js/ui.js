@@ -292,8 +292,9 @@ class UI {
       slot.dataset.slotType  = 'inv';
       slot.dataset.slotIndex = i;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
-      // Always allow pan-y so the browser can scroll natively; gem drag uses long-press
-      slot.style.touchAction = 'pan-y';
+      // Gem slots: touch-action:none so we own the pointer (manual scroll + drag).
+      // Empty slots: pan-y so the browser scrolls natively without any JS.
+      slot.style.touchAction = gem ? 'none' : 'pan-y';
       slot.onpointerdown = (e) => this._onSlotPointerDown(e, 'inv', i);
       grid.appendChild(slot);
     }
@@ -383,92 +384,97 @@ class UI {
     const gem = this._getGem({ type, index });
     if (!gem) return; // empty slot — browser handles pan-y scroll natively
 
+    // touch-action:none is set on gem slots so we own the pointer.
+    // Default: any movement scrolls.  Drag activates after holding still 180ms.
     const startX = e.clientX, startY = e.clientY;
-    const slotEl = e.currentTarget;
-    const pointerId = e.pointerId;
+    const invContent = document.getElementById('inventory-content');
+    const startScrollTop = invContent ? invContent.scrollTop : 0;
 
-    // Ghost element prepared but not yet added to DOM
-    const ghost = document.createElement('div');
-    ghost.id = 'drag-ghost';
-    ghost.innerHTML = this._gemCellHTML(gem);
-    ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:9999;opacity:0.88;' +
-      'transform:translate(-50%,-50%) rotate(3deg);transition:none;';
-    ghost.style.left = startX + 'px';
-    ghost.style.top  = startY + 'px';
+    let mode = 'idle'; // 'idle' → 'scroll' or 'drag'
+    let ghost = null;
 
-    // --- Phase 2: active drag (after long-press confirmed) ---
-    const onDragMove = (ev) => {
-      ghost.style.left = ev.clientX + 'px';
-      ghost.style.top  = ev.clientY + 'px';
-      ghost.style.visibility = 'hidden';
-      const under = document.elementFromPoint(ev.clientX, ev.clientY);
-      ghost.style.visibility = '';
-      document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
-      const toSlot = this._slotFromElement(under);
-      if (toSlot) {
-        const toEl = toSlot.type === 'wand'
-          ? document.getElementById(`wand-socket-${toSlot.index}`)
-          : document.getElementById('inventory-grid')?.children[toSlot.index];
-        if (toEl) toEl.classList.add('drop-over');
-      }
-    };
-
-    const onDragUp = (ev) => {
-      slotEl.removeEventListener('pointermove', onDragMove);
-      slotEl.removeEventListener('pointerup',   onDragUp);
-      slotEl.removeEventListener('pointercancel', onDragUp);
-      ghost.remove();
-      document.body.classList.remove('is-dragging');
-      document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
-      this._dragState = null;
-
-      ghost.style.visibility = 'hidden';
-      const under = document.elementFromPoint(ev.clientX, ev.clientY);
-      const to = this._slotFromElement(under);
-      if (to && !(to.type === type && to.index === index)) {
-        const gemA = this._getGem({ type, index });
-        const gemB = this._getGem(to);
-        this._setGem({ type, index }, gemB);
-        this._setGem(to, gemA);
-        if (to.type === 'wand' && gemA) {
-          this._socketSnapEffect(to.index, gemA);
-        }
-        this.updateSlots();
-      }
-      this._renderInventory();
-    };
-
-    // --- Phase 1: passive watch — doesn't block browser scroll at all ---
-    const cancelWatch = () => {
-      clearTimeout(longPressTimer);
-      document.removeEventListener('pointermove', onWatchMove);
-      document.removeEventListener('pointerup',   onWatchUp);
-    };
-
-    const onWatchMove = (ev) => {
-      const dx = ev.clientX - startX, dy = ev.clientY - startY;
-      if (dx * dx + dy * dy > 100) cancelWatch(); // moved >10px → abort, browser scrolls
-    };
-
-    const onWatchUp = () => cancelWatch();
-
-    // Passive so the browser scroll isn't blocked while we wait for long-press
-    document.addEventListener('pointermove', onWatchMove, { passive: true });
-    document.addEventListener('pointerup',   onWatchUp,   { passive: true });
-
-    const longPressTimer = setTimeout(() => {
-      document.removeEventListener('pointermove', onWatchMove);
-      document.removeEventListener('pointerup',   onWatchUp);
-      // Long-press confirmed — take over the pointer and start dragging
+    const activateDrag = () => {
+      if (mode !== 'idle') return;
+      mode = 'drag';
+      ghost = document.createElement('div');
+      ghost.id = 'drag-ghost';
+      ghost.innerHTML = this._gemCellHTML(gem);
+      ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:9999;opacity:0.88;' +
+        'transform:translate(-50%,-50%) rotate(3deg);transition:none;';
+      ghost.style.left = startX + 'px';
+      ghost.style.top  = startY + 'px';
       this._dragState = { type, index, gem };
       document.body.classList.add('is-dragging');
       document.body.appendChild(ghost);
-      try { slotEl.setPointerCapture(pointerId); } catch (_) {}
-      slotEl.addEventListener('pointermove',   onDragMove);
-      slotEl.addEventListener('pointerup',     onDragUp);
-      slotEl.addEventListener('pointercancel', onDragUp);
       this._renderInventory();
-    }, 420);
+    };
+
+    // After 180ms still idle → enter drag mode
+    const holdTimer = setTimeout(() => { if (mode === 'idle') activateDrag(); }, 180);
+
+    const onMove = (ev) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+
+      if (mode === 'idle' && (dx * dx + dy * dy) > 25) {
+        // Moved 5px before hold fired → scroll
+        clearTimeout(holdTimer);
+        mode = 'scroll';
+      }
+
+      if (mode === 'scroll' && invContent) {
+        invContent.scrollTop = startScrollTop - dy;
+        return;
+      }
+
+      if (mode === 'drag' && ghost) {
+        ghost.style.left = ev.clientX + 'px';
+        ghost.style.top  = ev.clientY + 'px';
+        ghost.style.visibility = 'hidden';
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        ghost.style.visibility = '';
+        document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+        const toSlot = this._slotFromElement(under);
+        if (toSlot) {
+          const toEl = toSlot.type === 'wand'
+            ? document.getElementById(`wand-socket-${toSlot.index}`)
+            : document.getElementById('inventory-grid')?.children[toSlot.index];
+          if (toEl) toEl.classList.add('drop-over');
+        }
+      }
+    };
+
+    const onUp = (ev) => {
+      clearTimeout(holdTimer);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup',   onUp);
+      document.removeEventListener('pointercancel', onUp);
+      document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+
+      if (mode === 'drag') {
+        if (ghost) ghost.remove();
+        document.body.classList.remove('is-dragging');
+        this._dragState = null;
+        ghost.style.visibility = 'hidden';
+        const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        const to = this._slotFromElement(under);
+        if (to && !(to.type === type && to.index === index)) {
+          const gemA = this._getGem({ type, index });
+          const gemB = this._getGem(to);
+          this._setGem({ type, index }, gemB);
+          this._setGem(to, gemA);
+          if (to.type === 'wand' && gemA) this._socketSnapEffect(to.index, gemA);
+          this.updateSlots();
+        }
+      } else {
+        this._dragState = null;
+      }
+      this._renderInventory();
+    };
+
+    document.addEventListener('pointermove',   onMove);
+    document.addEventListener('pointerup',     onUp);
+    document.addEventListener('pointercancel', onUp);
   }
 
   // ---- Socket snap delight effect ----
