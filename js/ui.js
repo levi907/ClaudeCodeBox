@@ -386,10 +386,8 @@ class UI {
     const startX = e.clientX, startY = e.clientY;
     const slotEl = e.currentTarget;
     const pointerId = e.pointerId;
-    let dragStarted = false;
-    let cancelled = false;
 
-    // Ghost element that follows the pointer during drag
+    // Ghost element prepared but not yet added to DOM
     const ghost = document.createElement('div');
     ghost.id = 'drag-ghost';
     ghost.innerHTML = this._gemCellHTML(gem);
@@ -398,79 +396,79 @@ class UI {
     ghost.style.left = startX + 'px';
     ghost.style.top  = startY + 'px';
 
-    const startDrag = () => {
-      dragStarted = true;
-      this._dragState = { type, index, gem };
-      document.body.classList.add('is-dragging');
-      document.body.appendChild(ghost);
-      // Capture pointer so drag events keep firing even if finger moves off the slot
-      try { slotEl.setPointerCapture(pointerId); } catch (_) {}
-      this._renderInventory();
-    };
-
-    const onMove = (ev) => {
-      if (cancelled) return;
-      const dx = ev.clientX - startX, dy = ev.clientY - startY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (!dragStarted && dist > 10) {
-        // Finger moved before long-press fired — let the browser scroll natively
-        clearTimeout(longPressTimer);
-        cancelled = true;
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-        return;
-      }
-
-      if (dragStarted) {
-        ghost.style.left = ev.clientX + 'px';
-        ghost.style.top  = ev.clientY + 'px';
-        ghost.style.visibility = 'hidden';
-        const under = document.elementFromPoint(ev.clientX, ev.clientY);
-        ghost.style.visibility = '';
-        document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
-        const toSlot = this._slotFromElement(under);
-        if (toSlot) {
-          const toEl = toSlot.type === 'wand'
-            ? document.getElementById(`wand-socket-${toSlot.index}`)
-            : document.getElementById('inventory-grid')?.children[toSlot.index];
-          if (toEl) toEl.classList.add('drop-over');
-        }
+    // --- Phase 2: active drag (after long-press confirmed) ---
+    const onDragMove = (ev) => {
+      ghost.style.left = ev.clientX + 'px';
+      ghost.style.top  = ev.clientY + 'px';
+      ghost.style.visibility = 'hidden';
+      const under = document.elementFromPoint(ev.clientX, ev.clientY);
+      ghost.style.visibility = '';
+      document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+      const toSlot = this._slotFromElement(under);
+      if (toSlot) {
+        const toEl = toSlot.type === 'wand'
+          ? document.getElementById(`wand-socket-${toSlot.index}`)
+          : document.getElementById('inventory-grid')?.children[toSlot.index];
+        if (toEl) toEl.classList.add('drop-over');
       }
     };
 
-    const onUp = (ev) => {
-      clearTimeout(longPressTimer);
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
+    const onDragUp = (ev) => {
+      slotEl.removeEventListener('pointermove', onDragMove);
+      slotEl.removeEventListener('pointerup',   onDragUp);
+      slotEl.removeEventListener('pointercancel', onDragUp);
       ghost.remove();
       document.body.classList.remove('is-dragging');
       document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
       this._dragState = null;
 
-      if (dragStarted) {
-        ghost.style.visibility = 'hidden';
-        const under = document.elementFromPoint(ev.clientX, ev.clientY);
-        const to = this._slotFromElement(under);
-        if (to && !(to.type === type && to.index === index)) {
-          const gemA = this._getGem({ type, index });
-          const gemB = this._getGem(to);
-          this._setGem({ type, index }, gemB);
-          this._setGem(to, gemA);
-          if (to.type === 'wand' && gemA) {
-            this._socketSnapEffect(to.index, gemA);
-          }
-          this.updateSlots();
+      ghost.style.visibility = 'hidden';
+      const under = document.elementFromPoint(ev.clientX, ev.clientY);
+      const to = this._slotFromElement(under);
+      if (to && !(to.type === type && to.index === index)) {
+        const gemA = this._getGem({ type, index });
+        const gemB = this._getGem(to);
+        this._setGem({ type, index }, gemB);
+        this._setGem(to, gemA);
+        if (to.type === 'wand' && gemA) {
+          this._socketSnapEffect(to.index, gemA);
         }
+        this.updateSlots();
       }
       this._renderInventory();
     };
 
-    // Long press → start drag; any movement before that → cancel and let browser scroll
-    const longPressTimer = setTimeout(startDrag, 420);
+    // --- Phase 1: passive watch — doesn't block browser scroll at all ---
+    const cancelWatch = () => {
+      clearTimeout(longPressTimer);
+      document.removeEventListener('pointermove', onWatchMove);
+      document.removeEventListener('pointerup',   onWatchUp);
+    };
 
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    const onWatchMove = (ev) => {
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if (dx * dx + dy * dy > 100) cancelWatch(); // moved >10px → abort, browser scrolls
+    };
+
+    const onWatchUp = () => cancelWatch();
+
+    // Passive so the browser scroll isn't blocked while we wait for long-press
+    document.addEventListener('pointermove', onWatchMove, { passive: true });
+    document.addEventListener('pointerup',   onWatchUp,   { passive: true });
+
+    const longPressTimer = setTimeout(() => {
+      document.removeEventListener('pointermove', onWatchMove);
+      document.removeEventListener('pointerup',   onWatchUp);
+      // Long-press confirmed — take over the pointer and start dragging
+      this._dragState = { type, index, gem };
+      document.body.classList.add('is-dragging');
+      document.body.appendChild(ghost);
+      try { slotEl.setPointerCapture(pointerId); } catch (_) {}
+      slotEl.addEventListener('pointermove',   onDragMove);
+      slotEl.addEventListener('pointerup',     onDragUp);
+      slotEl.addEventListener('pointercancel', onDragUp);
+      this._renderInventory();
+    }, 420);
   }
 
   // ---- Socket snap delight effect ----
