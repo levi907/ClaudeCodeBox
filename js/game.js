@@ -693,7 +693,7 @@ class Game {
           x: enemy.x, y: enemy.y,
           vx: Math.cos(a) * 400, vy: Math.sin(a) * 400,
           damage: Math.round(ws.damage * this.player.damageMultiplier * 0.8),
-          size: 8, pierce: 0, bounce: 0, chain: 0,
+          size: 8, pierce: 4, bounce: 0, chain: 0,
           type: 'bolt', color: '#cc88ff', lifetime: 1.5,
         }));
       }
@@ -934,6 +934,7 @@ class Game {
     p._gravitonGem        = false;
     p._sigilGem           = false;
     p._warpBoltGem        = false;
+    p._relicPierceBonus   = 0;
     p._bloodFrenzyMult    = 1.0;
 
     for (const r of this.relics) r.apply(p);
@@ -1053,7 +1054,7 @@ class Game {
       vx: Math.cos(a) * ws.projSpeed * 1.5,
       vy: Math.sin(a) * ws.projSpeed * 1.5,
       damage: dmg,
-      size: 18, pierce: 3, bounce: 0, chain: 0,
+      size: 18, pierce: 8, bounce: 0, chain: 0,
       type: 'bolt', color: '#ff6600', lifetime: 3.0,
       explosive: true, explosionRadius: 80,
     }));
@@ -1076,7 +1077,7 @@ class Game {
         vx: Math.cos(a) * ws.projSpeed,
         vy: Math.sin(a) * ws.projSpeed,
         damage: dmg,
-        size: 9, pierce: 1, bounce: 0, chain: 0,
+        size: 9, pierce: 5, bounce: 0, chain: 0,
         type: 'bolt', color: '#ff44ff', lifetime: 2.5,
       }));
     }
