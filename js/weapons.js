@@ -132,6 +132,20 @@ class Wand {
         }
       }
     }
+    // Single-target legendary mods: add pierce so their effects spread through packs
+    if (s.spiral)          s.pierce += 4;
+    if (s.virulentPoison)  s.pierce += 4;
+    if (s.thunderAegis)    s.pierce += 3;
+    if (s.reaper)          s.pierce += 4;
+    if (s.lifeLeech)       s.pierce += 4;
+    if (s.doubleTap)       s.pierce += 4;
+    if (s.curse)           s.pierce += 4;
+    if (s.decay)           s.pierce += 4;
+    if (s.bloodFrenzy)     s.pierce += 3;
+    if (s.unstableCore)    s.pierce += 4;
+    if (s.mirrorShot)      s.pierce += 3;
+    if (s.shockwave)       s.pierce += 3;
+
     return s;
   }
 
@@ -181,8 +195,8 @@ class Wand {
       const isCrit  = Math.random() < (p.critChance + stats.critBonus);
       const dmg     = isCrit ? baseDmg * 2 : baseDmg;
 
-      // Phase Shot: pierce all enemies
-      const effectivePierce = stats.phaseShot ? 999 : stats.pierce;
+      // Phase Shot: pierce all enemies; relics can also grant pierce
+      const effectivePierce = stats.phaseShot ? 999 : stats.pierce + (p._relicPierceBonus || 0);
 
       game.spawnProjectile(new Projectile({
         x: p.x, y: p.y,

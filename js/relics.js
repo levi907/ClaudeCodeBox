@@ -10,7 +10,7 @@ const RELIC_DEFS = {
     name: 'Forbidden Codex',
     icon: '📖',
     desc: 'Choose from 6 gems every level-up. Superior selections grant +100% bonus damage.',
-    apply(player) { player._extraChoices += 3; player.damageMultiplier += 1.0; },
+    apply(player) { player._extraChoices += 3; player.damageMultiplier += 1.0; player._relicPierceBonus += 3; },
   },
 
   arcane_cyclone: {
@@ -42,7 +42,7 @@ const RELIC_DEFS = {
     name: 'Berserker Rage',
     icon: '😈',
     desc: 'Always deal 2× damage, scaling to 8× when critically injured.',
-    apply(player) { player._berserkerMaxMult = 3.0; player.damageMultiplier *= 2.0; },
+    apply(player) { player._berserkerMaxMult = 3.0; player.damageMultiplier *= 2.0; player._relicPierceBonus += 3; },
   },
 
   chain_death: {
@@ -66,7 +66,7 @@ const RELIC_DEFS = {
     name: 'Time Warp',
     icon: '⏰',
     desc: '-60% all weapon cooldowns.',
-    apply(player) { player.cooldownReduction = Math.max(player.cooldownReduction, 0.60); },
+    apply(player) { player.cooldownReduction = Math.max(player.cooldownReduction, 0.60); player._relicPierceBonus += 3; },
   },
 
   iron_fortress: {
@@ -82,7 +82,7 @@ const RELIC_DEFS = {
     name: 'Void Prism',
     icon: '💎',
     desc: 'Every shot also fires at a second enemy.',
-    apply(player) { player._voidPrismChance = 1.0; },
+    apply(player) { player._voidPrismChance = 1.0; player._relicPierceBonus += 3; },
   },
 
   // ---- NEW RELICS ----
@@ -92,7 +92,7 @@ const RELIC_DEFS = {
     name: 'Blood Pact',
     icon: '🩸',
     desc: '+80 Max HP, +4 HP/s regen. Your shots inflict bleed and deal +80% bonus damage.',
-    apply(player) { player.maxHp += 80; player.hp = Math.min(player.hp + 80, player.maxHp); player._hpRegen += 4; player._bloodPactBleed = true; player.damageMultiplier += 0.8; },
+    apply(player) { player.maxHp += 80; player.hp = Math.min(player.hp + 80, player.maxHp); player._hpRegen += 4; player._bloodPactBleed = true; player.damageMultiplier += 0.8; player._relicPierceBonus += 3; },
   },
 
   phantom_strike: {
@@ -100,7 +100,7 @@ const RELIC_DEFS = {
     name: 'Phantom Strike',
     icon: '👻',
     desc: '30% chance any shot fires a phantom bolt dealing 3× damage.',
-    apply(player) { player._phantomStrikeChance = 0.30; },
+    apply(player) { player._phantomStrikeChance = 0.30; player._relicPierceBonus += 4; },
   },
 
   echo_chamber: {
@@ -124,7 +124,7 @@ const RELIC_DEFS = {
     name: "Reaper's Scythe",
     icon: '💀',
     desc: 'Execute enemies below 25% HP. Death energy charges all shots for +60% bonus damage.',
-    apply(player) { player._reaperThreshold = 0.25; player.damageMultiplier += 0.6; },
+    apply(player) { player._reaperThreshold = 0.25; player.damageMultiplier += 0.6; player._relicPierceBonus += 3; },
   },
 
   cursed_mirror: {
