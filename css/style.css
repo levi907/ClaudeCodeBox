@@ -1357,6 +1357,7 @@ button:hover, button:active {
 #inventory-content {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y; /* allow native scroll from empty slots and the container itself */
 }
 
 /* ============================================================
