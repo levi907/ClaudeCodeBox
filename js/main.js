@@ -8,12 +8,38 @@
   const canvas = document.getElementById('game-canvas');
   const game = window._game = new Game(canvas);
 
+  // Fullscreen helpers
+  function requestFS() {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
+  }
+  function exitFS() {
+    const ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if (ex) ex.call(document).catch(() => {});
+  }
+  function isFS() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+  }
+  function updateFSBtn() {
+    const btn = document.getElementById('fullscreen-btn');
+    if (btn) btn.textContent = isFS() ? '✕' : '⛶';
+  }
+  document.addEventListener('fullscreenchange', updateFSBtn);
+  document.addEventListener('webkitfullscreenchange', updateFSBtn);
+
+  const fsBtn = document.getElementById('fullscreen-btn');
+  fsBtn.addEventListener('click', () => { isFS() ? exitFS() : requestFS(); });
+  fsBtn.addEventListener('touchend', (e) => { e.preventDefault(); isFS() ? exitFS() : requestFS(); });
+
   // Start button
   document.getElementById('start-btn').addEventListener('click', () => {
+    requestFS();
     game.start();
   });
   document.getElementById('start-btn').addEventListener('touchend', (e) => {
     e.preventDefault();
+    requestFS();
     game.start();
   });
 
