@@ -47,13 +47,10 @@ class Game {
   }
 
   _resize() {
-    // Game logic runs in full CSS-pixel space; canvas renders at 1/4 resolution
-    // and is scaled up 4× by CSS image-rendering:pixelated for the pixel-art look.
-    const PS = 4;
-    this.width  = this.canvas.offsetWidth;
-    this.height = this.canvas.offsetHeight;
-    this.canvas.width  = Math.max(1, Math.round(this.width  / PS));
-    this.canvas.height = Math.max(1, Math.round(this.height / PS));
+    this.canvas.width = this.canvas.offsetWidth;
+    this.canvas.height = this.canvas.offsetHeight;
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
   }
 
   init() {
@@ -658,11 +655,6 @@ class Game {
   // ---- Draw ----
   draw() {
     const ctx = this.ctx;
-    // Scale all game-world coordinates down to the pixel-art canvas resolution.
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.scale(0.25, 0.25);  // matches PIXEL_SCALE = 4 in _resize()
-
     const w = this.width, h = this.height;
     const cx = this.camera.x, cy = this.camera.y;
 
@@ -722,7 +714,6 @@ class Game {
     this.ui.drawBossBar(ctx, boss, w, h);
 
     this._drawVignette(ctx, w, h);
-    ctx.restore();
   }
 
   _drawVignette(ctx, w, h) {
