@@ -9,12 +9,29 @@
   const W = 160, H = 90;
   canvas.width  = W;
   canvas.height = H;
-  Object.assign(canvas.style, {
-    position: 'absolute', inset: '0',
-    width: '100%', height: '100%',
-    imageRendering: 'pixelated',
-    zIndex: '1',
-  });
+
+  // Size the canvas to fill the screen while preserving 16:9, then centre it.
+  // This prevents stretching on phones with non-16:9 aspect ratios.
+  function fitCanvas() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let cssW, cssH;
+    if (vw / vh > W / H) {
+      cssH = vh; cssW = vh * W / H;
+    } else {
+      cssW = vw; cssH = vw * H / W;
+    }
+    Object.assign(canvas.style, {
+      position: 'absolute',
+      width:  cssW + 'px',
+      height: cssH + 'px',
+      left: '50%', top: '50%',
+      transform: 'translate(-50%,-50%)',
+      imageRendering: 'pixelated',
+      zIndex: '1',
+    });
+  }
+  fitCanvas();
+  window.addEventListener('resize', fitCanvas);
 
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
