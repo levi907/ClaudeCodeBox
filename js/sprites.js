@@ -1398,8 +1398,8 @@ const Sprites = {
   //  WORLD / BACKGROUND — Stone Dungeon Floor
   // ======================================================
   drawBackground(ctx, camX, camY, width, height) {
-    // Deep void base
-    ctx.fillStyle = '#0c0a14';
+    // Warm void base — matches menu's #0d0b09 stone dark
+    ctx.fillStyle = '#0c0904';
     ctx.fillRect(0, 0, width, height);
 
     const tileSize = CONFIG.TILE_SIZE;
@@ -1415,16 +1415,16 @@ const Sprites = {
         const v2 = Math.abs((hash >> 8) % 100) / 100;
         const v3 = Math.abs((hash >> 16) % 100) / 100;
 
-        // Tile stone color — 4 subtle shades
+        // Tile stone color — warm brown shades matching menu wall palette
         const shade =
-          v < 0.12 ? '#181428' :
-          v < 0.30 ? '#151120' :
-          v < 0.55 ? '#17131e' : '#13101c';
+          v < 0.12 ? '#181614' :
+          v < 0.30 ? '#161210' :
+          v < 0.55 ? '#1c1a16' : '#14120e';
         ctx.fillStyle = shade;
         ctx.fillRect(x, y, tileSize, tileSize);
 
-        // Mortar gaps — thin dark lines at top and left edges
-        ctx.fillStyle = '#08060f';
+        // Mortar gaps — warm dark brown lines
+        ctx.fillStyle = '#090704';
         ctx.fillRect(x, y, tileSize, 1.5);   // top
         ctx.fillRect(x, y, 1.5, tileSize);   // left
 
@@ -1440,7 +1440,6 @@ const Sprites = {
           ctx.lineTo(cx + (v2 - 0.5) * 18, cy + tileSize * 0.45);
           ctx.lineTo(cx + (v2 - 0.4) * 14 + 5, cy + tileSize * 0.78);
           ctx.stroke();
-          // Branch crack
           if (v > 0.85) {
             ctx.beginPath();
             ctx.moveTo(cx + (v2 - 0.5) * 10, cy + tileSize * 0.3);
@@ -1449,7 +1448,7 @@ const Sprites = {
           }
         }
 
-        // Arcane rune inscription (rare, glowing)
+        // Arcane rune inscription (rare)
         if (v > 0.965) {
           const runeAlpha = 0.11 + (v - 0.965) * 2.5;
           ctx.save();
@@ -1464,22 +1463,31 @@ const Sprites = {
           ctx.restore();
         }
 
-        // Warm torch glow pool (very rare — scattered ambient light)
-        if (v > 0.988) {
+        // Torch glow pool — same flame palette as menu lanterns, more frequent
+        if (v > 0.92) {
           ctx.save();
+          const spread = tileSize * (2.5 + v2 * 2);
           const torchGrad = ctx.createRadialGradient(
             x + tileSize / 2, y + tileSize / 2, 0,
-            x + tileSize / 2, y + tileSize / 2, tileSize * 1.8
+            x + tileSize / 2, y + tileSize / 2, spread
           );
-          torchGrad.addColorStop(0, 'rgba(200,90,15,0.07)');
-          torchGrad.addColorStop(0.6, 'rgba(180,70,8,0.03)');
-          torchGrad.addColorStop(1, 'rgba(160,60,5,0)');
+          torchGrad.addColorStop(0,   'rgba(236,160,48,0.13)');  // #eca030 — flmHi
+          torchGrad.addColorStop(0.35, 'rgba(200,104,32,0.07)'); // #c86820 — flmMd
+          torchGrad.addColorStop(0.7,  'rgba(144,64,16,0.03)');  // #904010 — flmLow
+          torchGrad.addColorStop(1,    'rgba(90,36,0,0)');       // fade out
           ctx.fillStyle = torchGrad;
-          ctx.fillRect(x - tileSize, y - tileSize, tileSize * 3, tileSize * 3);
+          ctx.fillRect(x - spread, y - spread, spread * 2, spread * 2);
           ctx.restore();
         }
       }
     }
+
+    // Edge vignette — dark border simulating torchlit dungeon walls around the viewport
+    const vig = ctx.createRadialGradient(width/2, height/2, height * 0.28, width/2, height/2, height * 0.85);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(4,2,1,0.72)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, width, height);
   },
 
   // ======================================================
