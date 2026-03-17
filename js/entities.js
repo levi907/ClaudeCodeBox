@@ -57,7 +57,7 @@ class Player {
   }
 
   takeDamage(dmg, particles) {
-    if (this.invincibleTime > 0) return;
+    if (this.invincible || this.invincibleTime > 0) return;
     const actualDmg = Math.max(1, dmg - this.armor);
     this.hp -= actualDmg;
     this.flashTime = 0.12;
@@ -124,7 +124,7 @@ const ENEMY_DEFS = {
   golem: {
     name: 'Golem',
     hp: 150, speed: 28, damage: 25, armor: 3,
-    xpDrop: [8, 14],
+    xpDrop: [28, 38],
     size: 24,
     score: 3,
     drawFn: (ctx, x, y, af) => Sprites.enemyGolem(ctx, x, y, af),
@@ -173,6 +173,8 @@ class Enemy {
     this.knockbackX = 0; this.knockbackY = 0;
     this.frozen = 0;
     this.poisoned = 0;
+    this.poisonStacks = 0;   // stackable % HP poison (from poison_chance stat)
+    this.poisonStackTimer = 0;
     this.bleed = 0;     // bleed duration in seconds
     this.cursed = 0;    // cursed duration — takes 25% more damage
     this.decaying = 0;  // decay duration — loses 3% maxHp/s
@@ -199,6 +201,16 @@ class Enemy {
       this.poisoned -= dt;
       this.hp -= (this.virulentlyPoisoned ? 12 : 3) * dt;
       if (this.hp <= 0) this.isDead = true;
+    }
+
+    if (this.poisonStacks > 0) {
+      this.poisonStackTimer -= dt;
+      if (this.poisonStackTimer <= 0) {
+        this.poisonStacks = 0;
+      } else {
+        this.hp -= this.poisonStacks * 0.02 * this.maxHp * dt;
+        if (this.hp <= 0) this.isDead = true;
+      }
     }
 
     if (this.bleed > 0) {
@@ -321,6 +333,7 @@ class Projectile {
     this.frostNova = opts.frostNova || false;
     this.curse = opts.curse || false;
     this.decay = opts.decay || false;
+    this.poisonChance = opts.poisonChance || 0;
   }
 
   update(dt) {
