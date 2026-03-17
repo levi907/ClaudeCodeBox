@@ -47,6 +47,12 @@ function makePlayer(relicName, legMod) {
     _cursedMirror: false,
     _giantsKnockback: 0,
     _extraChoices: 0,
+    // new relic mechanics
+    _soulDrain: 0, _soulDrainTimer: 0,
+    _thorns: 0, _thornsTimer: 0,
+    _bloodPactBleed: false,
+    _wardZap: false, _wardZapTimer: 0,
+    _mirrorPulse: false, _mirrorPulseTimer: 0,
 
     // gem flags
     _meteorGem: false,
@@ -73,22 +79,22 @@ function makePlayer(relicName, legMod) {
 // ---- Apply a relic to player ----
 const RELICS = {
   none:             p => {},
-  forbidden_codex:  p => { p._extraChoices += 3; },
+  forbidden_codex:  p => { p._extraChoices += 3; p.damageMultiplier += 1.0; },
   arcane_cyclone:   p => { p._omniShot += 3; },
-  giants_wand:      p => { p._projSizeMult = 8; p._giantsKnockback = 350; },
-  cataclysm_clock:  p => { p._nukeInterval = 18; p._nukeRadius = 280; },
-  berserker_rage:   p => { p._berserkerMaxMult = 3.0; },
+  giants_wand:      p => { p._projSizeMult = 8; p._giantsKnockback = 350; p._omniShot += 2; },
+  cataclysm_clock:  p => { p._nukeInterval = 12; p._nukeRadius = 550; },
+  berserker_rage:   p => { p._berserkerMaxMult = 3.0; p.damageMultiplier *= 2.0; },
   chain_death:      p => { p._chainDeathPct = 0.6; p._chainDeathRadius = 100; },
-  soul_vampire:     p => { p._killHealPct = 0.08; },
+  soul_vampire:     p => { p._killHealPct = 0.08; p._soulDrain = 80; },
   time_warp:        p => { p.cooldownReduction = 0.60; },
-  iron_fortress:    p => { p.armor += 40; p._fortressShieldDur = 3; },
+  iron_fortress:    p => { p.armor += 40; p._fortressShieldDur = 3; p._thorns += 20; },
   void_prism:       p => { p._voidPrismChance = 1.0; },
-  blood_pact:       p => { p.maxHp += 80; p.hp = p.maxHp; p._hpRegen += 4; },
+  blood_pact:       p => { p.maxHp += 80; p.hp = p.maxHp; p._hpRegen += 4; p._bloodPactBleed = true; p.damageMultiplier += 0.8; },
   phantom_strike:   p => { p._phantomStrikeChance = 0.30; },
-  echo_chamber:     p => { p._echoInterval = 6; },
-  arcane_ward:      p => { p._wardDuration = 8; },
-  reapers_scythe:   p => { p._reaperThreshold = 0.20; },
-  cursed_mirror:    p => { p._cursedMirror = true; },
+  echo_chamber:     p => { p._echoInterval = 4; },
+  arcane_ward:      p => { p._wardDuration = 8; p._wardZap = true; },
+  reapers_scythe:   p => { p._reaperThreshold = 0.25; p.damageMultiplier += 0.6; },
+  cursed_mirror:    p => { p._cursedMirror = true; p._mirrorPulse = true; },
 };
 
 // ---- Apply a legendary gem mod to wand stats ----
@@ -339,6 +345,9 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
         }
       }
 
+      // Blood Pact: shots apply bleed
+      if (p._bloodPactBleed) e.bleed = Math.max(e.bleed || 0, 3);
+
       // Poison (virulent)
       if (ws.virulentPoison && !e.virulentlyPoisoned) { e.virulentlyPoisoned = true; e.poisoned = 6; }
 
@@ -530,17 +539,84 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       }
     }
 
-    // Cataclysm Clock nuke
+    // Cataclysm Clock nuke (cap to 15 enemies to model realistic screen density)
     if (p._nukeInterval) {
       nukeTimer += dt;
       if (nukeTimer >= p._nukeInterval) {
         nukeTimer = 0;
         const dmg = ws.damage * 10;
-        for (const e of enemies.filter(e => !e.isDead && dist(e.x, e.y, 0, 0) < p._nukeRadius)) {
+        const nukeTargets = [...enemies].filter(e => !e.isDead && dist(e.x, e.y, 0, 0) < p._nukeRadius)
+          .sort((a, b) => dist(a.x, a.y, 0, 0) - dist(b.x, b.y, 0, 0)).slice(0, 15);
+        for (const e of nukeTargets) {
           e.hp -= Math.max(1, dmg - e.armor);
           if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
         }
         enemies = enemies.filter(e => !e.isDead);
+      }
+    }
+
+    // Soul Drain aura: deal 5 damage/s to 8 closest enemies (models clustering in real gameplay)
+    if (p._soulDrain > 0) {
+      p._soulDrainTimer += dt;
+      if (p._soulDrainTimer >= 1) {
+        p._soulDrainTimer = 0;
+        const drainTargets = [...enemies].filter(e => !e.isDead)
+          .sort((a, b) => dist(a.x, a.y, 0, 0) - dist(b.x, b.y, 0, 0)).slice(0, 8);
+        for (const e of drainTargets) {
+          const drainDmg = Math.max(1, 5 - e.armor);
+          e.hp -= drainDmg;
+          totalDamage.dealt += drainDmg;
+          p.hp = Math.min(p.maxHp, p.hp + 2);
+          if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
+        }
+      }
+    }
+
+    // Thorns aura (Iron Fortress): damage 3 closest enemies every 2s (models melee clustering)
+    if (p._thorns > 0) {
+      p._thornsTimer += dt;
+      if (p._thornsTimer >= 2) {
+        p._thornsTimer = 0;
+        const thornTargets = [...enemies].filter(e => !e.isDead)
+          .sort((a, b) => dist(a.x, a.y, 0, 0) - dist(b.x, b.y, 0, 0)).slice(0, 3);
+        for (const e of thornTargets) {
+          const thornDmg = Math.max(1, p._thorns - e.armor);
+          e.hp -= thornDmg;
+          totalDamage.dealt += thornDmg;
+          if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
+        }
+      }
+    }
+
+    // Arcane Ward zap: discharge at 6 nearest enemies every _wardDuration seconds
+    if (p._wardZap) {
+      p._wardZapTimer += dt;
+      if (p._wardZapTimer >= p._wardDuration) {
+        p._wardZapTimer = 0;
+        const zapDmg = Math.round(ws.damage * p.damageMultiplier * 3);
+        const zapTargets = [...enemies].filter(e => !e.isDead)
+          .sort((a, b) => dist(a.x, a.y, 0, 0) - dist(b.x, b.y, 0, 0)).slice(0, 6);
+        for (const t of zapTargets) {
+          const za = Math.max(1, zapDmg - t.armor);
+          t.hp -= za; totalDamage.dealt += za;
+          if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
+        }
+      }
+    }
+
+    // Cursed Mirror pulse: 30 arcane damage to 10 closest enemies every 6s
+    if (p._mirrorPulse) {
+      p._mirrorPulseTimer += dt;
+      if (p._mirrorPulseTimer >= 6) {
+        p._mirrorPulseTimer = 0;
+        const pulseTargets = [...enemies].filter(e => !e.isDead)
+          .sort((a, b) => dist(a.x, a.y, 0, 0) - dist(b.x, b.y, 0, 0)).slice(0, 10);
+        for (const e of pulseTargets) {
+          const pulseDmg = Math.max(1, 30 - e.armor);
+          e.hp -= pulseDmg;
+          totalDamage.dealt += pulseDmg;
+          if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
+        }
       }
     }
 

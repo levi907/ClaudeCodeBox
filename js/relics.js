@@ -9,8 +9,8 @@ const RELIC_DEFS = {
     id: 'forbidden_codex',
     name: 'Forbidden Codex',
     icon: '📖',
-    desc: 'Choose from 6 gems every level-up.',
-    apply(player) { player._extraChoices += 3; },
+    desc: 'Choose from 6 gems every level-up. Superior selections grant +100% bonus damage.',
+    apply(player) { player._extraChoices += 3; player.damageMultiplier += 1.0; },
   },
 
   arcane_cyclone: {
@@ -25,24 +25,24 @@ const RELIC_DEFS = {
     id: 'giants_wand',
     name: "Giant's Wand",
     icon: '🔮',
-    desc: 'Your projectiles are 8× larger and knock enemies back.',
-    apply(player) { player._projSizeMult = Math.max(player._projSizeMult, 8); player._giantsKnockback = 350; },
+    desc: 'Your projectiles are 8× larger, knock enemies back, and pierce 2 additional targets.',
+    apply(player) { player._projSizeMult = Math.max(player._projSizeMult, 8); player._giantsKnockback = 350; player._omniShot += 2; },
   },
 
   cataclysm_clock: {
     id: 'cataclysm_clock',
     name: 'Cataclysm Clock',
     icon: '💥',
-    desc: 'Massive explosion every 18s devastates all nearby enemies.',
-    apply(player) { player._nukeInterval = 18; player._nukeRadius = 340; },
+    desc: 'Massive explosion every 12s devastates all enemies within 400px.',
+    apply(player) { player._nukeInterval = 12; player._nukeRadius = 400; },
   },
 
   berserker_rage: {
     id: 'berserker_rage',
     name: 'Berserker Rage',
     icon: '😈',
-    desc: 'Deal up to 4× more damage the lower your HP.',
-    apply(player) { player._berserkerMaxMult = 3.0; },
+    desc: 'Always deal 2× damage, scaling to 8× when critically injured.',
+    apply(player) { player._berserkerMaxMult = 3.0; player.damageMultiplier *= 2.0; },
   },
 
   chain_death: {
@@ -57,8 +57,8 @@ const RELIC_DEFS = {
     id: 'soul_vampire',
     name: 'Soul Vampire',
     icon: '🧛',
-    desc: 'Each kill restores 8% of your max HP.',
-    apply(player) { player._killHealPct = 0.08; },
+    desc: 'Each kill restores 8% max HP. Drain 12 life/s from all nearby enemies.',
+    apply(player) { player._killHealPct = 0.08; player._soulDrain = 80; },
   },
 
   time_warp: {
@@ -73,8 +73,8 @@ const RELIC_DEFS = {
     id: 'iron_fortress',
     name: 'Iron Fortress',
     icon: '🛡️',
-    desc: '+40 Armor. Become invincible for 3s when below 25% HP.',
-    apply(player) { player.armor += 40; player._fortressShieldDur = 3; },
+    desc: '+40 Armor, +20 Thorns. Become invincible for 3s when below 25% HP.',
+    apply(player) { player.armor += 40; player._fortressShieldDur = 3; player._thorns += 20; },
   },
 
   void_prism: {
@@ -91,8 +91,8 @@ const RELIC_DEFS = {
     id: 'blood_pact',
     name: 'Blood Pact',
     icon: '🩸',
-    desc: '+80 Max HP and +4 HP/s regeneration.',
-    apply(player) { player.maxHp += 80; player.hp = Math.min(player.hp + 80, player.maxHp); player._hpRegen += 4; },
+    desc: '+80 Max HP, +4 HP/s regen. Your shots inflict bleed and deal +80% bonus damage.',
+    apply(player) { player.maxHp += 80; player.hp = Math.min(player.hp + 80, player.maxHp); player._hpRegen += 4; player._bloodPactBleed = true; player.damageMultiplier += 0.8; },
   },
 
   phantom_strike: {
@@ -107,32 +107,32 @@ const RELIC_DEFS = {
     id: 'echo_chamber',
     name: 'Echo Chamber',
     icon: '🔔',
-    desc: 'Every 6th shot fires 4 bonus projectiles in all directions.',
-    apply(player) { player._echoInterval = 6; },
+    desc: 'Every 4th shot fires 6 bonus projectiles in all directions.',
+    apply(player) { player._echoInterval = 4; },
   },
 
   arcane_ward: {
     id: 'arcane_ward',
     name: 'Arcane Ward',
     icon: '🔵',
-    desc: 'A magical barrier blocks 1 hit every 8 seconds.',
-    apply(player) { player._wardDuration = 8; },
+    desc: 'A magical barrier blocks 1 hit every 8s. When recharged, discharges lightning at 4 nearby enemies.',
+    apply(player) { player._wardDuration = 8; player._wardZap = true; },
   },
 
   reapers_scythe: {
     id: 'reapers_scythe',
     name: "Reaper's Scythe",
     icon: '💀',
-    desc: 'Projectiles instantly execute enemies below 20% HP.',
-    apply(player) { player._reaperThreshold = 0.20; },
+    desc: 'Execute enemies below 25% HP. Death energy charges all shots for +60% bonus damage.',
+    apply(player) { player._reaperThreshold = 0.25; player.damageMultiplier += 0.6; },
   },
 
   cursed_mirror: {
     id: 'cursed_mirror',
     name: 'Cursed Mirror',
     icon: '🪞',
-    desc: 'When you take damage, reflect it to all enemies within 300px.',
-    apply(player) { player._cursedMirror = true; },
+    desc: 'Reflect damage to all enemies within 300px. Also pulses arcane energy every 6s.',
+    apply(player) { player._cursedMirror = true; player._mirrorPulse = true; },
   },
 };
 

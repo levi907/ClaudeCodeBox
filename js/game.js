@@ -77,6 +77,9 @@ class Game {
     this._nukeTimer = 0;
     this._meteorTimer = 0;
     this._wardTimer = 999;  // starts ready (8s+)
+    this._wardZapTimer = 0;
+    this._soulDrainTimer = 0;
+    this._mirrorPulseTimer = 0;
     this._stormTimer = 0;
     this._timeStopTimer = 0;
     this._gravitonTimer = 0;
@@ -248,6 +251,56 @@ class Game {
       this.player._bloodFrenzyMult = 1.0;
     }
 
+    // Soul Vampire drain aura: deal 12 damage/s to nearby enemies
+    if (this.player._soulDrain > 0) {
+      this._soulDrainTimer += dt;
+      if (this._soulDrainTimer >= 1) {
+        this._soulDrainTimer = 0;
+        const drainDmg = 12;
+        for (const e of this.enemies) {
+          if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < this.player._soulDrain) {
+            e.takeDamage(drainDmg);
+            if (e.isDead) this.onEnemyDead(e);
+          }
+        }
+      }
+    }
+
+    // Cursed Mirror pulse: deal 30 arcane damage to all enemies within 300px every 6s
+    if (this.player._mirrorPulse) {
+      this._mirrorPulseTimer += dt;
+      if (this._mirrorPulseTimer >= 6) {
+        this._mirrorPulseTimer = 0;
+        for (const e of this.enemies) {
+          if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < 300) {
+            e.takeDamage(30);
+            if (e.isDead) this.onEnemyDead(e);
+          }
+        }
+        this.particles.spark(this.player.x, this.player.y, '#ff44aa', 16);
+        this.particles.floatText(this.player.x, this.player.y - 40, '🪞 MIRROR PULSE', '#ff44aa', 13);
+      }
+    }
+
+    // Arcane Ward zap: discharge at 4 nearest enemies every _wardDuration seconds
+    if (this.player._wardZap) {
+      this._wardZapTimer += dt;
+      if (this._wardZapTimer >= this.player._wardDuration) {
+        this._wardZapTimer = 0;
+        const zapDmg = Math.round(this.wand.computeStats().damage * this.player.damageMultiplier * 2);
+        const zapTargets = [...this.enemies]
+          .filter(e => !e.isDead)
+          .sort((a, b) => distSq(a.x, a.y, this.player.x, this.player.y) - distSq(b.x, b.y, this.player.x, this.player.y))
+          .slice(0, 4);
+        for (const t of zapTargets) {
+          t.takeDamage(zapDmg);
+          this._lightningArcs.push({ x1: this.player.x, y1: this.player.y, x2: t.x, y2: t.y, age: 0, maxAge: 0.25 });
+          if (t.isDead) this.onEnemyDead(t);
+        }
+        if (zapTargets.length > 0) this.particles.floatText(this.player.x, this.player.y - 30, '⚡ WARD ZAP', '#4488ff', 13);
+      }
+    }
+
     // Reaper's Scythe: execute low-HP enemies each frame
     if (this.player._reaperThreshold) {
       for (const e of this.enemies) {
@@ -382,6 +435,11 @@ class Game {
 
           // Bleed application
           if (p.bleed) {
+            e.bleed = Math.max(e.bleed, 3.0);
+          }
+
+          // Blood Pact: shots apply bleed
+          if (this.player._bloodPactBleed) {
             e.bleed = Math.max(e.bleed, 3.0);
           }
 
@@ -866,6 +924,10 @@ class Game {
     p._wardDuration       = 0;
     p._reaperThreshold    = 0;
     p._cursedMirror       = false;
+    p._soulDrain          = 0;
+    p._bloodPactBleed     = false;
+    p._wardZap            = false;
+    p._mirrorPulse        = false;
     p._soulBurstGem       = false;
     p._shockwaveGem       = false;
     p._combustionGem      = false;
