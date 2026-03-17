@@ -33,7 +33,7 @@ const RELIC_DEFS = {
     id: 'cataclysm_clock',
     name: 'Cataclysm Clock',
     icon: '💥',
-    desc: 'Massive explosion every 12s devastates all enemies in a massive radius.',
+    desc: 'Massive explosion every 12s devastates all enemies within 400px.',
     apply(player) { player._nukeInterval = 12; player._nukeRadius = 400; },
   },
 
@@ -49,7 +49,7 @@ const RELIC_DEFS = {
     id: 'chain_death',
     name: 'Chain Death',
     icon: '⛓',
-    desc: 'Enemies explode on death, dealing 60% damage in a burst radius.',
+    desc: 'Enemies explode on death, dealing 60% damage in 100px area.',
     apply(player) { player._chainDeathPct = 0.6; player._chainDeathRadius = 100; },
   },
 

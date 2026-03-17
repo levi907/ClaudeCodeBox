@@ -227,16 +227,19 @@ class UI {
         if (allLeg) {
           resultLabel = `<span class="super-legendary-badge">✦+ SUPER LEGENDARY</span>`;
           resultPreview = `<span class="forge-gem-preview forge-gem-preview-legendary" style="border-color:#ff6600;box-shadow:0 0 8px #ff6600"></span>`;
-        } else {
+        } else if (allRare) {
           resultLabel = 'Legendary';
           resultPreview = `<span class="forge-gem-preview forge-gem-preview-legendary"></span>`;
+        } else {
+          resultLabel = 'Rare';
+          resultPreview = `<span class="forge-gem-preview forge-gem-preview-rare"></span>`;
         }
         banner.innerHTML = `🔨 RARE FORGE — Result: ${resultPreview} ${resultLabel} <button class="forge-confirm-btn">⚒ Forge</button> <button class="forge-skip-btn">Skip</button>`;
         banner.querySelector('.forge-confirm-btn').addEventListener('click', () => this._executeRareForge());
         banner.querySelector('.forge-confirm-btn').addEventListener('touchend', e => { e.preventDefault(); this._executeRareForge(); });
       } else {
         const need = 3 - this._rareForgeSelected.length;
-        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} (any 3 = Legendary · 3× Legendary = <span class="super-legendary-badge">✦+ Super!</span>) <button class="forge-skip-btn">Skip</button>`;
+        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} (3× Rare = Legendary · 3× Legendary = <span class="super-legendary-badge">✦+ Super!</span>) <button class="forge-skip-btn">Skip</button>`;
       }
       banner.querySelector('.forge-skip-btn').addEventListener('click', () => this._skipForge());
       banner.querySelector('.forge-skip-btn').addEventListener('touchend', e => { e.preventDefault(); this._skipForge(); });
@@ -631,14 +634,19 @@ class UI {
         else break;
       }
       newGem = generateSuperLegendaryGem(uniqueLegKeys);
-    } else {
+    } else if (allRare) {
       const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
       const [legKey] = weightedPickUnique(legendaryKeys, 1);
       newGem = generateGem('legendary');
       newGem.mods = [{ type: legKey, value: null }, ...keptMods.slice(0, 3)];
+    } else {
+      newGem = generateGem('rare');
+      newGem.mods = keptMods.slice(0, 3);
     }
 
-    const title = allLeg ? '✦+ SUPER LEGENDARY FORGE!' : '✦ LEGENDARY FORGE RESULT';
+    const title = allLeg ? '✦+ SUPER LEGENDARY FORGE!'
+                : allRare ? '✦ LEGENDARY FORGE RESULT'
+                : '🔨 RARE FORGE RESULT';
 
     this._showForgeResult(newGem, title, () => {
       // Apply: clear source slots, put new gem in first selected
@@ -735,12 +743,8 @@ class UI {
       .map(g => `${g.rarity.charAt(0).toUpperCase() + g.rarity.slice(1)} Gem`)
       .join(', ') || 'No gems socketed';
 
-    const failReason = this.game._spawnCapReached
-      ? '⚠ Enemy spawn cap reached — overwhelmed!'
-      : '💀 You were slain';
     this.gameoverStats.innerHTML = `
-      <div class="stat-line" style="color:#ff6060;font-weight:bold">${failReason}</div>
-      <div class="stat-line">Time: ${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}</div>
+      <div class="stat-line">Time Survived: ${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}</div>
       <div class="stat-line">Level Reached: ${player.level}</div>
       <div class="stat-line">Enemies Slain: ${player.kills}</div>
       <div class="stat-line">Gems Socketed: ${gemSummary}</div>
@@ -758,7 +762,6 @@ class UI {
     const winScreen = document.getElementById('win-screen');
     const winStats = document.getElementById('win-stats');
     winStats.innerHTML = `
-      <div class="stat-line" style="color:#88ff88;font-weight:bold">All bosses defeated — spawn cap never breached!</div>
       <div class="stat-line">⏱ Time: ${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}</div>
       <div class="stat-line">⭐ Level: ${player.level}</div>
       <div class="stat-line">💀 Kills: ${player.kills}</div>
