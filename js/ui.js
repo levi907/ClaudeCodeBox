@@ -292,8 +292,8 @@ class UI {
       slot.dataset.slotType  = 'inv';
       slot.dataset.slotIndex = i;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
-      // Allow scroll through empty slots on mobile; disable browser handling on gem slots (drag target)
-      slot.style.touchAction = gem ? 'none' : 'pan-y';
+      // Always allow pan-y so the browser can scroll natively; gem drag uses long-press
+      slot.style.touchAction = 'pan-y';
       slot.onpointerdown = (e) => this._onSlotPointerDown(e, 'inv', i);
       grid.appendChild(slot);
     }
@@ -381,15 +381,15 @@ class UI {
     }
 
     const gem = this._getGem({ type, index });
-    if (!gem) return;
+    if (!gem) return; // empty slot — browser handles pan-y scroll natively
 
     const startX = e.clientX, startY = e.clientY;
-    let dragging = false;
-    let scrolling = false;
-    const invContent = document.getElementById('inventory-content');
-    const startScrollTop = invContent ? invContent.scrollTop : 0;
+    const slotEl = e.currentTarget;
+    const pointerId = e.pointerId;
+    let dragStarted = false;
+    let cancelled = false;
 
-    // Ghost element that follows the pointer
+    // Ghost element that follows the pointer during drag
     const ghost = document.createElement('div');
     ghost.id = 'drag-ghost';
     ghost.innerHTML = this._gemCellHTML(gem);
@@ -398,36 +398,33 @@ class UI {
     ghost.style.left = startX + 'px';
     ghost.style.top  = startY + 'px';
 
-    this._dragState = { type, index, gem };
+    const startDrag = () => {
+      dragStarted = true;
+      this._dragState = { type, index, gem };
+      document.body.classList.add('is-dragging');
+      document.body.appendChild(ghost);
+      // Capture pointer so drag events keep firing even if finger moves off the slot
+      try { slotEl.setPointerCapture(pointerId); } catch (_) {}
+      this._renderInventory();
+    };
 
     const onMove = (ev) => {
+      if (cancelled) return;
       const dx = ev.clientX - startX, dy = ev.clientY - startY;
-      const dist = Math.sqrt(dx*dx + dy*dy);
+      const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (!dragging && !scrolling && dist > 6) {
-        if (Math.abs(dy) > Math.abs(dx)) {
-          // Primarily vertical — treat as scroll gesture
-          scrolling = true;
-          this._dragState = null;
-          document.body.classList.remove('is-dragging');
-        } else {
-          // Primarily horizontal — treat as drag gesture
-          dragging = true;
-          document.body.classList.add('is-dragging');
-          document.body.appendChild(ghost);
-          this._renderInventory();
-        }
-      }
-
-      if (scrolling && invContent) {
-        invContent.scrollTop = startScrollTop - dy;
+      if (!dragStarted && dist > 10) {
+        // Finger moved before long-press fired — let the browser scroll natively
+        clearTimeout(longPressTimer);
+        cancelled = true;
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
         return;
       }
 
-      if (dragging) {
+      if (dragStarted) {
         ghost.style.left = ev.clientX + 'px';
         ghost.style.top  = ev.clientY + 'px';
-        // Highlight drop target
         ghost.style.visibility = 'hidden';
         const under = document.elementFromPoint(ev.clientX, ev.clientY);
         ghost.style.visibility = '';
@@ -443,6 +440,7 @@ class UI {
     };
 
     const onUp = (ev) => {
+      clearTimeout(longPressTimer);
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       ghost.remove();
@@ -450,8 +448,7 @@ class UI {
       document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
       this._dragState = null;
 
-      if (dragging) {
-        // Complete drop
+      if (dragStarted) {
         ghost.style.visibility = 'hidden';
         const under = document.elementFromPoint(ev.clientX, ev.clientY);
         const to = this._slotFromElement(under);
@@ -460,7 +457,6 @@ class UI {
           const gemB = this._getGem(to);
           this._setGem({ type, index }, gemB);
           this._setGem(to, gemA);
-          // Socket snap effect when dropping into a wand slot
           if (to.type === 'wand' && gemA) {
             this._socketSnapEffect(to.index, gemA);
           }
@@ -469,6 +465,9 @@ class UI {
       }
       this._renderInventory();
     };
+
+    // Long press → start drag; any movement before that → cancel and let browser scroll
+    const longPressTimer = setTimeout(startDrag, 420);
 
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
