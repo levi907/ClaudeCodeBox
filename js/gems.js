@@ -12,6 +12,9 @@ const MOD_DEFS = {
   move_speed:      { rarity: 'common',    label: '+Move Speed',   color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Speed` },
   lifesteal:       { rarity: 'common',    label: '+Lifesteal',    color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Lifesteal` },
   crit_chance:     { rarity: 'common',    label: '+Crit Chance',  color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Crit` },
+  armor:           { rarity: 'common',    label: '+Armor',        color: '#aabbcc', format: v => `+${v} Armor` },
+  hp_regen:        { rarity: 'common',    label: '+HP Regen',     color: '#aabbcc', format: v => `+${v} HP/s` },
+  proj_size:       { rarity: 'common',    label: '+Proj Size',    color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Proj Size` },
 
   // --- Rare mods (gold) - advanced upgrades ---
   extra_projectile: { rarity: 'rare',     label: '+Projectiles',  color: '#ffd700', format: v => `+${v} Projectile` },
@@ -20,51 +23,72 @@ const MOD_DEFS = {
   chain:            { rarity: 'rare',     label: '+Chain',        color: '#ffd700', format: v => `+${v} Chain` },
   cooldown_reduce:  { rarity: 'rare',     label: '-Cooldown',     color: '#ffd700', format: v => `-${Math.round(v * 100)}% Cooldown` },
   damage_percent:   { rarity: 'rare',     label: '+Damage%',      color: '#ffd700', format: v => `+${Math.round(v * 100)}% Damage` },
+  multicast:        { rarity: 'rare',     label: 'Multicast',     color: '#ffd700', format: v => `${Math.round(v * 100)}% chance to fire twice` },
+  thorns:           { rarity: 'rare',     label: '+Thorns',       color: '#ffd700', format: v => `Reflect ${v} damage on hit` },
+  bleed:            { rarity: 'rare',     label: 'Bleed',         color: '#ffd700', format: () => `Hits cause 5 dmg/s bleed for 3s` },
 
   // --- Legendary mods (orange) - unique game-changing effects ---
-  spiral:           { rarity: 'legendary', label: 'Spiral',          color: '#ff8c00', format: () => 'Projectiles spiral outward' },
-  explosive:        { rarity: 'legendary', label: 'Explosive',       color: '#ff8c00', format: () => 'Projectiles explode on contact' },
-  virulent_poison:  { rarity: 'legendary', label: 'Virulent Poison', color: '#ff8c00', format: () => 'Poison spreads on enemy death' },
-  thunder_aegis:    { rarity: 'legendary', label: 'Thunder Aegis',   color: '#ff8c00', format: () => 'AOE lightning when you take damage' },
+  spiral:           { rarity: 'legendary', label: 'Spiral',           color: '#ff8c00', format: () => 'Projectiles spiral outward' },
+  explosive:        { rarity: 'legendary', label: 'Explosive',        color: '#ff8c00', format: () => 'Projectiles explode on contact' },
+  virulent_poison:  { rarity: 'legendary', label: 'Virulent Poison',  color: '#ff8c00', format: () => 'Poison spreads on enemy death' },
+  thunder_aegis:    { rarity: 'legendary', label: 'Thunder Aegis',    color: '#ff8c00', format: () => 'AOE lightning when you take damage' },
+  chain_lightning:  { rarity: 'legendary', label: 'Chain Lightning',  color: '#ff8c00', format: () => 'On hit, arc to 3 nearby enemies (60% dmg)' },
+  meteor:           { rarity: 'legendary', label: 'Meteor',           color: '#ff8c00', format: () => 'Every 9s drop 3 meteors on enemies' },
+  reaper:           { rarity: 'legendary', label: 'Reaper',           color: '#ff8c00', format: () => 'Execute enemies below 20% HP' },
 };
 
 // Drop weight for each mod (higher = more likely to appear)
 const MOD_WEIGHTS = {
-  // Common - balanced, basic stats slightly more common
+  // Common
   flat_damage:      5,
   attack_speed:     4,
   max_hp:           5,
   move_speed:       3,
   lifesteal:        3,
   crit_chance:      3,
-  // Rare - projectile-count and chain mods are more impactful so rarer
+  armor:            4,
+  hp_regen:         3,
+  proj_size:        3,
+  // Rare
   extra_projectile: 2,
   pierce:           3,
   bounce:           2,
   chain:            2,
   cooldown_reduce:  4,
   damage_percent:   4,
-  // Legendary mods - equal chance within legendary tier
+  multicast:        3,
+  thorns:           2,
+  bleed:            3,
+  // Legendary mods — equal chance within legendary tier
   spiral:           1,
   explosive:        1,
   virulent_poison:  1,
   thunder_aegis:    1,
+  chain_lightning:  1,
+  meteor:           1,
+  reaper:           1,
 };
 
 // Numeric value for each non-legendary mod
 const MOD_VALUES = {
-  flat_damage: 10,
-  attack_speed: 0.12,
-  max_hp: 25,
-  move_speed: 0.12,
-  lifesteal: 0.06,
-  crit_chance: 0.08,
-  extra_projectile: 1,
-  pierce: 1,
-  bounce: 1,
-  chain: 1,
-  cooldown_reduce: 0.18,
-  damage_percent: 0.25,
+  flat_damage:       10,
+  attack_speed:      0.12,
+  max_hp:            25,
+  move_speed:        0.12,
+  lifesteal:         0.06,
+  crit_chance:       0.08,
+  armor:             6,
+  hp_regen:          1.5,
+  proj_size:         0.3,
+  extra_projectile:  1,
+  pierce:            1,
+  bounce:            1,
+  chain:             1,
+  cooldown_reduce:   0.18,
+  damage_percent:    0.25,
+  multicast:         0.35,
+  thorns:            8,
+  bleed:             1,  // value unused (flag-like)
 };
 
 const GEM_COLORS = {
@@ -96,16 +120,21 @@ function generateGem(rarityOverride) {
     rarity = r < 0.70 ? 'common' : r < 0.94 ? 'rare' : 'legendary';
   }
 
-  const commonKeys   = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'common');
-  const rareKeys     = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'rare');
+  const commonKeys    = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'common');
+  const rareKeys      = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'rare');
   const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
 
   const mods = [];
 
   if (rarity === 'common') {
-    // Common: 1 mod only
-    for (const k of weightedPickUnique(commonKeys, 1)) {
-      mods.push({ type: k, value: MOD_VALUES[k] });
+    // 20% chance for a common gem to roll a rare mod instead
+    if (Math.random() < 0.20) {
+      const [rareMod] = weightedPickUnique(rareKeys, 1);
+      mods.push({ type: rareMod, value: MOD_VALUES[rareMod] });
+    } else {
+      for (const k of weightedPickUnique(commonKeys, 1)) {
+        mods.push({ type: k, value: MOD_VALUES[k] });
+      }
     }
   } else if (rarity === 'rare') {
     const rareCount = Math.random() < 0.5 ? 1 : 2;

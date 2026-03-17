@@ -75,12 +75,15 @@ class Game {
     this._lightningArcs = [];
     this._processingLevelUp = false;
     this._nukeTimer = 0;
+    this._meteorTimer = 0;
+    this._wardTimer = 999;  // starts ready (8s+)
     this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
     this.camera.y = 0;
     this.ui.updateSlots();
     this.ui.hideGameOver();
+    document.getElementById('win-screen')?.classList.add('hidden');
   }
 
   start() {
@@ -119,8 +122,18 @@ class Game {
     this.time += dt;
     this.frame++;
 
-    // HP regen from relics
+    // Victory condition: survive 6 minutes
+    if (this.time >= 360) {
+      this.running = false;
+      this.ui.showWin(this.player, this.relics);
+      return;
+    }
+
+    // HP regen from relics/gems
     if (this.player._hpRegen) this.player.heal(this.player._hpRegen * dt);
+
+    // Arcane Ward: regenerate shield
+    if (this.player._wardDuration) this._wardTimer += dt;
 
     // Iron Fortress: low-HP shield
     if (this.player._fortressShieldDur) {
@@ -136,6 +149,25 @@ class Game {
       if (this._nukeTimer >= this.player._nukeInterval) {
         this._nukeTimer = 0;
         this._triggerNuke();
+      }
+    }
+
+    // Meteor gem: drop 3 meteors every 9s
+    if (this.player._meteorGem) {
+      this._meteorTimer += dt;
+      if (this._meteorTimer >= 9) {
+        this._meteorTimer = 0;
+        this._triggerMeteors();
+      }
+    }
+
+    // Reaper's Scythe: execute low-HP enemies each frame
+    if (this.player._reaperThreshold) {
+      for (const e of this.enemies) {
+        if (!e.isDead && e.hp < e.maxHp * this.player._reaperThreshold && e.hp > 0) {
+          e.takeDamage(99999);
+          if (e.isDead) this.onEnemyDead(e);
+        }
       }
     }
 
@@ -159,13 +191,32 @@ class Game {
       if (this.player.invincibleTime <= 0) {
         const d = dist(e.x, e.y, this.player.x, this.player.y);
         if (d < e.size + this.player.size * 0.7) {
-          this.player.takeDamage(e.damage, this.particles);
-          if (this.player._thunderAegis) this._thunderAegisStrike();
-          if (this.player._thorns > 0) {
-            e.takeDamage(this.player._thorns);
-            if (e.isDead) this.onEnemyDead(e);
+          // Arcane Ward: block the hit if shield is ready
+          if (this.player._wardDuration && this._wardTimer >= this.player._wardDuration) {
+            this._wardTimer = 0;
+            this.particles.spark(this.player.x, this.player.y, '#4488ff', 12);
+            this.particles.floatText(this.player.x, this.player.y - 20, 'WARDED', '#4488ff', 14);
+            this.player.invincibleTime = 0.3;
+          } else {
+            this.player.takeDamage(e.damage, this.particles);
+            if (this.player._thunderAegis) this._thunderAegisStrike();
+            if (this.player._thorns > 0) {
+              e.takeDamage(this.player._thorns);
+              if (e.isDead) this.onEnemyDead(e);
+            }
+            // Cursed Mirror: reflect damage to nearby enemies
+            if (this.player._cursedMirror) {
+              const nearby = this.enemies.filter(en => !en.isDead && dist(en.x, en.y, this.player.x, this.player.y) < 300);
+              for (const n of nearby) {
+                n.takeDamage(e.damage);
+                if (n.isDead) this.onEnemyDead(n);
+              }
+              if (nearby.length > 0) {
+                this.particles.spark(this.player.x, this.player.y, '#ff44aa', 8);
+              }
+            }
+            if (this.player.isDead) { this.ui.showGameOver(); return; }
           }
-          if (this.player.isDead) { this.ui.showGameOver(); return; }
         }
       }
     }
@@ -240,6 +291,30 @@ class Game {
             e.virulentlyPoisoned = true;
             e.poisoned = 6.0;
             this.particles.spark(e.x, e.y, '#80ff40', 5);
+          }
+
+          // Bleed application
+          if (p.bleed) {
+            e.bleed = Math.max(e.bleed, 3.0);
+          }
+
+          // Chain Lightning: arc to 3 nearby enemies for 60% damage
+          if (p.chainLightning && !e.isDead) {
+            const chainDmg = Math.round(p.damage * 0.6);
+            const chainTargets = this.enemies
+              .filter(t => !t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 200)
+              .sort((a, b) => distSq(e.x, e.y, a.x, a.y) - distSq(e.x, e.y, b.x, b.y))
+              .slice(0, 3);
+            for (const ct of chainTargets) {
+              ct.takeDamage(chainDmg);
+              this._lightningArcs.push({ x1: e.x, y1: e.y, x2: ct.x, y2: ct.y, age: 0, maxAge: 0.2 });
+              if (ct.isDead) this.onEnemyDead(ct);
+            }
+          }
+
+          // Reaper (gem): execute enemies below 20% HP
+          if (p.reaper && !e.isDead && e.hp < e.maxHp * 0.20) {
+            e.takeDamage(99999);
           }
 
           this.particles.floatText(e.x, e.y - 15, `${result.actual}`,
@@ -431,17 +506,20 @@ class Game {
       this.player.heal(this.player.maxHp * this.player._killHealPct);
     }
 
-    // Chain Death: enemies explode damaging nearby foes
-    if (this.player._chainDeathPct && this.player._chainDeathRadius) {
+    // Chain Death: enemies explode damaging nearby foes (no cascade — only first-order kills)
+    if (this.player._chainDeathPct && this.player._chainDeathRadius && !enemy._chainKill) {
       const dmg = Math.round(enemy.maxHp * this.player._chainDeathPct);
       const nearby = this.enemies.filter(e => !e.isDead && e !== enemy &&
         dist(e.x, e.y, enemy.x, enemy.y) < this.player._chainDeathRadius);
       for (const n of nearby) {
         const result = n.takeDamage(dmg);
         this.particles.floatText(n.x, n.y - 12, `${result.actual}`, '#ff8040', 11);
-        if (n.isDead) this.onEnemyDead(n);
+        if (n.isDead) {
+          n._chainKill = true;  // prevents secondary cascade
+          this.onEnemyDead(n);
+        }
       }
-      if (nearby.length > 0) this.particles.explode(enemy.x, enemy.y, '#ff6030', 12);
+      if (nearby.length > 0) this.particles.explode(enemy.x, enemy.y, '#ff6030', 8);
     }
 
     if (enemy.isBoss) {
@@ -612,17 +690,29 @@ class Game {
     p._killHealPct        = 0;
     p._voidPrismChance    = 0;
     p._fortressShieldDur  = 0;
+    p._phantomStrikeChance = 0;
+    p._echoInterval       = 0;
+    p._wardDuration       = 0;
+    p._reaperThreshold    = 0;
+    p._cursedMirror       = false;
 
     for (const r of this.relics) r.apply(p);
 
     // Layer gem bonuses on top of relic bonuses
     const ws = this.wand.computeStats();
-    p.maxHp         += ws.maxHpBonus;
-    p.hp             = Math.min(p.hp, p.maxHp);
+    p.maxHp          += ws.maxHpBonus;
+    p.hp              = Math.min(p.hp, p.maxHp);
     p.speedMultiplier += ws.moveSpeedBonus;
-    p.lifesteal      = Math.min(p.lifesteal + ws.lifestealBonus, 0.8);
-    p.critChance     = Math.min(p.critChance + ws.critBonus, 0.95);
-    p._thunderAegis  = ws.thunderAegis;
+    p.lifesteal       = Math.min(p.lifesteal + ws.lifestealBonus, 0.8);
+    p.critChance      = Math.min(p.critChance + ws.critBonus, 0.95);
+    p.armor           += ws.armorBonus;
+    p._hpRegen        += ws.hpRegenBonus;
+    p._thorns         += ws.thornsBonus;
+    p._projSizeMult   += ws.projSizeBonus;
+    p._thunderAegis   = ws.thunderAegis;
+    p._meteorGem      = ws.meteor;
+    // Reaper as gem stacks with Reaper's Scythe relic
+    if (ws.reaper && !p._reaperThreshold) p._reaperThreshold = 0.20;
   }
 
   // Keep legacy alias so old relics code paths don't break
@@ -655,6 +745,24 @@ class Game {
     this.particles.explode(this.player.x, this.player.y, '#ff4400', 40);
     this.particles.levelUpBurst(this.player.x, this.player.y);
     this.particles.floatText(this.player.x, this.player.y - 50, '💥 CATACLYSM!', '#ff6600', 18);
+  }
+
+  // Meteor gem: drop 3 meteors on random enemies
+  _triggerMeteors() {
+    const dmg = Math.round(this.wand.computeStats().damage * 12);
+    const radius = 110;
+    const targets = [...this.enemies].filter(e => !e.isDead)
+      .sort(() => Math.random() - 0.5).slice(0, 3);
+    for (const t of targets) {
+      // AoE at target position
+      const nearby = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, t.x, t.y) < radius);
+      for (const n of nearby) {
+        n.takeDamage(dmg);
+        if (n.isDead) this.onEnemyDead(n);
+      }
+      this.particles.explode(t.x, t.y, '#ff8800', 18);
+      this.particles.floatText(t.x, t.y - 20, '☄ METEOR', '#ff8800', 13);
+    }
   }
 
   // ---- Draw ----

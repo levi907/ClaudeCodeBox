@@ -173,6 +173,7 @@ class Enemy {
     this.knockbackX = 0; this.knockbackY = 0;
     this.frozen = 0;
     this.poisoned = 0;
+    this.bleed = 0;     // bleed duration in seconds
     this.isDead = false;
     this.id = Math.random();
   }
@@ -195,6 +196,12 @@ class Enemy {
     if (this.poisoned > 0) {
       this.poisoned -= dt;
       this.hp -= 3 * dt;
+      if (this.hp <= 0) this.isDead = true;
+    }
+
+    if (this.bleed > 0) {
+      this.bleed -= dt;
+      this.hp -= 5 * dt;
       if (this.hp <= 0) this.isDead = true;
     }
   }
