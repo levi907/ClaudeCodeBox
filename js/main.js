@@ -53,6 +53,17 @@
     }
   });
 
+  // Restart buttons (game over + win)
+  function bindRestart(id) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      document.getElementById('win-screen')?.classList.add('hidden');
+      game.restart();
+    });
+  }
+  bindRestart('win-restart-btn');
+
   // Prevent context menu on long press (mobile)
   document.addEventListener('contextmenu', e => e.preventDefault());
 

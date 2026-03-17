@@ -1124,6 +1124,36 @@ const Sprites = {
   // ======================================================
   //  WORLD / BACKGROUND — Stone Dungeon Floor
   // ======================================================
+  // Pre-rendered torch glow sprite (created once, reused every frame)
+  _getTorchSprite(tileSize) {
+    if (this._torchSprite && this._torchSprite.tileSize === tileSize) return this._torchSprite.canvas;
+    const spread = tileSize * 4.5; // max spread
+    const size = Math.ceil(spread * 2);
+    const off = document.createElement('canvas');
+    off.width = size; off.height = size;
+    const oc = off.getContext('2d');
+    const grad = oc.createRadialGradient(spread, spread, 0, spread, spread, spread);
+    grad.addColorStop(0,   'rgba(236,160,48,0.13)');
+    grad.addColorStop(0.35,'rgba(200,104,32,0.07)');
+    grad.addColorStop(0.7, 'rgba(144,64,16,0.03)');
+    grad.addColorStop(1,   'rgba(90,36,0,0)');
+    oc.fillStyle = grad;
+    oc.fillRect(0, 0, size, size);
+    this._torchSprite = { canvas: off, tileSize };
+    return off;
+  },
+
+  // Cached vignette gradient (recreated only when viewport size changes)
+  _getVignette(ctx, width, height) {
+    const c = this._vigCache;
+    if (c && c.width === width && c.height === height) return c.grad;
+    const grad = ctx.createRadialGradient(width/2, height/2, height * 0.28, width/2, height/2, height * 0.85);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(4,2,1,0.72)');
+    this._vigCache = { grad, width, height };
+    return grad;
+  },
+
   drawBackground(ctx, camX, camY, width, height) {
     // Warm void base — matches menu's #0d0b09 stone dark
     ctx.fillStyle = '#0c0904';
@@ -1132,6 +1162,9 @@ const Sprites = {
     const tileSize = CONFIG.TILE_SIZE;
     const startX = Math.floor(camX / tileSize) * tileSize - camX;
     const startY = Math.floor(camY / tileSize) * tileSize - camY;
+    const torchSprite = this._getTorchSprite(tileSize);
+    const torchSpriteSize = torchSprite.width;
+    const torchHalf = torchSpriteSize / 2;
 
     for (let x = startX; x < width + tileSize; x += tileSize) {
       for (let y = startY; y < height + tileSize; y += tileSize) {
@@ -1175,45 +1208,30 @@ const Sprites = {
           }
         }
 
-        // Arcane rune inscription (rare)
+        // Arcane rune inscription (rare) — no shadowBlur, just opacity
         if (v > 0.965) {
           const runeAlpha = 0.11 + (v - 0.965) * 2.5;
-          ctx.save();
-          ctx.shadowColor = `rgba(120,30,220,${runeAlpha * 3})`;
-          ctx.shadowBlur = 10;
           ctx.fillStyle = `rgba(130,40,220,${runeAlpha})`;
           ctx.font = `${tileSize * 0.48}px serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', '✦', '◈', '⟁'];
           ctx.fillText(runes[Math.abs(hash) % runes.length], x + tileSize / 2, y + tileSize / 2);
-          ctx.restore();
         }
 
-        // Torch glow pool — same flame palette as menu lanterns, more frequent
+        // Torch glow pool — stamp pre-rendered sprite instead of creating gradient each frame
         if (v > 0.92) {
-          ctx.save();
-          const spread = tileSize * (2.5 + v2 * 2);
-          const torchGrad = ctx.createRadialGradient(
-            x + tileSize / 2, y + tileSize / 2, 0,
-            x + tileSize / 2, y + tileSize / 2, spread
-          );
-          torchGrad.addColorStop(0,   'rgba(236,160,48,0.13)');  // #eca030 — flmHi
-          torchGrad.addColorStop(0.35, 'rgba(200,104,32,0.07)'); // #c86820 — flmMd
-          torchGrad.addColorStop(0.7,  'rgba(144,64,16,0.03)');  // #904010 — flmLow
-          torchGrad.addColorStop(1,    'rgba(90,36,0,0)');       // fade out
-          ctx.fillStyle = torchGrad;
-          ctx.fillRect(x - spread, y - spread, spread * 2, spread * 2);
-          ctx.restore();
+          const cx = x + tileSize / 2;
+          const cy = y + tileSize / 2;
+          ctx.globalAlpha = 0.6 + v2 * 0.4;
+          ctx.drawImage(torchSprite, cx - torchHalf, cy - torchHalf);
+          ctx.globalAlpha = 1;
         }
       }
     }
 
-    // Edge vignette — dark border simulating torchlit dungeon walls around the viewport
-    const vig = ctx.createRadialGradient(width/2, height/2, height * 0.28, width/2, height/2, height * 0.85);
-    vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(4,2,1,0.72)');
-    ctx.fillStyle = vig;
+    // Edge vignette — cached gradient, recreated only on resize
+    ctx.fillStyle = this._getVignette(ctx, width, height);
     ctx.fillRect(0, 0, width, height);
   },
 
@@ -1225,8 +1243,6 @@ const Sprites = {
     ctx.save();
     ctx.globalAlpha = p.alpha;
     if (p.type === 'spark') {
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
       ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(sx, sy, p.size, 0, Math.PI * 2);

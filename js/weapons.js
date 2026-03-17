@@ -8,6 +8,7 @@ class Wand {
   constructor() {
     this.socketedGems = [null, null, null]; // 3 gem sockets
     this.cooldownTimer = 0;
+    this._shotCount = 0; // tracks total shots fired (for echo_chamber)
   }
 
   // Derive all wand stats and player-affecting bonuses from socketed gems
@@ -30,6 +31,14 @@ class Wand {
       critBonus: 0,
       cooldownReduction: 0,
       damageMultBonus: 0,
+      armorBonus: 0,
+      hpRegenBonus: 0,
+      projSizeBonus: 0,
+      thornsBonus: 0,
+
+      // Rare gem flags
+      multicastChance: 0,
+      bleed: false,
 
       // Legendary effects
       spiral: false,
@@ -37,6 +46,9 @@ class Wand {
       explosionRadius: 60,
       virulentPoison: false,
       thunderAegis: false,
+      chainLightning: false,
+      meteor: false,
+      reaper: false,
     };
 
     for (const gem of this.socketedGems) {
@@ -55,10 +67,19 @@ class Wand {
           case 'chain':             s.chain += mod.value; break;
           case 'cooldown_reduce':   s.cooldownReduction += mod.value; break;
           case 'damage_percent':    s.damageMultBonus += mod.value; break;
+          case 'armor':             s.armorBonus += mod.value; break;
+          case 'hp_regen':          s.hpRegenBonus += mod.value; break;
+          case 'proj_size':         s.projSizeBonus += mod.value; break;
+          case 'thorns':            s.thornsBonus += mod.value; break;
+          case 'multicast':         s.multicastChance += mod.value; break;
+          case 'bleed':             s.bleed = true; break;
           case 'spiral':            s.spiral = true; break;
           case 'explosive':         s.explosive = true; break;
           case 'virulent_poison':   s.virulentPoison = true; break;
           case 'thunder_aegis':     s.thunderAegis = true; break;
+          case 'chain_lightning':   s.chainLightning = true; break;
+          case 'meteor':            s.meteor = true; break;
+          case 'reaper':            s.reaper = true; break;
         }
       }
     }
@@ -80,8 +101,10 @@ class Wand {
   _fire(game, stats) {
     const p = game.player;
     const count = stats.projectiles + p.projectileCountBonus;
-    const targets = game.getNearestEnemies(count + 2); // a few extras for prism
+    const targets = game.getNearestEnemies(count + 4);
     if (targets.length === 0) return;
+
+    this._shotCount++;
 
     // Berserker rage: damage bonus based on missing HP
     let berserkerMult = 1.0;
@@ -91,14 +114,14 @@ class Wand {
     }
 
     const totalDmgMult = p.damageMultiplier * (1 + stats.damageMultBonus) * berserkerMult;
-    const projSize = 7 * (p._projSizeMult || 1);
+    const projSize = 7 * (p._projSizeMult || 1); // projSizeBonus already applied to _projSizeMult
 
-    const spawnProj = (target, extraTarget) => {
+    const spawnProj = (target, extraTarget, dmgOverride) => {
       const tgt = extraTarget || target;
       let a = angle(p.x, p.y, tgt.x, tgt.y);
       if (count > 1 && !extraTarget) a += rng(-0.15, 0.15);
 
-      const baseDmg = Math.round(stats.damage * totalDmgMult);
+      const baseDmg = Math.round(stats.damage * (dmgOverride || totalDmgMult));
       const isCrit  = Math.random() < (p.critChance + stats.critBonus);
       const dmg     = isCrit ? baseDmg * 2 : baseDmg;
 
@@ -120,6 +143,9 @@ class Wand {
         explosive: stats.explosive,
         explosionRadius: stats.explosionRadius,
         virulentPoison: stats.virulentPoison,
+        bleed: stats.bleed,
+        chainLightning: stats.chainLightning,
+        reaper: stats.reaper,
       }));
     };
 
@@ -132,6 +158,16 @@ class Wand {
       if (p._voidPrismChance && Math.random() < p._voidPrismChance) {
         const altTarget = targets.find((t, idx) => idx !== (i % targets.length)) || target;
         spawnProj(target, altTarget);
+      }
+
+      // Multicast: chance to fire the same shot twice
+      if (stats.multicastChance && Math.random() < stats.multicastChance) {
+        spawnProj(target);
+      }
+
+      // Phantom Strike: fire a 3× damage phantom bolt
+      if (p._phantomStrikeChance && Math.random() < p._phantomStrikeChance) {
+        spawnProj(target, null, totalDmgMult * 3);
       }
     }
 
@@ -160,6 +196,35 @@ class Wand {
           explosive: stats.explosive,
           explosionRadius: stats.explosionRadius,
           virulentPoison: stats.virulentPoison,
+          bleed: stats.bleed,
+          chainLightning: stats.chainLightning,
+          reaper: stats.reaper,
+        }));
+      }
+    }
+
+    // Echo Chamber: every Nth shot fires bonus omni projectiles
+    if (p._echoInterval && this._shotCount % p._echoInterval === 0) {
+      const baseDmg = Math.round(stats.damage * totalDmgMult);
+      const echoCount = 6;
+      for (let i = 0; i < echoCount; i++) {
+        const a = (Math.PI * 2 * i) / echoCount;
+        game.spawnProjectile(new Projectile({
+          x: p.x, y: p.y,
+          vx: Math.cos(a) * stats.projSpeed,
+          vy: Math.sin(a) * stats.projSpeed,
+          damage: baseDmg,
+          size: projSize * 1.3,
+          pierce: stats.pierce,
+          bounce: 0,
+          chain: 0,
+          chainRange: 0,
+          type: 'bolt',
+          color: '#00ffcc',
+          lifetime: 2.5,
+          spiraling: false,
+          explosive: stats.explosive,
+          explosionRadius: stats.explosionRadius,
         }));
       }
     }

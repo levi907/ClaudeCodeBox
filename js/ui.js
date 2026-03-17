@@ -90,9 +90,11 @@ class UI {
                    'linear-gradient(90deg, #600000, #ff0000)';
     this.hpFill.classList.toggle('hp-danger', hpPct <= 0.25);
 
-    const minutes = Math.floor(t / 60);
-    const seconds = Math.floor(t % 60);
+    const remaining = Math.max(0, 360 - t);
+    const minutes = Math.floor(remaining / 60);
+    const seconds = Math.floor(remaining % 60);
     this.timerDisplay.textContent = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    this.timerDisplay.style.color = remaining <= 30 ? '#ff4040' : remaining <= 60 ? '#ffaa20' : '';
     this.killCount.textContent = player.kills;
 
     // Kill milestone notifications
@@ -738,6 +740,21 @@ class UI {
   }
 
   hideGameOver() { this.gameoverScreen.classList.add('hidden'); }
+
+  showWin(player, relics) {
+    const t = this.game.time;
+    const minutes = Math.floor(t / 60);
+    const seconds = Math.floor(t % 60);
+    const winScreen = document.getElementById('win-screen');
+    const winStats = document.getElementById('win-stats');
+    winStats.innerHTML = `
+      <div class="stat-line">⏱ Time: ${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}</div>
+      <div class="stat-line">⭐ Level: ${player.level}</div>
+      <div class="stat-line">💀 Kills: ${player.kills}</div>
+      <div class="stat-line">🏆 Relics: ${relics.map(r => r.def.name).join(', ') || 'None'}</div>
+    `;
+    winScreen.classList.remove('hidden');
+  }
 
   drawBossBar(ctx, boss, width, height) {
     if (!boss || boss.isDead) return;

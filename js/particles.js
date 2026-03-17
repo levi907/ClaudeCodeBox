@@ -2,9 +2,21 @@
 //  SPELL SURVIVORS - Particle System
 // ============================================================
 
+const PARTICLE_CAP = 400;
+
 class ParticleSystem {
   constructor() {
     this.particles = [];
+  }
+
+  _add(p) {
+    if (this.particles.length >= PARTICLE_CAP) {
+      // Drop oldest non-text particle to stay under cap
+      const idx = this.particles.findIndex(q => q.type !== 'text');
+      if (idx !== -1) this.particles.splice(idx, 1);
+      else return; // all text particles, skip
+    }
+    this.particles.push(p);
   }
 
   update(dt) {
@@ -34,7 +46,7 @@ class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const a = rng(0, Math.PI * 2);
       const spd = rng(30, 100);
-      this.particles.push({
+      this._add({
         type: 'spark', x, y,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
         drag: 3, gravity: 0,
@@ -49,7 +61,7 @@ class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const a = rng(0, Math.PI * 2);
       const spd = rng(20, 80);
-      this.particles.push({
+      this._add({
         type: 'blood', x, y,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
         drag: 4, gravity: 150,
@@ -62,7 +74,7 @@ class ParticleSystem {
 
   // Floating damage number
   floatText(x, y, text, color = '#ffffff', size = 14) {
-    this.particles.push({
+    this._add({
       type: 'text', x, y,
       vx: rng(-15, 15), vy: -60,
       drag: 1, gravity: 0,
@@ -77,7 +89,7 @@ class ParticleSystem {
     for (let i = 0; i < 16; i++) {
       const a = (i / 16) * Math.PI * 2;
       const spd = rng(80, 200);
-      this.particles.push({
+      this._add({
         type: 'star', x, y,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
         drag: 2, gravity: 0,
@@ -94,7 +106,7 @@ class ParticleSystem {
   xpCollect(x, y) {
     for (let i = 0; i < 4; i++) {
       const a = rng(0, Math.PI * 2);
-      this.particles.push({
+      this._add({
         type: 'spark', x, y,
         vx: Math.cos(a) * rng(20, 60), vy: Math.sin(a) * rng(20, 60),
         drag: 4, gravity: 0,
@@ -110,7 +122,7 @@ class ParticleSystem {
     for (let i = 0; i < count; i++) {
       const a = rng(0, Math.PI * 2);
       const spd = rng(50, 250);
-      this.particles.push({
+      this._add({
         type: 'spark', x, y,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
         drag: 3, gravity: 50,
@@ -125,7 +137,7 @@ class ParticleSystem {
   freeze(x, y) {
     for (let i = 0; i < 8; i++) {
       const a = rng(0, Math.PI * 2);
-      this.particles.push({
+      this._add({
         type: 'spark', x, y,
         vx: Math.cos(a) * rng(20, 60), vy: Math.sin(a) * rng(20, 60),
         drag: 3, gravity: 0,

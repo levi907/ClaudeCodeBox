@@ -23,7 +23,7 @@ const CONFIG = {
   ENEMY_SPAWN_MARGIN: 80,   // pixels beyond screen edge
   ENEMY_SPAWN_INTERVAL_START: 1.2,  // seconds
   ENEMY_SPAWN_INTERVAL_MIN: 0.3,
-  BOSS_SPAWN_MINUTES: [3, 6, 10, 15, 20],
+  BOSS_SPAWN_MINUTES: [1.5, 3, 4.5, 6],
 
   // World
   TILE_SIZE: 64,
