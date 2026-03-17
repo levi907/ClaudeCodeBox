@@ -174,6 +174,8 @@ class Enemy {
     this.frozen = 0;
     this.poisoned = 0;
     this.bleed = 0;     // bleed duration in seconds
+    this.cursed = 0;    // cursed duration — takes 25% more damage
+    this.decaying = 0;  // decay duration — loses 3% maxHp/s
     this.isDead = false;
     this.id = Math.random();
   }
@@ -204,10 +206,19 @@ class Enemy {
       this.hp -= 5 * dt;
       if (this.hp <= 0) this.isDead = true;
     }
+
+    if (this.cursed > 0) this.cursed -= dt;
+
+    if (this.decaying > 0) {
+      this.decaying -= dt;
+      this.hp -= this.maxHp * 0.03 * dt;
+      if (this.hp <= 0) this.isDead = true;
+    }
   }
 
   takeDamage(dmg, isCrit = false) {
-    const actual = Math.max(1, dmg - this.armor);
+    const curseMult = this.cursed > 0 ? 1.25 : 1;
+    const actual = Math.max(1, Math.round(dmg * curseMult) - this.armor);
     this.hp -= actual;
     if (this.hp <= 0) {
       this.hp = 0;
@@ -301,6 +312,15 @@ class Projectile {
     this.explosive = opts.explosive || false;
     this.explosionRadius = opts.explosionRadius || 0;
     this.virulentPoison = opts.virulentPoison || false;
+    this.bleed = opts.bleed || false;
+    this.chainLightning = opts.chainLightning || false;
+    this.reaper = opts.reaper || false;
+    // New legendary mod flags
+    this.lifeLeech = opts.lifeLeech || false;
+    this.overload = opts.overload || false;
+    this.frostNova = opts.frostNova || false;
+    this.curse = opts.curse || false;
+    this.decay = opts.decay || false;
   }
 
   update(dt) {

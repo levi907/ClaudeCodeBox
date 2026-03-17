@@ -294,9 +294,8 @@ class UI {
       slot.dataset.slotType  = 'inv';
       slot.dataset.slotIndex = i;
       slot.innerHTML = gem ? this._gemCellHTML(gem) : '<div class="empty-inv-label">—</div>';
-      // Gem slots: touch-action:none so we own the pointer (manual scroll + drag).
-      // Empty slots: pan-y so the browser scrolls natively without any JS.
-      slot.style.touchAction = gem ? 'none' : 'pan-y';
+      // All slots own the pointer so scroll always works regardless of gem presence.
+      slot.style.touchAction = 'none';
       slot.onpointerdown = (e) => this._onSlotPointerDown(e, 'inv', i);
       grid.appendChild(slot);
     }
@@ -384,13 +383,28 @@ class UI {
     }
 
     const gem = this._getGem({ type, index });
-    if (!gem) return; // empty slot — browser handles pan-y scroll natively
 
-    // touch-action:none is set on gem slots so we own the pointer.
-    // Default: any movement scrolls.  Drag activates after holding still 180ms.
+    // touch-action:none on all slots — we handle scroll + drag manually.
+    // Empty slots: scroll only (no drag).
     const startX = e.clientX, startY = e.clientY;
     const invContent = document.getElementById('inventory-content');
     const startScrollTop = invContent ? invContent.scrollTop : 0;
+
+    if (!gem) {
+      // Empty slot: support scrolling only
+      const onMoveEmpty = (ev) => {
+        if (invContent) invContent.scrollTop = startScrollTop - (ev.clientY - startY);
+      };
+      const onUpEmpty = () => {
+        document.removeEventListener('pointermove', onMoveEmpty);
+        document.removeEventListener('pointerup',   onUpEmpty);
+        document.removeEventListener('pointercancel', onUpEmpty);
+      };
+      document.addEventListener('pointermove',   onMoveEmpty);
+      document.addEventListener('pointerup',     onUpEmpty);
+      document.addEventListener('pointercancel', onUpEmpty);
+      return;
+    }
 
     let mode = 'idle'; // 'idle' → 'scroll' or 'drag'
     let ghost = null;

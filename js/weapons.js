@@ -40,7 +40,7 @@ class Wand {
       multicastChance: 0,
       bleed: false,
 
-      // Legendary effects
+      // Legendary effects (original)
       spiral: false,
       explosive: false,
       explosionRadius: 60,
@@ -49,6 +49,32 @@ class Wand {
       chainLightning: false,
       meteor: false,
       reaper: false,
+
+      // Pickup range bonus (attract/magnetism/void_pull)
+      xpRangeBonus: 0,
+
+      // New legendary mods
+      lifeLeech: false,
+      bounty: false,
+      phaseShot: false,
+      doubleTap: false,
+      overload: false,
+      frostNova: false,
+      curse: false,
+      decay: false,
+      soulBurst: false,
+      shockwave: false,
+      combustion: false,
+      bloodFrenzy: false,
+      stormCall: false,
+      timeStop: false,
+      graviton: false,
+      arcaneSurge: false,
+      unstableCore: false,
+      mirrorShot: false,
+      sigil: false,
+      warpBolt: false,
+      voidPull: false,
     };
 
     for (const gem of this.socketedGems) {
@@ -73,6 +99,8 @@ class Wand {
           case 'thorns':            s.thornsBonus += mod.value; break;
           case 'multicast':         s.multicastChance += mod.value; break;
           case 'bleed':             s.bleed = true; break;
+          case 'attract':           s.xpRangeBonus += mod.value; break;
+          case 'magnetism':         s.xpRangeBonus += mod.value; break;
           case 'spiral':            s.spiral = true; break;
           case 'explosive':         s.explosive = true; break;
           case 'virulent_poison':   s.virulentPoison = true; break;
@@ -80,6 +108,27 @@ class Wand {
           case 'chain_lightning':   s.chainLightning = true; break;
           case 'meteor':            s.meteor = true; break;
           case 'reaper':            s.reaper = true; break;
+          case 'life_leech':        s.lifeLeech = true; break;
+          case 'bounty':            s.bounty = true; break;
+          case 'phase_shot':        s.phaseShot = true; break;
+          case 'double_tap':        s.doubleTap = true; break;
+          case 'overload':          s.overload = true; break;
+          case 'frost_nova':        s.frostNova = true; break;
+          case 'curse':             s.curse = true; break;
+          case 'decay':             s.decay = true; break;
+          case 'soul_burst':        s.soulBurst = true; break;
+          case 'shockwave':         s.shockwave = true; break;
+          case 'combustion':        s.combustion = true; break;
+          case 'blood_frenzy':      s.bloodFrenzy = true; break;
+          case 'storm_call':        s.stormCall = true; break;
+          case 'time_stop':         s.timeStop = true; break;
+          case 'graviton':          s.graviton = true; break;
+          case 'arcane_surge':      s.arcaneSurge = true; break;
+          case 'unstable_core':     s.unstableCore = true; break;
+          case 'mirror_shot':       s.mirrorShot = true; break;
+          case 'sigil':             s.sigil = true; break;
+          case 'warp_bolt':         s.warpBolt = true; break;
+          case 'void_pull':         s.voidPull = true; break;
         }
       }
     }
@@ -113,17 +162,27 @@ class Wand {
       berserkerMult = 1 + p._berserkerMaxMult * (1 - hpRatio);
     }
 
-    const totalDmgMult = p.damageMultiplier * (1 + stats.damageMultBonus) * berserkerMult;
+    // Blood Frenzy: stacking kill bonus
+    const bloodFrenzyMult = p._bloodFrenzyMult || 1.0;
+
+    const totalDmgMult = p.damageMultiplier * (1 + stats.damageMultBonus) * berserkerMult * bloodFrenzyMult;
     const projSize = 7 * (p._projSizeMult || 1); // projSizeBonus already applied to _projSizeMult
 
-    const spawnProj = (target, extraTarget, dmgOverride) => {
+    const spawnProj = (target, extraTarget, dmgOverride, angleOverride) => {
       const tgt = extraTarget || target;
-      let a = angle(p.x, p.y, tgt.x, tgt.y);
-      if (count > 1 && !extraTarget) a += rng(-0.15, 0.15);
+      let a = angleOverride !== undefined ? angleOverride : angle(p.x, p.y, tgt.x, tgt.y);
+      if (count > 1 && !extraTarget && angleOverride === undefined) a += rng(-0.15, 0.15);
 
-      const baseDmg = Math.round(stats.damage * (dmgOverride || totalDmgMult));
+      let mult = dmgOverride || totalDmgMult;
+      // Unstable Core: 8% chance to deal 8× damage
+      if (stats.unstableCore && Math.random() < 0.08) mult *= 8;
+
+      const baseDmg = Math.round(stats.damage * mult);
       const isCrit  = Math.random() < (p.critChance + stats.critBonus);
       const dmg     = isCrit ? baseDmg * 2 : baseDmg;
+
+      // Phase Shot: pierce all enemies
+      const effectivePierce = stats.phaseShot ? 999 : stats.pierce;
 
       game.spawnProjectile(new Projectile({
         x: p.x, y: p.y,
@@ -131,7 +190,7 @@ class Wand {
         vy: Math.sin(a) * stats.projSpeed,
         damage: dmg,
         size: projSize,
-        pierce: stats.pierce,
+        pierce: effectivePierce,
         bounce: stats.bounce,
         chain: stats.chain,
         chainRange: stats.chainRange,
@@ -146,6 +205,11 @@ class Wand {
         bleed: stats.bleed,
         chainLightning: stats.chainLightning,
         reaper: stats.reaper,
+        lifeLeech: stats.lifeLeech,
+        overload: stats.overload,
+        frostNova: stats.frostNova,
+        curse: stats.curse,
+        decay: stats.decay,
       }));
     };
 
@@ -168,6 +232,19 @@ class Wand {
       // Phantom Strike: fire a 3× damage phantom bolt
       if (p._phantomStrikeChance && Math.random() < p._phantomStrikeChance) {
         spawnProj(target, null, totalDmgMult * 3);
+      }
+
+      // Double Tap: fire a second bolt at 85% damage
+      if (stats.doubleTap) {
+        spawnProj(target, null, totalDmgMult * 0.85);
+      }
+
+      // Mirror Shot: 25% chance to fire 3 spread copies
+      if (stats.mirrorShot && Math.random() < 0.25) {
+        const baseAngle = angle(p.x, p.y, target.x, target.y);
+        spawnProj(target, null, totalDmgMult * 0.7, baseAngle - 0.35);
+        spawnProj(target, null, totalDmgMult * 0.7, baseAngle);
+        spawnProj(target, null, totalDmgMult * 0.7, baseAngle + 0.35);
       }
     }
 
