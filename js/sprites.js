@@ -27,364 +27,83 @@ const Sprites = {
     ctx.translate(x, y);
     if (facing < 0) ctx.scale(-1, 1);
 
-    const bob = Math.sin(animFrame * 0.15) * 1.5;
+    // P = 1 canvas pixel at PIXEL_SCALE=4  (each art pixel = P×P game units = 4×4 display px)
+    const P  = 4;
+    // Pixel-art walk bob: alternates 0 / -1 pixel every 8 frames
+    const bob = (Math.floor(animFrame / 8) & 1) ? 0 : -P;
     const fl  = flashTime > 0;
-    const sb  = bob * 0.55; // staff bobs slightly less
 
-    // ---- Ground shadow ----
-    ctx.beginPath();
-    ctx.ellipse(0, 15 + bob, 13, 4, 0, 0, Math.PI * 2);
+    // Ground shadow
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fill();
+    ctx.fillRect(-3*P, P + bob, 6*P, P);
 
-    // ---- Staff pole — behind body, gnarled dark wood ----
-    ctx.strokeStyle = fl ? '#ffffff' : '#2a1606';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(12, 14 + sb);
-    ctx.bezierCurveTo(13, 4 + sb, 13, -5 + sb, 12, -13 + sb);
-    ctx.stroke();
-    if (!fl) {
-      // grain highlight
-      ctx.strokeStyle = '#4a2a0c';
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.moveTo(11, 11 + sb);
-      ctx.bezierCurveTo(12, 1 + sb, 12, -4 + sb, 11.5, -12 + sb);
-      ctx.stroke();
-    }
+    // Colour palette
+    const H = '#2e2820';  // hat body  (warm dark — distinct from floor)
+    const h = '#1e1a14';  // hat brim  (slightly lighter than stone)
+    const S = '#c09050';  // skin
+    const E = '#a050f0';  // arcane eye (bright purple)
+    const G = '#706050';  // beard / grey
+    const R = '#3a3830';  // robe main
+    const D = '#282624';  // robe shadow panels
+    const T = '#4a2c0c';  // staff wood
+    const C = '#e060ff';  // crystal tip (bright)
+    const B = '#302618';  // boots      (warm dark brown)
+    const _ = null;
 
-    // ---- Boots ----
-    if (!fl) {
-      // left boot (slightly back)
-      ctx.fillStyle = '#1c1408';
-      ctx.beginPath();
-      ctx.moveTo(-9, 7 + bob);
-      ctx.lineTo(-9, 13 + bob);
-      ctx.bezierCurveTo(-9, 17 + bob, -2, 17 + bob, -1, 14 + bob);
-      ctx.lineTo(-1, 7 + bob);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#342210';
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
+    // 8-wide × 13-row pixel art sprite.
+    // xOff = -4  → col 0 starts at x = -16, col 7 ends at x = +16
+    // yOff = -13 → row 0 (hat tip) at y = -52, row 12 bottom at y = 0 (feet)
+    const sprite = [
+    //  0    1    2    3    4    5    6    7
+      [ _,   _,   _,   H,   H,   _,   _,   _ ],  //  0  hat tip
+      [ _,   _,   H,   H,   H,   H,   _,   _ ],  //  1  hat
+      [ _,   H,   H,   H,   H,   H,   H,   _ ],  //  2  hat
+      [ h,   h,   h,   h,   h,   h,   h,   h ],  //  3  hat brim
+      [ _,   _,   S,   S,   S,   S,   _,   C ],  //  4  face + crystal
+      [ _,   _,   G,   S,   E,   S,   _,   T ],  //  5  eye + staff
+      [ _,   _,   G,   G,   S,   _,   _,   T ],  //  6  beard + staff
+      [ _,   D,   R,   R,   R,   R,   D,   T ],  //  7  shoulders
+      [ _,   D,   R,   R,   R,   R,   _,   T ],  //  8  torso
+      [ _,   D,   R,   R,   R,   D,   _,   T ],  //  9  lower torso
+      [ _,   _,   D,   R,   R,   D,   _,   _ ],  // 10  robe hem
+      [ _,   B,   _,   _,   _,   B,   _,   _ ],  // 11  boot tops
+      [ B,   B,   _,   _,   B,   B,   _,   _ ],  // 12  boots
+    ];
 
-      // right boot (forward)
-      ctx.fillStyle = '#201808';
-      ctx.beginPath();
-      ctx.moveTo(1, 7 + bob);
-      ctx.lineTo(1, 13 + bob);
-      ctx.bezierCurveTo(1, 17 + bob, 8, 17 + bob, 9, 14 + bob);
-      ctx.lineTo(9, 7 + bob);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#342210';
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
-    }
+    const ROWS = sprite.length, COLS = 8;
+    const xOff = -4, yOff = -13;
 
-    // ---- Robe lower hem — three overlapping panels ----
-    // left back panel
-    ctx.fillStyle = fl ? '#ffffff' : '#252320';
-    ctx.beginPath();
-    ctx.moveTo(-10, 0 + bob);
-    ctx.bezierCurveTo(-15, 5 + bob, -14, 13 + bob, -9, 15 + bob);
-    ctx.lineTo(-3, 15 + bob);
-    ctx.lineTo(-4, 0 + bob);
-    ctx.closePath();
-    ctx.fill();
-
-    // right back panel
-    ctx.fillStyle = fl ? '#ffffff' : '#272522';
-    ctx.beginPath();
-    ctx.moveTo(10, 0 + bob);
-    ctx.bezierCurveTo(15, 5 + bob, 14, 13 + bob, 9, 15 + bob);
-    ctx.lineTo(3, 15 + bob);
-    ctx.lineTo(4, 0 + bob);
-    ctx.closePath();
-    ctx.fill();
-
-    // center front panel — slightly lighter, closest to viewer
-    ctx.fillStyle = fl ? '#ffffff' : '#3a3832';
-    ctx.beginPath();
-    ctx.moveTo(-5, 0 + bob);
-    ctx.lineTo(-7, 15 + bob);
-    ctx.lineTo(7, 15 + bob);
-    ctx.lineTo(5, 0 + bob);
-    ctx.closePath();
-    ctx.fill();
-
-    if (!fl) {
-      ctx.strokeStyle = '#2a2820';
-      ctx.lineWidth = 0.7;
-      ctx.beginPath();
-      ctx.moveTo(-5, 0 + bob); ctx.lineTo(-7, 15 + bob);
-      ctx.moveTo(5, 0 + bob);  ctx.lineTo(7, 15 + bob);
-      ctx.stroke();
-    }
-
-    // ---- Robe body / torso ----
-    ctx.fillStyle = fl ? '#ffffff' : '#3c3a34';
-    ctx.beginPath();
-    ctx.moveTo(-12, 0 + bob);
-    ctx.bezierCurveTo(-13, -5 + bob, -10, -9 + bob, -7, -10 + bob);
-    ctx.lineTo(7, -10 + bob);
-    ctx.bezierCurveTo(10, -9 + bob, 13, -5 + bob, 12, 0 + bob);
-    ctx.closePath();
-    ctx.fill();
-
-    if (!fl) {
-      // shoulder fold lines
-      ctx.strokeStyle = '#505048';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(-12, 0 + bob);
-      ctx.bezierCurveTo(-13, -5 + bob, -11, -8 + bob, -8, -9.5 + bob);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(12, 0 + bob);
-      ctx.bezierCurveTo(13, -5 + bob, 11, -8 + bob, 8, -9.5 + bob);
-      ctx.stroke();
-
-      // visible tunic at open collar
-      ctx.fillStyle = '#4a3018';
-      ctx.beginPath();
-      ctx.moveTo(-3, -8 + bob);
-      ctx.lineTo(0, -12 + bob);
-      ctx.lineTo(3, -8 + bob);
-      ctx.closePath();
-      ctx.fill();
-
-      // leather belt
-      ctx.fillStyle = '#4a2a0e';
-      ctx.fillRect(-11, 0.5 + bob, 22, 2.5);
-      // buckle
-      ctx.fillStyle = '#c07020';
-      ctx.fillRect(-3.5, 0.2 + bob, 7, 3.3);
-      ctx.strokeStyle = '#e09030';
-      ctx.lineWidth = 0.7;
-      ctx.beginPath();
-      ctx.moveTo(-2, 1.8 + bob); ctx.lineTo(2, 1.8 + bob);
-      ctx.stroke();
-
-      // cloak clasp
-      ctx.fillStyle = '#c07020';
-      ctx.beginPath();
-      ctx.arc(0, -9 + bob, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // ---- Head — gaunt angular face ----
-    ctx.beginPath();
-    ctx.moveTo(0, -10 + bob);             // chin
-    ctx.bezierCurveTo(-7, -11 + bob, -8, -18 + bob, -5, -22 + bob);
-    ctx.bezierCurveTo(-2, -25 + bob,  6, -25 + bob,  7, -21 + bob);
-    ctx.bezierCurveTo( 9, -17 + bob,  7, -11 + bob,  0, -10 + bob);
-    ctx.fillStyle = fl ? '#ffffff' : '#b87840';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#906030';
-      ctx.lineWidth = 0.7;
-      ctx.stroke();
-      // hat-brim shadow across upper face
-      ctx.fillStyle = 'rgba(0,0,0,0.38)';
-      ctx.beginPath();
-      ctx.moveTo(-7, -17 + bob);
-      ctx.bezierCurveTo(-8, -19 + bob, -5, -23 + bob, 0, -23 + bob);
-      ctx.bezierCurveTo(5, -23 + bob,  8, -19 + bob, 7, -17 + bob);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    if (!fl) {
-      // left eye — dark glint deep-set under shadow
-      ctx.fillStyle = '#0a0604';
-      ctx.beginPath();
-      ctx.ellipse(-3, -18.5 + bob, 1.8, 1.4, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,180,60,0.4)'; // faint amber catch-light
-      ctx.beginPath();
-      ctx.ellipse(-3.5, -19 + bob, 0.7, 0.6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // right eye — arcane purple glow
-      ctx.fillStyle = '#9040e0';
-      
-      ctx.shadowBlur = 0;
-      ctx.beginPath();
-      ctx.ellipse(3.5, -18.5 + bob, 1.5, 1.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // gaunt nose — long angular
-      ctx.strokeStyle = 'rgba(120,65,18,0.75)';
-      ctx.lineWidth = 0.9;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(1, -17 + bob);
-      ctx.lineTo(2.5, -13.5 + bob);
-      ctx.quadraticCurveTo(4, -13 + bob, 3, -12 + bob);
-      ctx.stroke();
-
-      // thin lips
-      ctx.strokeStyle = 'rgba(90,50,15,0.85)';
-      ctx.lineWidth = 0.85;
-      ctx.beginPath();
-      ctx.moveTo(-2.5, -11.5 + bob);
-      ctx.quadraticCurveTo(0, -11 + bob, 3, -11.5 + bob);
-      ctx.stroke();
-
-      // beard — long scraggly grey
-      ctx.fillStyle = '#706858';
-      ctx.beginPath();
-      ctx.moveTo(-5, -11 + bob);
-      ctx.bezierCurveTo(-7, -5 + bob, -6, 1 + bob, -2, 3 + bob);
-      ctx.bezierCurveTo(0, 4 + bob, 3, 3 + bob, 5, 0 + bob);
-      ctx.bezierCurveTo(7, -5 + bob, 6, -11 + bob, 4, -11 + bob);
-      ctx.closePath();
-      ctx.fill();
-      // beard texture strands
-      ctx.strokeStyle = '#908878';
-      ctx.lineWidth = 0.6;
-      ctx.beginPath();
-      ctx.moveTo(-3, -9 + bob); ctx.bezierCurveTo(-4, -3 + bob, -3, 1 + bob, -1, 2 + bob);
-      ctx.moveTo(0,  -9 + bob); ctx.bezierCurveTo(0,  -3 + bob,  0, 1 + bob,  1, 2 + bob);
-      ctx.moveTo(3,  -9 + bob); ctx.bezierCurveTo(4,  -4 + bob,  3, 0 + bob,  2, 1 + bob);
-      ctx.stroke();
-    }
-
-    // ---- Hat brim — very wide (wider than shoulders) ----
-    ctx.beginPath();
-    ctx.ellipse(0, -21 + bob, 16, 4.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#181812';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#2c2c22';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      // underside cast-shadow onto face
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.beginPath();
-      ctx.ellipse(0, -20.5 + bob, 15, 3.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // ---- Hat cone — very tall, bent drooping tip ----
-    ctx.fillStyle = fl ? '#ffffff' : '#1b1b13';
-    ctx.beginPath();
-    ctx.moveTo(-14, -22 + bob);
-    ctx.bezierCurveTo(-15, -32 + bob, -8, -41 + bob,  1, -47 + bob);  // left side up
-    ctx.bezierCurveTo( 5,  -50 + bob,  9, -49 + bob, 11, -44 + bob);  // bent drooping tip
-    ctx.bezierCurveTo(11,  -36 + bob,  8, -28 + bob, 14, -22 + bob);  // right side down
-    ctx.closePath();
-    ctx.fill();
-
-    if (!fl) {
-      // lit left edge
-      ctx.strokeStyle = '#2e2e22';
-      ctx.lineWidth = 1.1;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-14, -22 + bob);
-      ctx.bezierCurveTo(-15, -32 + bob, -8, -41 + bob, 1, -47 + bob);
-      ctx.stroke();
-      // fabric creases
-      ctx.strokeStyle = '#131310';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(-3, -26 + bob);
-      ctx.bezierCurveTo(-1, -35 + bob,  4, -42 + bob, 7, -46 + bob);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo( 5, -26 + bob);
-      ctx.bezierCurveTo( 7, -32 + bob,  9, -37 + bob, 10, -42 + bob);
-      ctx.stroke();
-
-      // hat band — leather amber
-      ctx.strokeStyle = '#6a3e14';
-      ctx.lineWidth = 2.2;
-      ctx.lineCap = 'butt';
-      ctx.beginPath();
-      ctx.moveTo(-13, -24 + bob);
-      ctx.bezierCurveTo(-4, -27 + bob, 6, -26 + bob, 13, -24 + bob);
-      ctx.stroke();
-
-      // rune clasp on band
-      ctx.fillStyle = '#c07020';
-      ctx.beginPath();
-      ctx.arc(-1, -25.5 + bob, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#e09030';
-      ctx.lineWidth = 0.9;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-3.5, -25.5 + bob); ctx.lineTo(1.5, -25.5 + bob);
-      ctx.moveTo(-1,   -28.5 + bob); ctx.lineTo(-1,  -22.5 + bob);
-      ctx.stroke();
-    }
-
-    // ---- Staff top — leather binding + gnarled root cradle + crystal ----
-    if (!fl) {
-      // leather cord wraps
-      ctx.strokeStyle = '#5a3010';
-      ctx.lineWidth = 1.8;
-      ctx.lineCap = 'butt';
-      ctx.beginPath();
-      ctx.moveTo(10, -11 + sb); ctx.lineTo(14, -11 + sb);
-      ctx.moveTo(10, -13 + sb); ctx.lineTo(14, -13 + sb);
-      ctx.moveTo(10.5, -15 + sb); ctx.lineTo(13.5, -15 + sb);
-      ctx.stroke();
-
-      // gnarled branch arms gripping crystal
-      ctx.strokeStyle = '#2a1608';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(10, -15 + sb);
-      ctx.bezierCurveTo(8, -18 + sb, 9, -21 + sb, 12, -22 + sb);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(14, -15 + sb);
-      ctx.bezierCurveTo(16, -18 + sb, 15, -21 + sb, 12, -22 + sb);
-      ctx.stroke();
-
-      // crystal shard — faceted diamond shape
-      ctx.fillStyle = 'rgba(195,85,255,0.45)';
-      ctx.beginPath();
-      ctx.moveTo(8.5, -21 + sb);
-      ctx.lineTo(12, -16.5 + sb);
-      ctx.lineTo(15.5, -21 + sb);
-      ctx.lineTo(12, -29 + sb);
-      ctx.closePath();
-      ctx.fill();
-      // inner face
-      ctx.fillStyle = 'rgba(220,140,255,0.25)';
-      ctx.beginPath();
-      ctx.moveTo(12, -16.5 + sb);
-      ctx.lineTo(15.5, -21 + sb);
-      ctx.lineTo(12, -25 + sb);
-      ctx.closePath();
-      ctx.fill();
-
-      // arcane glow orb
-      
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(155,50,255,0.7)';
-      ctx.beginPath();
-      ctx.ellipse(12, -23 + sb, 4.5, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // bright inner core
-      ctx.fillStyle = 'rgba(230,170,255,0.55)';
-      ctx.beginPath();
-      ctx.ellipse(11.5, -24.5 + sb, 2, 3, -0.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+    if (fl) {
+      // Flash white: just fill the bounding box
+      for (let row = 0; row < ROWS; row++)
+        for (let col = 0; col < COLS; col++)
+          if (sprite[row][col]) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect((col+xOff)*P, (row+yOff)*P+bob, P, P);
+          }
     } else {
-      ctx.beginPath();
-      ctx.arc(12, -23 + sb, 6.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+      // Pass 1: 8-connected black outline — draws outline pixels around the sprite
+      ctx.fillStyle = '#080808';
+      for (let row = -1; row <= ROWS; row++) {
+        for (let col = -1; col <= COLS; col++) {
+          // Skip if this position is itself a sprite pixel
+          if (row >= 0 && row < ROWS && col >= 0 && col < COLS && sprite[row][col]) continue;
+          // Check whether any 8-connected neighbour is a sprite pixel
+          let hit = false;
+          for (let dr = -1; dr <= 1 && !hit; dr++)
+            for (let dc = -1; dc <= 1 && !hit; dc++) {
+              const nr = row+dr, nc = col+dc;
+              if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && sprite[nr][nc]) hit = true;
+            }
+          if (hit) ctx.fillRect((col+xOff)*P, (row+yOff)*P+bob, P, P);
+        }
+      }
+      // Pass 2: sprite pixels
+      for (let row = 0; row < ROWS; row++)
+        for (let col = 0; col < COLS; col++) {
+          const c = sprite[row][col];
+          if (c) { ctx.fillStyle = c; ctx.fillRect((col+xOff)*P, (row+yOff)*P+bob, P, P); }
+        }
     }
 
     ctx.restore();
