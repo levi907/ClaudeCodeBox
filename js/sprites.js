@@ -18,7 +18,9 @@ const Sprites = {
   },
 
   // ======================================================
-  //  PLAYER — Arcane Mage
+  //  PLAYER — The Gaunt Wanderer
+  //  Lean elder wizard: layered robes, visible boots & beard,
+  //  enormous bent hat, gnarled staff with bound crystal.
   // ======================================================
   player(ctx, x, y, facing, animFrame, flashTime) {
     ctx.save();
@@ -26,170 +28,361 @@ const Sprites = {
     if (facing < 0) ctx.scale(-1, 1);
 
     const bob = Math.sin(animFrame * 0.15) * 1.5;
-    const fl = flashTime > 0;
+    const fl  = flashTime > 0;
+    const sb  = bob * 0.55; // staff bobs slightly less
 
-    // Ground shadow
+    // ---- Ground shadow ----
     ctx.beginPath();
-    ctx.ellipse(0, 15 + bob, 11, 4, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.ellipse(0, 15 + bob, 13, 4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fill();
 
-    // Robe hem — flowing lower section
-    ctx.beginPath();
-    ctx.moveTo(-11, 2 + bob);
-    ctx.bezierCurveTo(-14, 9 + bob, -11, 15 + bob, -5, 16 + bob);
-    ctx.lineTo(5, 16 + bob);
-    ctx.bezierCurveTo(11, 15 + bob, 14, 9 + bob, 11, 2 + bob);
-    ctx.closePath();
-    ctx.fillStyle = fl ? '#ffffff' : '#280068';
-    ctx.fill();
-
-    // Robe body
-    ctx.beginPath();
-    ctx.ellipse(0, 2 + bob, 9, 11, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#3800a8';
-    ctx.fill();
-
-    if (!fl) {
-      // Robe edge trim (silver arcane thread)
-      ctx.strokeStyle = '#7050b0';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(-11, 2 + bob);
-      ctx.bezierCurveTo(-14, 9 + bob, -11, 15 + bob, -5, 16 + bob);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(11, 2 + bob);
-      ctx.bezierCurveTo(14, 9 + bob, 11, 15 + bob, 5, 16 + bob);
-      ctx.stroke();
-
-      // Chest arcane sigil (small rune cross)
-      ctx.strokeStyle = 'rgba(160,100,255,0.5)';
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(-3, 0 + bob); ctx.lineTo(3, 0 + bob);
-      ctx.moveTo(0, -3 + bob); ctx.lineTo(0, 4 + bob);
-      ctx.moveTo(-2, -1.5 + bob); ctx.lineTo(2, 2.5 + bob);
-      ctx.stroke();
-
-      // Gold belt
-      ctx.strokeStyle = '#b08030';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-9, 7 + bob); ctx.lineTo(9, 7 + bob);
-      ctx.stroke();
-      // Belt buckle
-      ctx.fillStyle = '#d4a840';
-      ctx.fillRect(-2, 5.5 + bob, 4, 3);
-    }
-
-    // Head
-    ctx.beginPath();
-    ctx.ellipse(0, -9 + bob, 7, 7.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#f0c090';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#c08050';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    }
-
-    // Eyes
-    if (!fl) {
-      ctx.fillStyle = '#f0e8d0';
-      ctx.beginPath();
-      ctx.ellipse(2.5, -9.5 + bob, 2.2, 2.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#9040e0';
-      ctx.shadowColor = '#c060ff';
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.ellipse(2.8, -9.8 + bob, 1.3, 1.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-
-    // Hat brim
-    ctx.beginPath();
-    ctx.ellipse(0, -14 + bob, 10, 3.5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = fl ? '#ffffff' : '#180050';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#5030a0';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    // Hat cone
-    ctx.beginPath();
-    ctx.moveTo(-9, -14 + bob);
-    ctx.lineTo(2, -28 + bob);
-    ctx.lineTo(9, -14 + bob);
-    ctx.closePath();
-    ctx.fillStyle = fl ? '#ffffff' : '#200060';
-    ctx.fill();
-    if (!fl) {
-      ctx.strokeStyle = '#5030a0';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-
-    // Hat gold band
-    if (!fl) {
-      ctx.strokeStyle = '#b08030';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-8.5, -17 + bob);
-      ctx.quadraticCurveTo(0, -19.5 + bob, 8.5, -17 + bob);
-      ctx.stroke();
-      // Star on hat
-      ctx.fillStyle = '#f0c050';
-      ctx.shadowColor = '#f0d080';
-      ctx.shadowBlur = 6;
-      ctx.font = '7px serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('★', 0, -22 + bob);
-      ctx.shadowBlur = 0;
-    }
-
-    // Staff
-    const staffBob = bob * 0.5;
-    ctx.strokeStyle = fl ? '#ffffff' : '#4a2000';
-    ctx.lineWidth = 2.5;
+    // ---- Staff pole — behind body, gnarled dark wood ----
+    ctx.strokeStyle = fl ? '#ffffff' : '#2a1606';
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(10, -3 + staffBob);
-    ctx.lineTo(14, 14 + staffBob);
+    ctx.moveTo(12, 14 + sb);
+    ctx.bezierCurveTo(13, 4 + sb, 13, -5 + sb, 12, -13 + sb);
     ctx.stroke();
-
-    // Staff crystal orb
     if (!fl) {
-      // Crystal body (faceted)
-      ctx.fillStyle = '#c070ff';
+      // grain highlight
+      ctx.strokeStyle = '#4a2a0c';
+      ctx.lineWidth = 0.9;
       ctx.beginPath();
-      ctx.moveTo(10, -8 + staffBob);
-      ctx.lineTo(14, -5 + staffBob);
-      ctx.lineTo(13, 0 + staffBob);
-      ctx.lineTo(8, -2 + staffBob);
+      ctx.moveTo(11, 11 + sb);
+      ctx.bezierCurveTo(12, 1 + sb, 12, -4 + sb, 11.5, -12 + sb);
+      ctx.stroke();
+    }
+
+    // ---- Boots ----
+    if (!fl) {
+      // left boot (slightly back)
+      ctx.fillStyle = '#1c1408';
+      ctx.beginPath();
+      ctx.moveTo(-9, 7 + bob);
+      ctx.lineTo(-9, 13 + bob);
+      ctx.bezierCurveTo(-9, 17 + bob, -2, 17 + bob, -1, 14 + bob);
+      ctx.lineTo(-1, 7 + bob);
       ctx.closePath();
       ctx.fill();
-      // Glow orb
-      ctx.shadowColor = '#a030ff';
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(180,60,255,0.55)';
+      ctx.strokeStyle = '#342210';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+
+      // right boot (forward)
+      ctx.fillStyle = '#201808';
       ctx.beginPath();
-      ctx.ellipse(11, -5 + staffBob, 4.5, 5, -0.3, 0, Math.PI * 2);
+      ctx.moveTo(1, 7 + bob);
+      ctx.lineTo(1, 13 + bob);
+      ctx.bezierCurveTo(1, 17 + bob, 8, 17 + bob, 9, 14 + bob);
+      ctx.lineTo(9, 7 + bob);
+      ctx.closePath();
       ctx.fill();
-      // Highlight
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.strokeStyle = '#342210';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+
+    // ---- Robe lower hem — three overlapping panels ----
+    // left back panel
+    ctx.fillStyle = fl ? '#ffffff' : '#252320';
+    ctx.beginPath();
+    ctx.moveTo(-10, 0 + bob);
+    ctx.bezierCurveTo(-15, 5 + bob, -14, 13 + bob, -9, 15 + bob);
+    ctx.lineTo(-3, 15 + bob);
+    ctx.lineTo(-4, 0 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // right back panel
+    ctx.fillStyle = fl ? '#ffffff' : '#272522';
+    ctx.beginPath();
+    ctx.moveTo(10, 0 + bob);
+    ctx.bezierCurveTo(15, 5 + bob, 14, 13 + bob, 9, 15 + bob);
+    ctx.lineTo(3, 15 + bob);
+    ctx.lineTo(4, 0 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // center front panel — slightly lighter, closest to viewer
+    ctx.fillStyle = fl ? '#ffffff' : '#3a3832';
+    ctx.beginPath();
+    ctx.moveTo(-5, 0 + bob);
+    ctx.lineTo(-7, 15 + bob);
+    ctx.lineTo(7, 15 + bob);
+    ctx.lineTo(5, 0 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    if (!fl) {
+      ctx.strokeStyle = '#2a2820';
+      ctx.lineWidth = 0.7;
       ctx.beginPath();
-      ctx.ellipse(9.5, -7 + staffBob, 1.5, 2, -0.5, 0, Math.PI * 2);
+      ctx.moveTo(-5, 0 + bob); ctx.lineTo(-7, 15 + bob);
+      ctx.moveTo(5, 0 + bob);  ctx.lineTo(7, 15 + bob);
+      ctx.stroke();
+    }
+
+    // ---- Robe body / torso ----
+    ctx.fillStyle = fl ? '#ffffff' : '#3c3a34';
+    ctx.beginPath();
+    ctx.moveTo(-12, 0 + bob);
+    ctx.bezierCurveTo(-13, -5 + bob, -10, -9 + bob, -7, -10 + bob);
+    ctx.lineTo(7, -10 + bob);
+    ctx.bezierCurveTo(10, -9 + bob, 13, -5 + bob, 12, 0 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    if (!fl) {
+      // shoulder fold lines
+      ctx.strokeStyle = '#505048';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(-12, 0 + bob);
+      ctx.bezierCurveTo(-13, -5 + bob, -11, -8 + bob, -8, -9.5 + bob);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(12, 0 + bob);
+      ctx.bezierCurveTo(13, -5 + bob, 11, -8 + bob, 8, -9.5 + bob);
+      ctx.stroke();
+
+      // visible tunic at open collar
+      ctx.fillStyle = '#4a3018';
+      ctx.beginPath();
+      ctx.moveTo(-3, -8 + bob);
+      ctx.lineTo(0, -12 + bob);
+      ctx.lineTo(3, -8 + bob);
+      ctx.closePath();
+      ctx.fill();
+
+      // leather belt
+      ctx.fillStyle = '#4a2a0e';
+      ctx.fillRect(-11, 0.5 + bob, 22, 2.5);
+      // buckle
+      ctx.fillStyle = '#c07020';
+      ctx.fillRect(-3.5, 0.2 + bob, 7, 3.3);
+      ctx.strokeStyle = '#e09030';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-2, 1.8 + bob); ctx.lineTo(2, 1.8 + bob);
+      ctx.stroke();
+
+      // cloak clasp
+      ctx.fillStyle = '#c07020';
+      ctx.beginPath();
+      ctx.arc(0, -9 + bob, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ---- Head — gaunt angular face ----
+    ctx.beginPath();
+    ctx.moveTo(0, -10 + bob);             // chin
+    ctx.bezierCurveTo(-7, -11 + bob, -8, -18 + bob, -5, -22 + bob);
+    ctx.bezierCurveTo(-2, -25 + bob,  6, -25 + bob,  7, -21 + bob);
+    ctx.bezierCurveTo( 9, -17 + bob,  7, -11 + bob,  0, -10 + bob);
+    ctx.fillStyle = fl ? '#ffffff' : '#b87840';
+    ctx.fill();
+    if (!fl) {
+      ctx.strokeStyle = '#906030';
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+      // hat-brim shadow across upper face
+      ctx.fillStyle = 'rgba(0,0,0,0.38)';
+      ctx.beginPath();
+      ctx.moveTo(-7, -17 + bob);
+      ctx.bezierCurveTo(-8, -19 + bob, -5, -23 + bob, 0, -23 + bob);
+      ctx.bezierCurveTo(5, -23 + bob,  8, -19 + bob, 7, -17 + bob);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if (!fl) {
+      // left eye — dark glint deep-set under shadow
+      ctx.fillStyle = '#0a0604';
+      ctx.beginPath();
+      ctx.ellipse(-3, -18.5 + bob, 1.8, 1.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,180,60,0.4)'; // faint amber catch-light
+      ctx.beginPath();
+      ctx.ellipse(-3.5, -19 + bob, 0.7, 0.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // right eye — arcane purple glow
+      ctx.fillStyle = '#9040e0';
+      ctx.shadowColor = '#c060ff';
+      ctx.shadowBlur = 9;
+      ctx.beginPath();
+      ctx.ellipse(3.5, -18.5 + bob, 1.5, 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // gaunt nose — long angular
+      ctx.strokeStyle = 'rgba(120,65,18,0.75)';
+      ctx.lineWidth = 0.9;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(1, -17 + bob);
+      ctx.lineTo(2.5, -13.5 + bob);
+      ctx.quadraticCurveTo(4, -13 + bob, 3, -12 + bob);
+      ctx.stroke();
+
+      // thin lips
+      ctx.strokeStyle = 'rgba(90,50,15,0.85)';
+      ctx.lineWidth = 0.85;
+      ctx.beginPath();
+      ctx.moveTo(-2.5, -11.5 + bob);
+      ctx.quadraticCurveTo(0, -11 + bob, 3, -11.5 + bob);
+      ctx.stroke();
+
+      // beard — long scraggly grey
+      ctx.fillStyle = '#706858';
+      ctx.beginPath();
+      ctx.moveTo(-5, -11 + bob);
+      ctx.bezierCurveTo(-7, -5 + bob, -6, 1 + bob, -2, 3 + bob);
+      ctx.bezierCurveTo(0, 4 + bob, 3, 3 + bob, 5, 0 + bob);
+      ctx.bezierCurveTo(7, -5 + bob, 6, -11 + bob, 4, -11 + bob);
+      ctx.closePath();
+      ctx.fill();
+      // beard texture strands
+      ctx.strokeStyle = '#908878';
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(-3, -9 + bob); ctx.bezierCurveTo(-4, -3 + bob, -3, 1 + bob, -1, 2 + bob);
+      ctx.moveTo(0,  -9 + bob); ctx.bezierCurveTo(0,  -3 + bob,  0, 1 + bob,  1, 2 + bob);
+      ctx.moveTo(3,  -9 + bob); ctx.bezierCurveTo(4,  -4 + bob,  3, 0 + bob,  2, 1 + bob);
+      ctx.stroke();
+    }
+
+    // ---- Hat brim — very wide (wider than shoulders) ----
+    ctx.beginPath();
+    ctx.ellipse(0, -21 + bob, 16, 4.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = fl ? '#ffffff' : '#181812';
+    ctx.fill();
+    if (!fl) {
+      ctx.strokeStyle = '#2c2c22';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // underside cast-shadow onto face
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, -20.5 + bob, 15, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ---- Hat cone — very tall, bent drooping tip ----
+    ctx.fillStyle = fl ? '#ffffff' : '#1b1b13';
+    ctx.beginPath();
+    ctx.moveTo(-14, -22 + bob);
+    ctx.bezierCurveTo(-15, -32 + bob, -8, -41 + bob,  1, -47 + bob);  // left side up
+    ctx.bezierCurveTo( 5,  -50 + bob,  9, -49 + bob, 11, -44 + bob);  // bent drooping tip
+    ctx.bezierCurveTo(11,  -36 + bob,  8, -28 + bob, 14, -22 + bob);  // right side down
+    ctx.closePath();
+    ctx.fill();
+
+    if (!fl) {
+      // lit left edge
+      ctx.strokeStyle = '#2e2e22';
+      ctx.lineWidth = 1.1;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-14, -22 + bob);
+      ctx.bezierCurveTo(-15, -32 + bob, -8, -41 + bob, 1, -47 + bob);
+      ctx.stroke();
+      // fabric creases
+      ctx.strokeStyle = '#131310';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(-3, -26 + bob);
+      ctx.bezierCurveTo(-1, -35 + bob,  4, -42 + bob, 7, -46 + bob);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo( 5, -26 + bob);
+      ctx.bezierCurveTo( 7, -32 + bob,  9, -37 + bob, 10, -42 + bob);
+      ctx.stroke();
+
+      // hat band — leather amber
+      ctx.strokeStyle = '#6a3e14';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'butt';
+      ctx.beginPath();
+      ctx.moveTo(-13, -24 + bob);
+      ctx.bezierCurveTo(-4, -27 + bob, 6, -26 + bob, 13, -24 + bob);
+      ctx.stroke();
+
+      // rune clasp on band
+      ctx.fillStyle = '#c07020';
+      ctx.beginPath();
+      ctx.arc(-1, -25.5 + bob, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e09030';
+      ctx.lineWidth = 0.9;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-3.5, -25.5 + bob); ctx.lineTo(1.5, -25.5 + bob);
+      ctx.moveTo(-1,   -28.5 + bob); ctx.lineTo(-1,  -22.5 + bob);
+      ctx.stroke();
+    }
+
+    // ---- Staff top — leather binding + gnarled root cradle + crystal ----
+    if (!fl) {
+      // leather cord wraps
+      ctx.strokeStyle = '#5a3010';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'butt';
+      ctx.beginPath();
+      ctx.moveTo(10, -11 + sb); ctx.lineTo(14, -11 + sb);
+      ctx.moveTo(10, -13 + sb); ctx.lineTo(14, -13 + sb);
+      ctx.moveTo(10.5, -15 + sb); ctx.lineTo(13.5, -15 + sb);
+      ctx.stroke();
+
+      // gnarled branch arms gripping crystal
+      ctx.strokeStyle = '#2a1608';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(10, -15 + sb);
+      ctx.bezierCurveTo(8, -18 + sb, 9, -21 + sb, 12, -22 + sb);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(14, -15 + sb);
+      ctx.bezierCurveTo(16, -18 + sb, 15, -21 + sb, 12, -22 + sb);
+      ctx.stroke();
+
+      // crystal shard — faceted diamond shape
+      ctx.fillStyle = 'rgba(195,85,255,0.45)';
+      ctx.beginPath();
+      ctx.moveTo(8.5, -21 + sb);
+      ctx.lineTo(12, -16.5 + sb);
+      ctx.lineTo(15.5, -21 + sb);
+      ctx.lineTo(12, -29 + sb);
+      ctx.closePath();
+      ctx.fill();
+      // inner face
+      ctx.fillStyle = 'rgba(220,140,255,0.25)';
+      ctx.beginPath();
+      ctx.moveTo(12, -16.5 + sb);
+      ctx.lineTo(15.5, -21 + sb);
+      ctx.lineTo(12, -25 + sb);
+      ctx.closePath();
+      ctx.fill();
+
+      // arcane glow orb
+      ctx.shadowColor = '#a030ff';
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(155,50,255,0.7)';
+      ctx.beginPath();
+      ctx.ellipse(12, -23 + sb, 4.5, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // bright inner core
+      ctx.fillStyle = 'rgba(230,170,255,0.55)';
+      ctx.beginPath();
+      ctx.ellipse(11.5, -24.5 + sb, 2, 3, -0.2, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
     } else {
       ctx.beginPath();
-      ctx.arc(11, -5 + staffBob, 5, 0, Math.PI * 2);
+      ctx.arc(12, -23 + sb, 6.5, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
     }
@@ -1205,8 +1398,8 @@ const Sprites = {
   //  WORLD / BACKGROUND — Stone Dungeon Floor
   // ======================================================
   drawBackground(ctx, camX, camY, width, height) {
-    // Deep void base
-    ctx.fillStyle = '#0c0a14';
+    // Warm void base — matches menu's #0d0b09 stone dark
+    ctx.fillStyle = '#0c0904';
     ctx.fillRect(0, 0, width, height);
 
     const tileSize = CONFIG.TILE_SIZE;
@@ -1222,16 +1415,16 @@ const Sprites = {
         const v2 = Math.abs((hash >> 8) % 100) / 100;
         const v3 = Math.abs((hash >> 16) % 100) / 100;
 
-        // Tile stone color — 4 subtle shades
+        // Tile stone color — warm brown shades matching menu wall palette
         const shade =
-          v < 0.12 ? '#181428' :
-          v < 0.30 ? '#151120' :
-          v < 0.55 ? '#17131e' : '#13101c';
+          v < 0.12 ? '#181614' :
+          v < 0.30 ? '#161210' :
+          v < 0.55 ? '#1c1a16' : '#14120e';
         ctx.fillStyle = shade;
         ctx.fillRect(x, y, tileSize, tileSize);
 
-        // Mortar gaps — thin dark lines at top and left edges
-        ctx.fillStyle = '#08060f';
+        // Mortar gaps — warm dark brown lines
+        ctx.fillStyle = '#090704';
         ctx.fillRect(x, y, tileSize, 1.5);   // top
         ctx.fillRect(x, y, 1.5, tileSize);   // left
 
@@ -1247,7 +1440,6 @@ const Sprites = {
           ctx.lineTo(cx + (v2 - 0.5) * 18, cy + tileSize * 0.45);
           ctx.lineTo(cx + (v2 - 0.4) * 14 + 5, cy + tileSize * 0.78);
           ctx.stroke();
-          // Branch crack
           if (v > 0.85) {
             ctx.beginPath();
             ctx.moveTo(cx + (v2 - 0.5) * 10, cy + tileSize * 0.3);
@@ -1256,7 +1448,7 @@ const Sprites = {
           }
         }
 
-        // Arcane rune inscription (rare, glowing)
+        // Arcane rune inscription (rare)
         if (v > 0.965) {
           const runeAlpha = 0.11 + (v - 0.965) * 2.5;
           ctx.save();
@@ -1271,22 +1463,31 @@ const Sprites = {
           ctx.restore();
         }
 
-        // Warm torch glow pool (very rare — scattered ambient light)
-        if (v > 0.988) {
+        // Torch glow pool — same flame palette as menu lanterns, more frequent
+        if (v > 0.92) {
           ctx.save();
+          const spread = tileSize * (2.5 + v2 * 2);
           const torchGrad = ctx.createRadialGradient(
             x + tileSize / 2, y + tileSize / 2, 0,
-            x + tileSize / 2, y + tileSize / 2, tileSize * 1.8
+            x + tileSize / 2, y + tileSize / 2, spread
           );
-          torchGrad.addColorStop(0, 'rgba(200,90,15,0.07)');
-          torchGrad.addColorStop(0.6, 'rgba(180,70,8,0.03)');
-          torchGrad.addColorStop(1, 'rgba(160,60,5,0)');
+          torchGrad.addColorStop(0,   'rgba(236,160,48,0.13)');  // #eca030 — flmHi
+          torchGrad.addColorStop(0.35, 'rgba(200,104,32,0.07)'); // #c86820 — flmMd
+          torchGrad.addColorStop(0.7,  'rgba(144,64,16,0.03)');  // #904010 — flmLow
+          torchGrad.addColorStop(1,    'rgba(90,36,0,0)');       // fade out
           ctx.fillStyle = torchGrad;
-          ctx.fillRect(x - tileSize, y - tileSize, tileSize * 3, tileSize * 3);
+          ctx.fillRect(x - spread, y - spread, spread * 2, spread * 2);
           ctx.restore();
         }
       }
     }
+
+    // Edge vignette — dark border simulating torchlit dungeon walls around the viewport
+    const vig = ctx.createRadialGradient(width/2, height/2, height * 0.28, width/2, height/2, height * 0.85);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(4,2,1,0.72)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, width, height);
   },
 
   // ======================================================
