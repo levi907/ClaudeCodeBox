@@ -170,19 +170,21 @@ class Game {
       }
     }
 
-    // Enemy-enemy separation (bumping)
-    for (let i = 0; i < this.enemies.length; i++) {
-      for (let j = i + 1; j < this.enemies.length; j++) {
-        const a = this.enemies[i], b = this.enemies[j];
-        const minD = a.size + b.size;
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const dSq = dx * dx + dy * dy;
-        if (dSq < minD * minD && dSq > 0.0001) {
-          const d = Math.sqrt(dSq);
-          const push = (minD - d) * 0.5;
-          const nx = dx / d, ny = dy / d;
-          a.x -= nx * push; a.y -= ny * push;
-          b.x += nx * push; b.y += ny * push;
+    // Enemy-enemy separation (bumping) — skip when too many enemies to avoid O(n²) cost
+    if (this.enemies.length <= 80) {
+      for (let i = 0; i < this.enemies.length; i++) {
+        for (let j = i + 1; j < this.enemies.length; j++) {
+          const a = this.enemies[i], b = this.enemies[j];
+          const minD = a.size + b.size;
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const dSq = dx * dx + dy * dy;
+          if (dSq < minD * minD && dSq > 0.0001) {
+            const d = Math.sqrt(dSq);
+            const push = (minD - d) * 0.5;
+            const nx = dx / d, ny = dy / d;
+            a.x -= nx * push; a.y -= ny * push;
+            b.x += nx * push; b.y += ny * push;
+          }
         }
       }
     }
@@ -504,9 +506,12 @@ class Game {
   }
 
   _spawnEnemyWave() {
+    const MAX_ENEMIES = 150;
+    if (this.enemies.length >= MAX_ENEMIES) return;
     const minutes = this.time / 60;
     const count = Math.min(1 + Math.floor(minutes * 0.5), 6);
     for (let i = 0; i < count; i++) {
+      if (this.enemies.length >= MAX_ENEMIES) break;
       const type = this._pickEnemyType(minutes);
       const { x, y } = this._spawnPosition();
       const diff = 1 + minutes * CONFIG.DIFFICULTY_RAMP;
