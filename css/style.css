@@ -233,6 +233,30 @@ html, body {
   box-shadow: none;
 }
 
+/* Music toggle button */
+#music-btn {
+  background: none;
+  border: 1px solid rgba(192,112,32,0.35);
+  color: var(--gold);
+  font-size: 15px;
+  padding: 2px 7px;
+  min-height: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: all;
+  letter-spacing: 0;
+  box-shadow: none;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: border-color 0.12s, color 0.12s, opacity 0.2s;
+}
+#music-btn:hover, #music-btn:active {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  transform: none;
+  box-shadow: none;
+}
+
 /* Timer */
 #timer-display {
   color: var(--gold-bright);

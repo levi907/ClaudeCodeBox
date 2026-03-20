@@ -64,6 +64,22 @@
   }
   bindRestart('win-restart-btn');
 
+  // Music mute toggle
+  const musicBtn = document.getElementById('music-btn');
+  if (musicBtn) {
+    musicBtn.addEventListener('click', () => {
+      const muted = window.Music?.toggleMute();
+      musicBtn.textContent = muted ? '♪̶' : '♪';
+      musicBtn.style.opacity = muted ? '0.45' : '1';
+    });
+    musicBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const muted = window.Music?.toggleMute();
+      musicBtn.textContent = muted ? '♪̶' : '♪';
+      musicBtn.style.opacity = muted ? '0.45' : '1';
+    });
+  }
+
   // Prevent context menu on long press (mobile)
   document.addEventListener('contextmenu', e => e.preventDefault());
 
