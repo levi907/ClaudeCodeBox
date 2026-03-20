@@ -354,21 +354,22 @@ class Projectile {
   }
 
   // Returns true if the hit should be processed.
-  // Sets isDead / _needsBounce based on pierce/bounce budget.
+  // Sets isDead / _needsBounce based on bounce/pierce budget.
+  // Order: bounce first (active redirect), then pierce (passive pass-through), then die.
   hitEnemy(enemy) {
     if (this.hitEnemies.has(enemy.id)) return false;
     this.hitEnemies.add(enemy.id);
     // Spiraling projectiles pierce everything indefinitely
     if (this.spiraling) return true;
-    // Pierce first
-    if (this.pierceCount < this.pierce) {
-      this.pierceCount++;
-      return true;
-    }
-    // Then bounce
+    // Bounce BEFORE pierce — bounce actively redirects toward new targets
     if (this.bounceCount < this.bounce) {
       this.bounceCount++;
       this._needsBounce = true;
+      return true;
+    }
+    // Pierce after bounce is exhausted
+    if (this.pierceCount < this.pierce) {
+      this.pierceCount++;
       return true;
     }
     this.isDead = true;

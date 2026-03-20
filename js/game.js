@@ -341,6 +341,9 @@ class Game {
       if (e.isDead) { this.enemies.splice(i, 1); continue; }
       e.update(dt, this.player.x, this.player.y);
 
+      // DoT death (poison/bleed/decay/poisonStacks killed this enemy during update)
+      if (e.isDead) { this.onEnemyDead(e); this.enemies.splice(i, 1); continue; }
+
       // Enemy hits player
       if (this.player.invincibleTime <= 0) {
         const d = dist(e.x, e.y, this.player.x, this.player.y);
@@ -515,6 +518,12 @@ class Game {
 
           if (e.isDead) this.onEnemyDead(e);
 
+          // Chain: fire a bolt at a nearby unhit enemy on EACH hit (before pierce exhaustion)
+          if (p.chain > 0) {
+            this._spawnChainProjectiles(p, 1);
+            p.chain--;
+          }
+
           // Bounce: redirect projectile toward nearest unhit enemy
           if (p._needsBounce) {
             p._needsBounce = false;
@@ -531,10 +540,9 @@ class Game {
             }
           }
 
-          // On projectile death: explosion and/or chain
+          // On projectile death: explosion only (chain already fires per-hit above)
           if (p.isDead) {
             if (p.explosive && p.explosionRadius > 0) this._wandExplode(p);
-            if (p.chain > 0) this._spawnChainProjectiles(p);
           }
         }
       }
@@ -636,11 +644,11 @@ class Game {
   }
 
   // Chain gem: on hit, fire new bolts at nearby unhit enemies
-  _spawnChainProjectiles(proj) {
+  _spawnChainProjectiles(proj, count = 1) {
     const chainTargets = [...this.enemies]
       .filter(e => !e.isDead && !proj.hitEnemies.has(e.id) && dist(proj.x, proj.y, e.x, e.y) < proj.chainRange)
       .sort((a, b) => distSq(proj.x, proj.y, a.x, a.y) - distSq(proj.x, proj.y, b.x, b.y))
-      .slice(0, proj.chain);
+      .slice(0, count);
 
     for (const t of chainTargets) {
       const a = angle(proj.x, proj.y, t.x, t.y);

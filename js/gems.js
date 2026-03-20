@@ -7,7 +7,7 @@
 const MOD_DEFS = {
   // --- Common mods (grey) - basic stat upgrades ---
   flat_damage:     { rarity: 'common',    label: '+Damage',       color: '#aabbcc', format: v => `+${v} Damage` },
-  attack_speed:    { rarity: 'common',    label: '+Attack Speed', color: '#aabbcc', format: v => `-${(v * 1000) | 0}ms Cooldown` },
+  attack_speed:    { rarity: 'common',    label: '+Attack Speed', color: '#aabbcc', format: v => `+${(v * 1000) | 0}ms Attack Speed` },
   max_hp:          { rarity: 'common',    label: '+Max HP',       color: '#aabbcc', format: v => `+${v} Max HP` },
   move_speed:      { rarity: 'common',    label: '+Move Speed',   color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Speed` },
   lifesteal:       { rarity: 'common',    label: '+Lifesteal',    color: '#aabbcc', format: v => `+${Math.round(v * 100)}% Lifesteal` },
@@ -22,7 +22,7 @@ const MOD_DEFS = {
   pierce:           { rarity: 'rare',     label: '+Pierce',       color: '#ffd700', format: v => `+${v} Pierce` },
   bounce:           { rarity: 'rare',     label: '+Bounce',       color: '#ffd700', format: v => `+${v} Bounce` },
   chain:            { rarity: 'rare',     label: '+Chain',        color: '#ffd700', format: v => `+${v} Chain` },
-  cooldown_reduce:  { rarity: 'rare',     label: '-Cooldown',     color: '#ffd700', format: v => `-${Math.round(v * 100)}% Cooldown` },
+  cooldown_reduce:  { rarity: 'rare',     label: '+Attack Speed', color: '#ffd700', format: v => `+${Math.round(v * 100)}% Attack Speed` },
   damage_percent:   { rarity: 'rare',     label: '+Damage%',      color: '#ffd700', format: v => `+${Math.round(v * 100)}% Damage` },
   multicast:        { rarity: 'rare',     label: 'Multicast',     color: '#ffd700', format: v => `${Math.round(v * 100)}% chance to fire twice` },
   thorns:           { rarity: 'rare',     label: '+Thorns',       color: '#ffd700', format: v => `Reflect ${v} damage on hit` },
