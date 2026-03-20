@@ -53,14 +53,16 @@
     }
   });
 
-  // Restart buttons (game over + win)
+  // Win screen restart button (touch + click)
   function bindRestart(id) {
     const btn = document.getElementById(id);
     if (!btn) return;
-    btn.addEventListener('click', () => {
+    const handler = () => {
       document.getElementById('win-screen')?.classList.add('hidden');
       game.restart();
-    });
+    };
+    btn.addEventListener('click', handler);
+    btn.addEventListener('touchend', e => { e.preventDefault(); handler(); });
   }
   bindRestart('win-restart-btn');
 

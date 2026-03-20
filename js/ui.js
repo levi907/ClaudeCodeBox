@@ -16,16 +16,26 @@ class UI {
     this.gameoverScreen = document.getElementById('gameover-screen');
     this.gameoverStats  = document.getElementById('gameover-stats');
     this.restartBtn     = document.getElementById('restart-btn');
+    this.continueBtn    = document.getElementById('continue-btn');
     this.wandHudBtn     = document.getElementById('wand-hud-btn');
     this.inventoryPanel = document.getElementById('inventory-panel');
 
-    this.restartBtn.addEventListener('click', () => game.restart());
-    this.restartBtn.addEventListener('touchend', e => { e.preventDefault(); game.restart(); });
+    // Restart — hide screen immediately, then reset
+    const doRestart = () => { this.hideGameOver(); game.restart(); };
+    this.restartBtn.addEventListener('click', doRestart);
+    this.restartBtn.addEventListener('touchend', e => { e.preventDefault(); doRestart(); });
+
+    // Continue — revive at 25% HP without resetting the run
+    const doContinue = () => this._continueRun();
+    this.continueBtn.addEventListener('click', doContinue);
+    this.continueBtn.addEventListener('touchend', e => { e.preventDefault(); doContinue(); });
 
     this.wandHudBtn.addEventListener('click', () => this.openInventory());
     this.wandHudBtn.addEventListener('touchend', e => { e.preventDefault(); this.openInventory(); });
 
-    document.getElementById('inventory-close-btn').addEventListener('click', () => this.closeInventory());
+    const closeBtn = document.getElementById('inventory-close-btn');
+    closeBtn.addEventListener('click',    ()  => this.closeInventory());
+    closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); this.closeInventory(); });
 
     // Close when tapping/clicking anywhere outside the content box
     const panel = document.getElementById('inventory-panel');
@@ -813,6 +823,21 @@ class UI {
   }
 
   hideGameOver() { this.gameoverScreen.classList.add('hidden'); }
+
+  // Revive the player and resume the current run
+  _continueRun() {
+    const p = this.game.player;
+    if (!p) return;
+    p.isDead = false;
+    p.hp = Math.max(1, Math.floor(p.maxHp * 0.25));
+    this.hideGameOver();
+    // If the loop stopped (win condition hit before death), restart it
+    if (!this.game.running) {
+      this.game.running = true;
+      this.game._lastTime = performance.now();
+      this.game._loop();
+    }
+  }
 
   showWin(player, relics) {
     const t = this.game.time;

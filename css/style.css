@@ -1142,6 +1142,23 @@ html, body {
   content: '› ';
   color: rgba(192,112,32,0.5);
 }
+#gameover-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+#continue-btn {
+  background: linear-gradient(170deg, rgba(40,60,20,0.9), rgba(20,38,10,0.95));
+  border: 1px solid rgba(80,140,30,0.55);
+  color: #90cc50;
+  box-shadow: 0 0 14px rgba(80,150,20,0.2);
+}
+#continue-btn:hover, #continue-btn:active {
+  background: linear-gradient(170deg, rgba(55,80,25,0.95), rgba(30,52,14,0.98));
+  border-color: rgba(100,170,40,0.8);
+  box-shadow: 0 0 22px rgba(90,170,25,0.4);
+  color: #b0e060;
+}
 
 /* ═══════════════════════════════════════════
    WIN SCREEN
