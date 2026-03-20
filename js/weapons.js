@@ -39,6 +39,7 @@ class Wand {
       // Rare gem flags
       multicastChance: 0,
       bleed: false,
+      poisonChance: 0,
 
       // Legendary effects (original)
       spiral: false,
@@ -99,6 +100,7 @@ class Wand {
           case 'thorns':            s.thornsBonus += mod.value; break;
           case 'multicast':         s.multicastChance += mod.value; break;
           case 'bleed':             s.bleed = true; break;
+          case 'poison_chance':     s.poisonChance += mod.value; break;
           case 'attract':           s.xpRangeBonus += mod.value; break;
           case 'magnetism':         s.xpRangeBonus += mod.value; break;
           case 'spiral':            s.spiral = true; break;
@@ -133,7 +135,8 @@ class Wand {
       }
     }
     // Single-target legendary mods: add pierce so their effects spread through packs
-    if (s.spiral)          s.pierce += 4;
+    // Spiral shoots wide arcs — compensate with +100% damage and extra pierce
+    if (s.spiral)          { s.pierce += 4; s.damageMultBonus += 1.0; }
     if (s.virulentPoison)  s.pierce += 4;
     if (s.thunderAegis)    s.pierce += 3;
     if (s.reaper)          s.pierce += 4;
@@ -145,6 +148,8 @@ class Wand {
     if (s.unstableCore)    s.pierce += 4;
     if (s.mirrorShot)      s.pierce += 3;
     if (s.shockwave)       s.pierce += 3;
+    // Phase shot: pierces everything — reward with +100% damage bonus
+    if (s.phaseShot)       s.damageMultBonus += 1.0;
 
     return s;
   }
@@ -224,6 +229,7 @@ class Wand {
         frostNova: stats.frostNova,
         curse: stats.curse,
         decay: stats.decay,
+        poisonChance: stats.poisonChance,
       }));
     };
 
@@ -290,6 +296,7 @@ class Wand {
           bleed: stats.bleed,
           chainLightning: stats.chainLightning,
           reaper: stats.reaper,
+          poisonChance: stats.poisonChance,
         }));
       }
     }

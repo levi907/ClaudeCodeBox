@@ -182,28 +182,36 @@ class Game {
       }
     }
 
-    // Time Stop: freeze all enemies for 1.5s every 15s
+    // Time Stop: freeze all enemies + deal 80 damage every 15s
     if (this.player._timeStopGem) {
       this._timeStopTimer += dt;
       if (this._timeStopTimer >= 15) {
         this._timeStopTimer = 0;
-        for (const e of this.enemies) e.frozen = Math.max(e.frozen, 1.5);
-        this.particles.explode(this.player.x, this.player.y, '#88ccff', 20);
-        this.particles.floatText(this.player.x, this.player.y - 40, '⏰ TIME STOP', '#88ccff', 15);
+        for (const e of this.enemies) {
+          if (!e.isDead) {
+            e.frozen = Math.max(e.frozen, 1.5);
+            e.takeDamage(80);
+          }
+        }
+        this.particles.explode(this.player.x, this.player.y, '#88ccff', 30);
+        this.particles.floatText(this.player.x, this.player.y - 40, '⏰ TIME STOP — 80 dmg', '#88ccff', 15);
       }
     }
 
-    // Graviton: pull all enemies toward player every 16s
+    // Graviton: pull all enemies toward player + deal 100 damage every 16s
     if (this.player._gravitonGem) {
       this._gravitonTimer += dt;
       if (this._gravitonTimer >= 16) {
         this._gravitonTimer = 0;
         for (const e of this.enemies) {
-          e.x += (this.player.x - e.x) * 0.7;
-          e.y += (this.player.y - e.y) * 0.7;
+          if (!e.isDead) {
+            e.x += (this.player.x - e.x) * 0.7;
+            e.y += (this.player.y - e.y) * 0.7;
+            e.takeDamage(100);
+          }
         }
-        this.particles.explode(this.player.x, this.player.y, '#cc44ff', 20);
-        this.particles.floatText(this.player.x, this.player.y - 40, '🌌 GRAVITON', '#cc44ff', 15);
+        this.particles.explode(this.player.x, this.player.y, '#cc44ff', 30);
+        this.particles.floatText(this.player.x, this.player.y - 40, '🌌 GRAVITON — 100 dmg', '#cc44ff', 15);
       }
     }
 
@@ -434,6 +442,13 @@ class Game {
             e.bleed = Math.max(e.bleed, 3.0);
           }
 
+          // Stackable % HP poison application
+          if (p.poisonChance && Math.random() < p.poisonChance) {
+            e.poisonStacks = Math.min(8, e.poisonStacks + 1);
+            e.poisonStackTimer = 4.0;
+            this.particles.spark(e.x, e.y, '#80ff40', 3);
+          }
+
           // Blood Pact: shots apply bleed
           if (this.player._bloodPactBleed) {
             e.bleed = Math.max(e.bleed, 3.0);
@@ -457,19 +472,20 @@ class Game {
             this.particles.spark(e.x, e.y, '#ffcc00', 8);
           }
 
-          // Frost Nova: 20% chance freeze enemies in 150px for 2s
+          // Frost Nova: 20% chance freeze + 60 damage to enemies in 150px for 2s
           if (p.frostNova && Math.random() < 0.20) {
             for (const t of this.enemies) {
               if (!t.isDead && dist(t.x, t.y, e.x, e.y) < 150) {
                 t.frozen = Math.max(t.frozen, 2.0);
+                t.takeDamage(60);
               }
             }
             this.particles.spark(e.x, e.y, '#88ddff', 10);
           }
 
-          // Decay: target loses 12% maxHp/s for 10s
+          // Decay: target loses 20% maxHp/s for 8s
           if (p.decay) {
-            e.decaying = Math.max(e.decaying, 10.0); // 12% maxHp/s for 10s
+            e.decaying = Math.max(e.decaying, 8.0); // 20% maxHp/s for 8s
             this.particles.spark(e.x, e.y, '#44cc44', 4);
           }
 

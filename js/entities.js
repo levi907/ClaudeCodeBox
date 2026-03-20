@@ -173,6 +173,8 @@ class Enemy {
     this.knockbackX = 0; this.knockbackY = 0;
     this.frozen = 0;
     this.poisoned = 0;
+    this.poisonStacks = 0;      // stackable % HP poison stacks
+    this.poisonStackTimer = 0;  // timer until stacks expire
     this.bleed = 0;     // bleed duration in seconds
     this.cursed = 0;    // cursed duration — takes 25% more damage
     this.decaying = 0;  // decay duration — loses 3% maxHp/s
@@ -211,7 +213,14 @@ class Enemy {
 
     if (this.decaying > 0) {
       this.decaying -= dt;
-      this.hp -= this.maxHp * 0.12 * dt;
+      this.hp -= this.maxHp * 0.20 * dt;
+      if (this.hp <= 0) this.isDead = true;
+    }
+
+    if (this.poisonStacks > 0) {
+      this.poisonStackTimer -= dt;
+      this.hp -= this.maxHp * 0.02 * this.poisonStacks * dt;
+      if (this.poisonStackTimer <= 0) this.poisonStacks = 0;
       if (this.hp <= 0) this.isDead = true;
     }
   }
@@ -321,6 +330,7 @@ class Projectile {
     this.frostNova = opts.frostNova || false;
     this.curse = opts.curse || false;
     this.decay = opts.decay || false;
+    this.poisonChance = opts.poisonChance || 0;
   }
 
   update(dt) {

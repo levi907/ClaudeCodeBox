@@ -227,19 +227,16 @@ class UI {
         if (allLeg) {
           resultLabel = `<span class="super-legendary-badge">✦+ SUPER LEGENDARY</span>`;
           resultPreview = `<span class="forge-gem-preview forge-gem-preview-legendary" style="border-color:#ff6600;box-shadow:0 0 8px #ff6600"></span>`;
-        } else if (allRare) {
+        } else {
           resultLabel = 'Legendary';
           resultPreview = `<span class="forge-gem-preview forge-gem-preview-legendary"></span>`;
-        } else {
-          resultLabel = 'Rare';
-          resultPreview = `<span class="forge-gem-preview forge-gem-preview-rare"></span>`;
         }
         banner.innerHTML = `🔨 RARE FORGE — Result: ${resultPreview} ${resultLabel} <button class="forge-confirm-btn">⚒ Forge</button> <button class="forge-skip-btn">Skip</button>`;
         banner.querySelector('.forge-confirm-btn').addEventListener('click', () => this._executeRareForge());
         banner.querySelector('.forge-confirm-btn').addEventListener('touchend', e => { e.preventDefault(); this._executeRareForge(); });
       } else {
         const need = 3 - this._rareForgeSelected.length;
-        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} (3× Rare = Legendary · 3× Legendary = <span class="super-legendary-badge">✦+ Super!</span>) <button class="forge-skip-btn">Skip</button>`;
+        banner.innerHTML = `🔨 RARE FORGE — Select ${need} more gem${need !== 1 ? 's' : ''} (Any 3 = Legendary · 3× Legendary = <span class="super-legendary-badge">✦+ Super!</span>) <button class="forge-skip-btn">Skip</button>`;
       }
       banner.querySelector('.forge-skip-btn').addEventListener('click', () => this._skipForge());
       banner.querySelector('.forge-skip-btn').addEventListener('touchend', e => { e.preventDefault(); this._skipForge(); });
@@ -640,13 +637,14 @@ class UI {
       newGem = generateGem('legendary');
       newGem.mods = [{ type: legKey, value: null }, ...keptMods.slice(0, 3)];
     } else {
-      newGem = generateGem('rare');
-      newGem.mods = keptMods.slice(0, 3);
+      const legendaryKeys = Object.keys(MOD_DEFS).filter(k => MOD_DEFS[k].rarity === 'legendary');
+      const [legKey] = weightedPickUnique(legendaryKeys, 1);
+      newGem = generateGem('legendary');
+      newGem.mods = [{ type: legKey, value: null }, ...keptMods.slice(0, 3)];
     }
 
     const title = allLeg ? '✦+ SUPER LEGENDARY FORGE!'
-                : allRare ? '✦ LEGENDARY FORGE RESULT'
-                : '🔨 RARE FORGE RESULT';
+                : '✦ LEGENDARY FORGE RESULT';
 
     this._showForgeResult(newGem, title, () => {
       // Apply: clear source slots, put new gem in first selected

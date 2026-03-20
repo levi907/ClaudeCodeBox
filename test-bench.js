@@ -100,7 +100,7 @@ const RELICS = {
 // ---- Apply a legendary gem mod to wand stats ----
 const LEG_MODS = {
   none:            (s, p) => {},
-  spiral:          (s, p) => { s.projLifetime = 9; },
+  spiral:          (s, p) => { s.projLifetime = 9; p.damageMultiplier *= 2.0; s.pierce = (s.pierce || 0) + 4; },
   explosive:       (s, p) => { s.explosive = true; s.explosionRadius = 60; },
   virulent_poison: (s, p) => { s.virulentPoison = true; },
   thunder_aegis:   (s, p) => { s.thunderAegis = true; },
@@ -110,12 +110,12 @@ const LEG_MODS = {
   // New legendary mods
   life_leech:      (s, p) => { s.lifeLeech = true; },
   bounty:          (s, p) => { p._xpMult = 1.7; },  // +70% XP — shows as faster levels
-  phase_shot:      (s, p) => { s.pierce = 999; },
+  phase_shot:      (s, p) => { s.pierce = 999; p.damageMultiplier *= 2.0; },
   double_tap:      (s, p) => { s.doubleTap = true; },
   overload:        (s, p) => { s.overload = true; p.critChance = Math.max(p.critChance, 0.40); },
   frost_nova:      (s, p) => { s.frostNova = true; },
   curse:           (s, p) => { s.curse = true; },
-  decay:           (s, p) => { s.decay = true; s.decayDuration = 10; },
+  decay:           (s, p) => { s.decay = true; s.decayDuration = 8; },
   soul_burst:      (s, p) => { p._soulBurstGem = true; },
   shockwave:       (s, p) => { p._shockwaveGem = true; },
   combustion:      (s, p) => { p._combustionGem = true; s.virulentPoison = true; }, // needs poison to explode
@@ -143,6 +143,7 @@ function makeWandStats(legMod, cdr = 0, player = null) {
     lifeLeech: false, doubleTap: false, overload: false,
     frostNova: false, curse: false, decay: false,
     unstableCore: false, mirrorShot: false,
+    poisonChance: 0,
   };
   if (legMod && LEG_MODS[legMod]) LEG_MODS[legMod](s, player || {});
   s.effectiveCd = s.cooldown * (1 - Math.min(0.8, cdr));
@@ -196,6 +197,7 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       isDead: false, id: Math.random(),
       poisoned: 0, bleed: 0,
       virulentlyPoisoned: false,
+      poisonStacks: 0, poisonStackTimer: 0,
     };
   }
 
@@ -321,13 +323,18 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
         }
       }
 
-      // Frost Nova: 20% chance freeze nearby
+      // Frost Nova: 20% chance freeze + 60 AoE damage nearby
       if (ws.frostNova && Math.random() < 0.20) {
-        for (const t of alive.filter(t => !t.isDead && dist(t.x, t.y, e.x, e.y) < 150)) t.frozen = Math.max(t.frozen || 0, 2);
+        for (const t of alive.filter(t => !t.isDead && dist(t.x, t.y, e.x, e.y) < 150)) {
+          t.frozen = Math.max(t.frozen || 0, 2);
+          const nova = Math.max(1, 60 - (t.armor || 0));
+          t.hp -= nova; totalDamage.dealt += nova;
+          if (t.hp <= 0) { t.isDead = true; onEnemyDead(t); }
+        }
       }
 
-      // Decay mod: apply decay (10s at 12% maxHp/s)
-      if (ws.decay) e.decaying = Math.max(e.decaying || 0, ws.decayDuration || 10);
+      // Decay mod: apply decay (8s at 20% maxHp/s)
+      if (ws.decay) e.decaying = Math.max(e.decaying || 0, 8);
 
       if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); return; }
 
@@ -363,6 +370,12 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
 
       // Poison (virulent): 10s duration at 12 dmg/s
       if (ws.virulentPoison && !e.virulentlyPoisoned) { e.virulentlyPoisoned = true; e.poisoned = 10; }
+
+      // Stackable % HP poison
+      if (ws.poisonChance && Math.random() < ws.poisonChance) {
+        e.poisonStacks = Math.min(8, (e.poisonStacks || 0) + 1);
+        e.poisonStackTimer = 4.0;
+      }
 
       // Lifesteal
       if (p.lifesteal > 0) p.hp = Math.min(p.maxHp, p.hp + actual * p.lifesteal);
@@ -437,7 +450,8 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       if (e.poisoned > 0) { e.poisoned -= dt; e.hp -= (e.virulentlyPoisoned ? 12 : 3) * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
       if (e.bleed > 0) { e.bleed -= dt; e.hp -= 5 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
       if (e.cursed > 0) e.cursed -= dt;
-      if (e.decaying > 0) { e.decaying -= dt; e.hp -= e.maxHp * 0.12 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
+      if (e.decaying > 0) { e.decaying -= dt; e.hp -= e.maxHp * 0.20 * dt; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
+      if (e.poisonStacks > 0) { e.poisonStackTimer -= dt; e.hp -= e.maxHp * 0.02 * e.poisonStacks * dt; if (e.poisonStackTimer <= 0) e.poisonStacks = 0; if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); } }
     }
     enemies = enemies.filter(e => !e.isDead);
 
@@ -494,22 +508,32 @@ function simulate(relicName, legMod, durationSec = 30, seed = 42) {
       }
     }
 
-    // Time Stop: freeze all enemies every 15s
+    // Time Stop: freeze + 80 damage to up to 20 closest enemies every 15s
     if (p._timeStopGem) {
       timeStopTimer += dt;
       if (timeStopTimer >= 15) {
         timeStopTimer = 0;
-        for (const e of enemies) e.frozen = Math.max(e.frozen || 0, 1.5);
+        const tsTargets = [...enemies].filter(e=>!e.isDead).sort((a,b)=>dist(a.x,a.y,0,0)-dist(b.x,b.y,0,0)).slice(0, 20);
+        for (const e of tsTargets) {
+          e.frozen = Math.max(e.frozen || 0, 1.5);
+          const ts = Math.max(1, 80 - (e.armor || 0));
+          e.hp -= ts; totalDamage.dealt += ts;
+          if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
+        }
       }
     }
 
-    // Graviton: pull all enemies toward center every 16s
+    // Graviton: pull + 100 damage to up to 20 closest enemies every 16s
     if (p._gravitonGem) {
       gravitonTimer += dt;
       if (gravitonTimer >= 16) {
         gravitonTimer = 0;
-        for (const e of enemies) {
+        const gvTargets = [...enemies].filter(e=>!e.isDead).sort((a,b)=>dist(a.x,a.y,0,0)-dist(b.x,b.y,0,0)).slice(0, 20);
+        for (const e of gvTargets) {
           e.x *= 0.6; e.y *= 0.6; // pull 40% closer
+          const gv = Math.max(1, 100 - (e.armor || 0));
+          e.hp -= gv; totalDamage.dealt += gv;
+          if (e.hp <= 0) { e.isDead = true; onEnemyDead(e); }
         }
       }
     }
