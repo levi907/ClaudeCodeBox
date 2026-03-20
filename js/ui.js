@@ -344,7 +344,7 @@ class UI {
   _onSlotPointerDown(e, type, index) {
     const isForgeMode = this._forgeMode || this._rareForgeMode || this._diceForgeMode;
 
-    // In forge modes, support scroll on vertical drag before acting on tap
+    // ── Forge modes: tap-to-select with optional scroll ───
     if (isForgeMode) {
       const startX = e.clientX, startY = e.clientY;
       const invContent = document.getElementById('inventory-content');
@@ -352,18 +352,16 @@ class UI {
       let scrolled = false;
 
       const onForgeMove = (ev) => {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
         if (!scrolled && (dx * dx + dy * dy) > 25) scrolled = true;
         if (scrolled && invContent) invContent.scrollTop = startScrollTop - (ev.clientY - startY);
       };
-      const onForgeUp = (ev) => {
-        document.removeEventListener('pointermove', onForgeMove);
-        document.removeEventListener('pointerup',   onForgeUp);
+      const onForgeUp = () => {
+        document.removeEventListener('pointermove',   onForgeMove);
+        document.removeEventListener('pointerup',     onForgeUp);
         document.removeEventListener('pointercancel', onForgeUp);
-        if (scrolled) return; // was a scroll, not a tap
+        if (scrolled) return;
 
-        // Legendary forge mode
         if (this._forgeMode) {
           const gem = this._getGem({ type, index });
           if (!gem) return;
@@ -374,23 +372,15 @@ class UI {
           }
           return;
         }
-
-        // Rare forge mode: select 3 gems (any non-super-legendary)
         if (this._rareForgeMode) {
           const gem = this._getGem({ type, index });
           if (!gem || gem.superLegendary) return;
-          const slot = { type, index };
           const alreadyIdx = this._rareForgeSelected.findIndex(s => s.type === type && s.index === index);
-          if (alreadyIdx !== -1) {
-            this._rareForgeSelected.splice(alreadyIdx, 1);
-          } else {
-            this._rareForgeSelected.push(slot);
-          }
+          if (alreadyIdx !== -1) this._rareForgeSelected.splice(alreadyIdx, 1);
+          else this._rareForgeSelected.push({ type, index });
           this._renderInventory();
           return;
         }
-
-        // Dice forge mode: reroll a rare/legendary gem
         if (this._diceForgeMode) {
           const gem = this._getGem({ type, index });
           if (!gem || (gem.rarity !== 'rare' && gem.rarity !== 'legendary')) return;
@@ -404,22 +394,27 @@ class UI {
       return;
     }
 
+    // ── Normal mode: move-to-drag (no long press) ─────────
     const gem = this._getGem({ type, index });
-
-    // touch-action:none on all slots — we handle scroll + drag manually.
-    // Empty slots: scroll only (no drag).
     const startX = e.clientX, startY = e.clientY;
     const invContent = document.getElementById('inventory-content');
     const startScrollTop = invContent ? invContent.scrollTop : 0;
 
+    // Immediate "pressed" feedback on the source element
+    const srcEl = type === 'wand'
+      ? document.getElementById(`wand-socket-${index}`)
+      : document.getElementById('inventory-grid')?.children[index];
+    if (srcEl) srcEl.classList.add('gem-held');
+
     if (!gem) {
-      // Empty slot: support scrolling only
+      // Empty slot — scroll only
       const onMoveEmpty = (ev) => {
         if (invContent) invContent.scrollTop = startScrollTop - (ev.clientY - startY);
       };
       const onUpEmpty = () => {
-        document.removeEventListener('pointermove', onMoveEmpty);
-        document.removeEventListener('pointerup',   onUpEmpty);
+        if (srcEl) srcEl.classList.remove('gem-held');
+        document.removeEventListener('pointermove',   onMoveEmpty);
+        document.removeEventListener('pointerup',     onUpEmpty);
         document.removeEventListener('pointercancel', onUpEmpty);
       };
       document.addEventListener('pointermove',   onMoveEmpty);
@@ -428,36 +423,43 @@ class UI {
       return;
     }
 
-    let mode = 'idle'; // 'idle' → 'scroll' or 'drag'
+    // State: 'idle' → 'drag' (moved diagonally) or 'scroll' (moved vertically)
+    let mode = 'idle';
     let ghost = null;
 
-    const activateDrag = () => {
-      if (mode !== 'idle') return;
+    const startDrag = (curX, curY) => {
       mode = 'drag';
+      if (navigator.vibrate) navigator.vibrate(8);
+      if (srcEl) srcEl.classList.remove('gem-held');
+
       ghost = document.createElement('div');
       ghost.id = 'drag-ghost';
       ghost.innerHTML = this._gemCellHTML(gem);
-      ghost.style.cssText = 'position:fixed;pointer-events:none;z-index:9999;opacity:0.88;' +
-        'transform:translate(-50%,-50%) rotate(3deg);transition:none;';
-      ghost.style.left = startX + 'px';
-      ghost.style.top  = startY + 'px';
+      ghost.style.cssText =
+        `position:fixed;pointer-events:none;z-index:9999;` +
+        `left:${curX}px;top:${curY}px;` +
+        `transform:translate(-50%,-50%) rotate(2deg);` +
+        `will-change:left,top;`;
+      document.body.appendChild(ghost);
+
       this._dragState = { type, index, gem };
       document.body.classList.add('is-dragging');
-      document.body.appendChild(ghost);
-      this._renderInventory();
+      this._renderInventory(); // marks source slot .dragging via _dragState
     };
-
-    // After 180ms still idle → enter drag mode
-    const holdTimer = setTimeout(() => { if (mode === 'idle') activateDrag(); }, 180);
 
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
 
-      if (mode === 'idle' && (dx * dx + dy * dy) > 25) {
-        // Moved 5px before hold fired → scroll
-        clearTimeout(holdTimer);
-        mode = 'scroll';
+      if (mode === 'idle') {
+        if (dx * dx + dy * dy < 64) return; // wait for 8px movement
+        // Vertical-dominant movement → scroll; anything else → drag
+        if (Math.abs(dy) > Math.abs(dx) * 1.8) {
+          mode = 'scroll';
+          if (srcEl) srcEl.classList.remove('gem-held');
+        } else {
+          startDrag(ev.clientX, ev.clientY);
+        }
       }
 
       if (mode === 'scroll' && invContent) {
@@ -468,9 +470,12 @@ class UI {
       if (mode === 'drag' && ghost) {
         ghost.style.left = ev.clientX + 'px';
         ghost.style.top  = ev.clientY + 'px';
+
+        // Hit-test under the ghost
         ghost.style.visibility = 'hidden';
         const under = document.elementFromPoint(ev.clientX, ev.clientY);
         ghost.style.visibility = '';
+
         document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
         const toSlot = this._slotFromElement(under);
         if (toSlot) {
@@ -482,19 +487,26 @@ class UI {
       }
     };
 
+    const cleanupListeners = () => {
+      document.removeEventListener('pointermove',   onMove);
+      document.removeEventListener('pointerup',     onUp);
+      document.removeEventListener('pointercancel', onCancel);
+    };
+
     const onUp = (ev) => {
-      clearTimeout(holdTimer);
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup',   onUp);
-      document.removeEventListener('pointercancel', onUp);
+      cleanupListeners();
+      if (srcEl) srcEl.classList.remove('gem-held');
       document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
 
       if (mode === 'drag') {
-        if (ghost) ghost.remove();
-        document.body.classList.remove('is-dragging');
-        this._dragState = null;
+        // Remove ghost, hit-test, swap gems
         ghost.style.visibility = 'hidden';
         const under = document.elementFromPoint(ev.clientX, ev.clientY);
+        ghost.remove();
+        ghost = null;
+        document.body.classList.remove('is-dragging');
+        this._dragState = null;
+
         const to = this._slotFromElement(under);
         if (to && !(to.type === type && to.index === index)) {
           const gemA = this._getGem({ type, index });
@@ -502,6 +514,7 @@ class UI {
           this._setGem({ type, index }, gemB);
           this._setGem(to, gemA);
           if (to.type === 'wand' && gemA) this._socketSnapEffect(to.index, gemA);
+          else this._dropEffect(to);
           this.updateSlots();
         }
       } else {
@@ -510,9 +523,32 @@ class UI {
       this._renderInventory();
     };
 
+    const onCancel = () => {
+      cleanupListeners();
+      if (srcEl) srcEl.classList.remove('gem-held');
+      document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+      if (ghost) { ghost.remove(); ghost = null; }
+      document.body.classList.remove('is-dragging');
+      this._dragState = null;
+      this._renderInventory();
+    };
+
     document.addEventListener('pointermove',   onMove);
     document.addEventListener('pointerup',     onUp);
-    document.addEventListener('pointercancel', onUp);
+    document.addEventListener('pointercancel', onCancel);
+  }
+
+  // ── Drop pop effect on inventory slots ───────────────────
+  _dropEffect(slot) {
+    if (!slot) return;
+    const el = slot.type === 'wand'
+      ? document.getElementById(`wand-socket-${slot.index}`)
+      : document.getElementById('inventory-grid')?.children[slot.index];
+    if (!el) return;
+    el.classList.remove('gem-drop');
+    void el.offsetWidth;
+    el.classList.add('gem-drop');
+    el.addEventListener('animationend', () => el.classList.remove('gem-drop'), { once: true });
   }
 
   // ---- Socket snap delight effect ----
