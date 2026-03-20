@@ -342,40 +342,65 @@ class UI {
   }
 
   _onSlotPointerDown(e, type, index) {
-    // Legendary forge mode
-    if (this._forgeMode) {
-      const gem = this._getGem({ type, index });
-      if (!gem) return;
-      if (gem.rarity === 'legendary' && !gem.superLegendary) {
-        // Upgrade existing legendary → super legendary
-        this._forgifySuperLegendary(gem, { type, index });
-      } else if (gem.rarity !== 'legendary') {
-        // Upgrade common/rare → legendary
-        this._forgifyGem(gem, { type, index }, (s, v) => this._setGem(s, v));
-      }
-      return;
-    }
+    const isForgeMode = this._forgeMode || this._rareForgeMode || this._diceForgeMode;
 
-    // Rare forge mode: select 3 gems (any non-super-legendary)
-    if (this._rareForgeMode) {
-      const gem = this._getGem({ type, index });
-      if (!gem || gem.superLegendary) return;
-      const slot = { type, index };
-      const alreadyIdx = this._rareForgeSelected.findIndex(s => s.type === type && s.index === index);
-      if (alreadyIdx !== -1) {
-        this._rareForgeSelected.splice(alreadyIdx, 1);
-      } else {
-        this._rareForgeSelected.push(slot);
-      }
-      this._renderInventory();
-      return;
-    }
+    // In forge modes, support scroll on vertical drag before acting on tap
+    if (isForgeMode) {
+      const startX = e.clientX, startY = e.clientY;
+      const invContent = document.getElementById('inventory-content');
+      const startScrollTop = invContent ? invContent.scrollTop : 0;
+      let scrolled = false;
 
-    // Dice forge mode: reroll a rare/legendary gem
-    if (this._diceForgeMode) {
-      const gem = this._getGem({ type, index });
-      if (!gem || (gem.rarity !== 'rare' && gem.rarity !== 'legendary')) return;
-      this._executeDiceForge(gem, { type, index });
+      const onForgeMove = (ev) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        if (!scrolled && (dx * dx + dy * dy) > 25) scrolled = true;
+        if (scrolled && invContent) invContent.scrollTop = startScrollTop - (ev.clientY - startY);
+      };
+      const onForgeUp = (ev) => {
+        document.removeEventListener('pointermove', onForgeMove);
+        document.removeEventListener('pointerup',   onForgeUp);
+        document.removeEventListener('pointercancel', onForgeUp);
+        if (scrolled) return; // was a scroll, not a tap
+
+        // Legendary forge mode
+        if (this._forgeMode) {
+          const gem = this._getGem({ type, index });
+          if (!gem) return;
+          if (gem.rarity === 'legendary' && !gem.superLegendary) {
+            this._forgifySuperLegendary(gem, { type, index });
+          } else if (gem.rarity !== 'legendary') {
+            this._forgifyGem(gem, { type, index }, (s, v) => this._setGem(s, v));
+          }
+          return;
+        }
+
+        // Rare forge mode: select 3 gems (any non-super-legendary)
+        if (this._rareForgeMode) {
+          const gem = this._getGem({ type, index });
+          if (!gem || gem.superLegendary) return;
+          const slot = { type, index };
+          const alreadyIdx = this._rareForgeSelected.findIndex(s => s.type === type && s.index === index);
+          if (alreadyIdx !== -1) {
+            this._rareForgeSelected.splice(alreadyIdx, 1);
+          } else {
+            this._rareForgeSelected.push(slot);
+          }
+          this._renderInventory();
+          return;
+        }
+
+        // Dice forge mode: reroll a rare/legendary gem
+        if (this._diceForgeMode) {
+          const gem = this._getGem({ type, index });
+          if (!gem || (gem.rarity !== 'rare' && gem.rarity !== 'legendary')) return;
+          this._executeDiceForge(gem, { type, index });
+          return;
+        }
+      };
+      document.addEventListener('pointermove',   onForgeMove);
+      document.addEventListener('pointerup',     onForgeUp);
+      document.addEventListener('pointercancel', onForgeUp);
       return;
     }
 
