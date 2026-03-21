@@ -76,6 +76,7 @@ class Wand {
       sigil: false,
       warpBolt: false,
       voidPull: false,
+      vitalSurge: false,
     };
 
     for (const gem of this.socketedGems) {
@@ -131,6 +132,7 @@ class Wand {
           case 'sigil':             s.sigil = true; break;
           case 'warp_bolt':         s.warpBolt = true; break;
           case 'void_pull':         s.voidPull = true; break;
+          case 'vital_surge':       s.vitalSurge = true; break;
         }
       }
     }

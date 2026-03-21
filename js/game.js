@@ -86,6 +86,7 @@ class Game {
     this._gravitonTimer = 0;
     this._sigilTimer = 0;
     this._warpBoltTimer = 0;
+    this._vitalSurgeTimer = 0;
     this._arcaneKillCount = 0;
     this._bloodFrenzyStacks = 0;
     this._bloodFrenzyTimer = 0;
@@ -247,6 +248,26 @@ class Game {
       if (this._warpBoltTimer >= 10) {
         this._warpBoltTimer = 0;
         this._fireWarpBolt();
+      }
+    }
+
+    // Vital Surge: AOE life pulse every 8s
+    if (this.player._vitalSurgeGem) {
+      this._vitalSurgeTimer += dt;
+      if (this._vitalSurgeTimer >= 8) {
+        this._vitalSurgeTimer = 0;
+        const surgeDmg = Math.round(this.player.maxHp * 0.30);
+        let hit = 0;
+        for (const e of this.enemies) {
+          if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < 200) {
+            const result = e.takeDamage(surgeDmg);
+            this.particles.floatText(e.x, e.y - 12, `${result.actual}`, '#ff4488', 12);
+            if (e.isDead) this.onEnemyDead(e);
+            hit++;
+          }
+        }
+        this.particles.explode(this.player.x, this.player.y, '#ff4488', 16);
+        this.particles.floatText(this.player.x, this.player.y - 30, '❤ VITAL SURGE', '#ff4488', 14);
       }
     }
 
@@ -961,6 +982,7 @@ class Game {
     p._gravitonGem        = false;
     p._sigilGem           = false;
     p._warpBoltGem        = false;
+    p._vitalSurgeGem      = false;
     p._relicPierceBonus   = 0;
     p._bloodFrenzyMult    = 1.0;
 
@@ -993,6 +1015,13 @@ class Game {
     p._gravitonGem    = ws.graviton;
     p._sigilGem       = ws.sigil;
     p._warpBoltGem    = ws.warpBolt;
+    p._vitalSurgeGem  = ws.vitalSurge;
+
+    // Vital Surge: +50% max HP
+    if (ws.vitalSurge) {
+      p.maxHp = Math.round(p.maxHp * 1.5);
+      p.hp = Math.min(p.hp, p.maxHp);
+    }
 
     // Bounty: +70% XP from kills
     if (ws.bounty) p._xpMultiplier *= 1.7;

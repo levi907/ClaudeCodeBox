@@ -43,23 +43,24 @@ const MOD_DEFS = {
   bounty:           { rarity: 'legendary', label: 'Bounty',           color: '#ff8c00', format: () => '+70% XP from all kills' },
   phase_shot:       { rarity: 'legendary', label: 'Phase Shot',       color: '#ff8c00', format: () => 'Projectiles pierce all enemies (+100% damage)' },
   double_tap:       { rarity: 'legendary', label: 'Double Tap',       color: '#ff8c00', format: () => 'Each shot fires a second bolt (−15% dmg)' },
-  overload:         { rarity: 'legendary', label: 'Overload',         color: '#ff8c00', format: () => 'Critical hits explode in 55px AoE' },
+  overload:         { rarity: 'legendary', label: 'Overload',         color: '#ff8c00', format: () => 'Critical hits explode in 150px AoE (80% damage)' },
   frost_nova:       { rarity: 'legendary', label: 'Frost Nova',       color: '#ff8c00', format: () => '20% hit chance: 60 AoE dmg + freeze nearby enemies 2s' },
-  curse:            { rarity: 'legendary', label: 'Curse',            color: '#ff8c00', format: () => 'Cursed enemies take 25% more damage for 5s' },
+  curse:            { rarity: 'legendary', label: 'Curse',            color: '#ff8c00', format: () => 'Cursed enemies take 75% more damage for 8s' },
   decay:            { rarity: 'legendary', label: 'Decay',            color: '#ff8c00', format: () => 'Enemies lose 20% max HP/s for 8s after hit' },
   soul_burst:       { rarity: 'legendary', label: 'Soul Burst',       color: '#ff8c00', format: () => 'On kill: fire 3 soul bolts at nearby foes' },
   shockwave:        { rarity: 'legendary', label: 'Shockwave',        color: '#ff8c00', format: () => 'On kill: push all enemies in 220px away' },
-  combustion:       { rarity: 'legendary', label: 'Combustion',       color: '#ff8c00', format: () => 'Poisoned enemies explode on death (150% HP)' },
+  combustion:       { rarity: 'legendary', label: 'Combustion',       color: '#ff8c00', format: () => 'Poisoned enemies explode on death (60% Max HP in 90px)' },
   blood_frenzy:     { rarity: 'legendary', label: 'Blood Frenzy',     color: '#ff8c00', format: () => 'Kills grant +10% dmg for 3s (max 5 stacks)' },
   storm_call:       { rarity: 'legendary', label: 'Storm Call',       color: '#ff8c00', format: () => 'Every 9s: lightning strikes 5 enemies (6× dmg)' },
   time_stop:        { rarity: 'legendary', label: 'Time Stop',        color: '#ff8c00', format: () => 'Every 15s: deal 80 dmg + freeze all enemies for 1.5s' },
   graviton:         { rarity: 'legendary', label: 'Graviton',         color: '#ff8c00', format: () => 'Every 16s: pull all enemies to you + deal 100 damage' },
-  arcane_surge:     { rarity: 'legendary', label: 'Arcane Surge',     color: '#ff8c00', format: () => 'Every 10 kills: auto-fire 6 homing bolts' },
+  arcane_surge:     { rarity: 'legendary', label: 'Arcane Surge',     color: '#ff8c00', format: () => 'Every 5 kills: auto-fire 10 homing bolts' },
   unstable_core:    { rarity: 'legendary', label: 'Unstable Core',    color: '#ff8c00', format: () => '8% per shot: deal 8× damage' },
   mirror_shot:      { rarity: 'legendary', label: 'Mirror Shot',      color: '#ff8c00', format: () => '25% chance: fire 3 spread copies of your shot' },
   sigil:            { rarity: 'legendary', label: 'Sigil',            color: '#ff8c00', format: () => 'Every 18s: place sigil (25 dmg/s, 7s, 140px)' },
   warp_bolt:        { rarity: 'legendary', label: 'Warp Bolt',        color: '#ff8c00', format: () => 'Every 10s: fire a massive 5× damage bolt' },
   void_pull:        { rarity: 'legendary', label: 'Void Pull',        color: '#ff8c00', format: () => 'Massively increased pickup range' },
+  vital_surge:      { rarity: 'legendary', label: 'Vital Surge',      color: '#ff8c00', format: () => '+50% Max HP. Every 8s, life pulse deals 30% Max HP to all enemies within 200px' },
 };
 
 // Drop weight for each mod (higher = more likely to appear)
@@ -116,6 +117,7 @@ const MOD_WEIGHTS = {
   sigil:            1,
   warp_bolt:        1,
   void_pull:        1,
+  vital_surge:      1,
 };
 
 // Numeric value for each non-legendary mod
