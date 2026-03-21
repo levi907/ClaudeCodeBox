@@ -16,26 +16,30 @@ class UI {
     this.gameoverScreen = document.getElementById('gameover-screen');
     this.gameoverStats  = document.getElementById('gameover-stats');
     this.restartBtn     = document.getElementById('restart-btn');
-    this.continueBtn    = document.getElementById('continue-btn');
     this.wandHudBtn     = document.getElementById('wand-hud-btn');
     this.inventoryPanel = document.getElementById('inventory-panel');
 
-    // Restart — hide screen immediately, then reset
+    // Restart (game over screen)
     const doRestart = () => { this.hideGameOver(); game.restart(); };
     this.restartBtn.addEventListener('click', doRestart);
     this.restartBtn.addEventListener('touchend', e => { e.preventDefault(); doRestart(); });
 
-    // Continue — revive at 25% HP without resetting the run
+    // Win screen: Continue (keep playing) + Play Again (full reset)
+    const winContinueBtn = document.getElementById('win-continue-btn');
     const doContinue = () => this._continueRun();
-    this.continueBtn.addEventListener('click', doContinue);
-    this.continueBtn.addEventListener('touchend', e => { e.preventDefault(); doContinue(); });
+    winContinueBtn.addEventListener('click', doContinue);
+    winContinueBtn.addEventListener('touchend', e => { e.preventDefault(); doContinue(); });
 
     this.wandHudBtn.addEventListener('click', () => this.openInventory());
     this.wandHudBtn.addEventListener('touchend', e => { e.preventDefault(); this.openInventory(); });
 
+    // Inventory close — pointerup + stopPropagation to bypass any pointer-capture conflicts
     const closeBtn = document.getElementById('inventory-close-btn');
-    closeBtn.addEventListener('click',    ()  => this.closeInventory());
-    closeBtn.addEventListener('touchend', (e) => { e.preventDefault(); this.closeInventory(); });
+    closeBtn.addEventListener('pointerup', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.closeInventory();
+    });
 
     // Close when tapping/clicking anywhere outside the content box
     const panel = document.getElementById('inventory-panel');
@@ -824,14 +828,10 @@ class UI {
 
   hideGameOver() { this.gameoverScreen.classList.add('hidden'); }
 
-  // Revive the player and resume the current run
+  // Continue after victory — keep all progress, disable the win timer
   _continueRun() {
-    const p = this.game.player;
-    if (!p) return;
-    p.isDead = false;
-    p.hp = Math.max(1, Math.floor(p.maxHp * 0.25));
-    this.hideGameOver();
-    // If the loop stopped (win condition hit before death), restart it
+    document.getElementById('win-screen')?.classList.add('hidden');
+    this.game._endless = true;   // disables the 6-minute win check
     if (!this.game.running) {
       this.game.running = true;
       this.game._lastTime = performance.now();

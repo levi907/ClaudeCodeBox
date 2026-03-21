@@ -1142,23 +1142,6 @@ html, body {
   content: '› ';
   color: rgba(192,112,32,0.5);
 }
-#gameover-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-#continue-btn {
-  background: linear-gradient(170deg, rgba(40,60,20,0.9), rgba(20,38,10,0.95));
-  border: 1px solid rgba(80,140,30,0.55);
-  color: #90cc50;
-  box-shadow: 0 0 14px rgba(80,150,20,0.2);
-}
-#continue-btn:hover, #continue-btn:active {
-  background: linear-gradient(170deg, rgba(55,80,25,0.95), rgba(30,52,14,0.98));
-  border-color: rgba(100,170,40,0.8);
-  box-shadow: 0 0 22px rgba(90,170,25,0.4);
-  color: #b0e060;
-}
 
 /* ═══════════════════════════════════════════
    WIN SCREEN
@@ -1227,6 +1210,30 @@ html, body {
   background: linear-gradient(135deg, #245214, #102c0a);
   border-color: rgba(100,220,60,0.8);
   box-shadow: 0 0 20px rgba(60,180,30,0.4);
+}
+#win-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+#win-continue-btn {
+  background: linear-gradient(135deg, #1a3060, #0d1f40);
+  border: 1px solid rgba(80,140,255,0.5);
+  color: #88bbff;
+  box-shadow: 0 0 14px rgba(60,100,220,0.2);
+  font-size: clamp(11px, 2vw, 14px);
+  font-family: var(--font-title);
+  letter-spacing: 2px;
+  padding: 10px 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+#win-continue-btn:hover {
+  background: linear-gradient(135deg, #244080, #14285a);
+  border-color: rgba(100,160,255,0.8);
+  box-shadow: 0 0 20px rgba(60,120,255,0.4);
 }
 
 /* ═══════════════════════════════════════════

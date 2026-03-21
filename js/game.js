@@ -69,6 +69,7 @@ class Game {
     this.particles.clear();
     this.time = 0;
     this.frame = 0;
+    this._endless = false;
     this._spawnTimer = 0;
     this._spawnInterval = CONFIG.ENEMY_SPAWN_INTERVAL_START;
     this._bossSpawnIndex = 0;
@@ -136,8 +137,8 @@ class Game {
     this.time += dt;
     this.frame++;
 
-    // Victory condition: survive 6 minutes
-    if (this.time >= 360) {
+    // Victory condition: survive 6 minutes (skipped in endless mode)
+    if (this.time >= 360 && !this._endless) {
       this.running = false;
       this.ui.showWin(this.player, this.relics);
       return;
