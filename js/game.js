@@ -250,7 +250,7 @@ class Game {
         if (sig.age >= sig.duration) { this._sigils.splice(i, 1); continue; }
         const sigDmg = 15 * dt;
         for (const e of this.enemies) {
-          if (!e.isDead && distSq(e.x, e.y, sig.x, sig.y) < sig.radius * sig.radius) {
+          if (!e.isDead && !e._phased && distSq(e.x, e.y, sig.x, sig.y) < sig.radius * sig.radius) {
             e.hp -= sigDmg;
             if (e.hp <= 0) { e.isDead = true; this.onEnemyDead(e); }
           }
@@ -535,6 +535,13 @@ class Game {
             e.barrierActive = false;
             this.particles.spark(e.x, e.y, '#88ccff', 10);
             this.particles.floatText(e.x, e.y - 15, '🛡 BARRIER', '#88ccff', 12);
+            continue;
+          }
+
+          // Phase mod: invincible — pass through
+          if (e._phased) {
+            this.particles.spark(e.x, e.y, '#cc88ff', 5);
+            this.particles.floatText(e.x, e.y - 15, 'PHASED', '#cc88ff', 11);
             continue;
           }
 
@@ -1069,7 +1076,7 @@ class Game {
   _applyMonsterRarity(enemy, rarity) {
     enemy.rarity = rarity;
     const modCount = rarity === 'rare' ? 6 : 2;
-    const pool = ['size', 'damage', 'hp', 'move_speed', 'huge_xp', 'erratic', 'barrier', 'regeneration', 'reflect'];
+    const pool = ['size', 'damage', 'hp', 'move_speed', 'huge_xp', 'erratic', 'barrier', 'regeneration', 'reflect', 'phase'];
     const available = [...pool];
     const picked = [];
     while (picked.length < modCount && available.length > 0) {
@@ -1293,6 +1300,7 @@ class Game {
       }
       if (counts.erratic)      p.critChance          = Math.min(0.95, p.critChance + counts.erratic * 0.10);
       if (counts.barrier)      p.armor              += counts.barrier * 15;
+      if (counts.phase)        p.armor              += counts.phase   * 8;
     }
   }
 

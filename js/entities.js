@@ -220,6 +220,9 @@ class Enemy {
     this.erraticOffset = 0;
     this.xpMult = 1;
     this._rarityBarColor = null;
+    // Phase mod
+    this._phased = false;
+    this._phaseTimer = 2.5;  // starts vulnerable for 2.5s before first phase-in
   }
 
   update(dt, playerX, playerY) {
@@ -254,6 +257,15 @@ class Enemy {
       this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.02 * dt);
     }
 
+    // Phase mod: alternate 1.5 s invincible / 2.5 s vulnerable
+    if (this.mods.includes('phase')) {
+      this._phaseTimer -= dt;
+      if (this._phaseTimer <= 0) {
+        this._phased = !this._phased;
+        this._phaseTimer = this._phased ? 1.5 : 2.5;
+      }
+    }
+
     if (this.poisoned > 0) {
       this.poisoned -= dt;
       this.hp -= (this.virulentlyPoisoned ? 12 : 3) * dt;
@@ -283,6 +295,7 @@ class Enemy {
   }
 
   takeDamage(dmg, isCrit = false) {
+    if (this._phased) return { actual: 0, isCrit: false };
     const curseMult = this.cursed > 0 ? 1.75 : 1;
     const actual = Math.max(1, Math.round(dmg * curseMult) - this.armor);
     this.hp -= actual;
@@ -351,6 +364,27 @@ class Enemy {
       ctx.arc(screenX, screenY, this.size + 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Phase mod: ghostly flicker when invincible
+    if (this._phased) {
+      ctx.save();
+      const flicker = 0.55 + 0.30 * Math.sin(this.animFrame * 0.25);
+      // Faint white outline
+      ctx.shadowColor = '#cc88ff';
+      ctx.shadowBlur = 22 * flicker;
+      ctx.strokeStyle = `rgba(204,136,255,${0.65 + 0.3 * flicker})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, this.size + 5, 0, Math.PI * 2);
+      ctx.stroke();
+      // Purple translucent fill to signal intangibility
+      ctx.globalAlpha = 0.30 * flicker;
+      ctx.fillStyle = '#cc88ff';
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, this.size + 5, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
 
