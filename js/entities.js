@@ -63,7 +63,7 @@ class Player {
         this._dashVy = 0;
       }
       this._dashTimer = 0.22;
-      this._dashCooldown = 3.0;
+      this._dashCooldown = 6.0;
       this.invincibleTime = Math.max(this.invincibleTime, 0.26);
       this._dashJustStarted = true;
       this._dashedEnemies = new Set();
@@ -127,7 +127,7 @@ class Player {
   }
 
   draw(ctx, screenX, screenY) {
-    Sprites.player(ctx, screenX, screenY, this.facing, this.animFrame, this.flashTime);
+    Sprites.player(ctx, screenX, screenY, this.facing, this.animFrame, this.flashTime, this._projSizeMult || 1);
   }
 }
 

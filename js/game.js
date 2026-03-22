@@ -1314,7 +1314,7 @@ class Game {
       vx: Math.cos(a) * ws.projSpeed * 1.5,
       vy: Math.sin(a) * ws.projSpeed * 1.5,
       damage: dmg,
-      size: 18, pierce: 8, bounce: 0, chain: 0,
+      size: 18 * (this.player._projSizeMult || 1), pierce: 8, bounce: 0, chain: 0,
       type: 'bolt', color: '#ff6600', lifetime: 3.0,
       explosive: true, explosionRadius: 80,
     }));
@@ -1337,7 +1337,7 @@ class Game {
         vx: Math.cos(a) * ws.projSpeed,
         vy: Math.sin(a) * ws.projSpeed,
         damage: dmg,
-        size: 9, pierce: 5, bounce: 0, chain: 0,
+        size: 9 * (this.player._projSizeMult || 1), pierce: 5, bounce: 0, chain: 0,
         type: 'bolt', color: '#ff44ff', lifetime: 2.5,
       }));
     }
@@ -1459,7 +1459,7 @@ class Game {
     // Dash cooldown arc (bottom-right, near dash button)
     {
       const p = this.player;
-      const cdTotal = 3.0;
+      const cdTotal = 6.0;
       const cdPct = p._dashCooldown <= 0 ? 1 : 1 - (p._dashCooldown / cdTotal);
       const bx = w - 48, by = h - 84, r = 28;
       ctx.save();

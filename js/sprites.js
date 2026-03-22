@@ -20,9 +20,10 @@ const Sprites = {
   // ======================================================
   //  PLAYER — Original purple-robed wizard
   // ======================================================
-  player(ctx, x, y, facing, animFrame, flashTime) {
+  player(ctx, x, y, facing, animFrame, flashTime, scale = 1) {
     ctx.save();
     ctx.translate(x, y);
+    if (scale !== 1) ctx.scale(scale, scale);
     if (facing < 0) ctx.scale(-1, 1);
 
     const bob = Math.sin(animFrame * 0.15) * 1.5;
