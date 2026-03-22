@@ -635,3 +635,248 @@ class MenuMusicSystem {
 }
 
 window.MenuMusic = new MenuMusicSystem();
+
+// ============================================================
+//  BOSS MUSIC SYSTEM — intense spooky 8-bit dungeon boss theme
+//  D minor, 140 BPM, driving bass + drums + lead + fast arp
+// ============================================================
+
+class BossMusicSystem {
+  constructor() {
+    this.BPM   = 140;
+    this.STEP  = 60 / 140 / 4;  // ≈ 0.1071 s per 16th-note
+    this.STEPS = 64;             // 4 bars
+    this.TICK  = 40;
+    this.playing = false;
+    this.muted   = false;
+    this.ctx     = null;
+    this.masterGain = null;
+    this._timer  = null;
+    this._step   = 0;
+    this._next   = 0;
+    this._buildPatterns();
+  }
+
+  _buildPatterns() {
+    const _ = null;
+    // Frequencies in D minor (D E F G A Bb C, Cs=C# harmonic leading tone)
+    const D2=73.42, E2=82.41, F2=87.31, G2=98.00, A2=110.0, Bb2=116.5, C3=130.8;
+    const D3=146.8, E3=164.8, F3=174.6, G3=196.0, A3=220.0, Bb3=233.1, Cs3=138.6;
+    const D4=293.7, E4=329.6, F4=349.2, G4=392.0, A4=440.0, Bb4=466.2, C4=261.6, Cs4=277.2;
+    const D5=587.3;
+
+    // ── Kick (beats 1,3 + syncopated pickup on 14) ──
+    this.patKick = [
+      1,_,_,_,_,_,_,_, 1,_,1,_,_,_,1,_,
+      1,_,_,_,_,_,_,_, 1,_,_,_,_,_,1,_,
+      1,_,_,_,_,_,_,_, 1,_,1,_,_,_,1,_,
+      1,_,_,_,_,_,_,_, 1,_,_,_,_,_,1,_,
+    ];
+    // ── Snare (beats 2, 4) ──
+    this.patSnare = [
+      _,_,_,_,1,_,_,_, _,_,_,_,1,_,_,_,
+      _,_,_,_,1,_,_,_, _,_,_,_,1,_,_,_,
+      _,_,_,_,1,_,_,_, _,_,_,_,1,_,_,_,
+      _,_,_,_,1,_,_,_, _,_,_,_,1,_,_,_,
+    ];
+    // ── Closed hihat (8th notes) ──
+    this.patHihat = [
+      1,_,1,_,1,_,1,_, 1,_,1,_,1,_,1,_,
+      1,_,1,_,1,_,1,_, 1,_,1,_,1,_,1,_,
+      1,_,1,_,1,_,1,_, 1,_,1,_,1,_,1,_,
+      1,_,1,_,1,_,1,_, 1,_,1,_,1,_,1,_,
+    ];
+    // ── Driving bass (8th notes) ──
+    this.patBass = [
+      D2,_,D2,_,F2,_,F2,_, A2,_,A2,_,G2,_,G2,_,  // Dm feel
+      C3,_,C3,_,A2,_,A2,_, Bb2,_,Bb2,_,Cs3,_,D3,_,  // tension → resolve
+      D2,_,D2,_,F2,_,F2,_, C3,_,C3,_,D2,_,D2,_,
+      A2,_,A2,_,G2,_,G2,_, F2,_,F2,_,E2,_,E2,_,   // downward tension
+    ];
+    // ── Lead melody (angular, aggressive D minor) ──
+    this.patLead = [
+      D4,_,_,_, F4,_,A4,_, D5,_,_,_,  A4,_,_,_,
+      Bb4,_,_,_,A4,_,G4,_, F4,_,E4,_,  F4,_,_,_,
+      D5,_,_,_,Cs4,_,D5,_, Bb4,_,A4,_, G4,_,_,_,
+      F4,_,_,_, E4,_,F4,_, _,_,_,_,    D5,_,_,_,
+    ];
+    // ── Fast D-minor arpeggio (every 16th note) ──
+    this.patArp = [
+      D3,F3,A3,C4, D3,F3,A3,C4, D3,F3,A3,C4, D3,F3,A3,C4,  // Dm7
+      A2,C3,F3,A3, A2,C3,F3,A3, A2,C3,F3,A3, A2,C3,F3,A3,  // Fadd9
+      D3,F3,A3,C4, D3,F3,A3,C4, C3,E3,G3,Bb3,C3,E3,G3,Bb3, // Dm / Cm
+      A2,C3,E3,G3, A2,C3,E3,G3, F2,A2,D3,F3, F2,A2,D3,F3,  // Am / F cadence
+    ];
+  }
+
+  _init() {
+    if (this.ctx) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0;
+    this.masterGain.connect(this.ctx.destination);
+
+    // Short slapback echo
+    this._echoDelay = this.ctx.createDelay(1.0);
+    this._echoDelay.delayTime.value = 0.12;
+    this._echoFB  = this.ctx.createGain(); this._echoFB.gain.value  = 0.18;
+    this._echoWet = this.ctx.createGain(); this._echoWet.gain.value = 0.15;
+    this._echoDelay.connect(this._echoFB);
+    this._echoFB.connect(this._echoDelay);
+    this._echoDelay.connect(this._echoWet);
+    this._echoWet.connect(this.masterGain);
+
+    this.gLead  = this.ctx.createGain(); this.gLead.gain.value  = 0.26;
+    this.gBass  = this.ctx.createGain(); this.gBass.gain.value  = 0.38;
+    this.gArp   = this.ctx.createGain(); this.gArp.gain.value   = 0.10;
+    this.gDrum  = this.ctx.createGain(); this.gDrum.gain.value  = 0.24;
+
+    this.gLead.connect(this.masterGain);
+    this.gLead.connect(this._echoDelay);
+    this.gBass.connect(this.masterGain);
+    this.gArp.connect(this.masterGain);
+    this.gDrum.connect(this.masterGain);
+  }
+
+  // ── Voice helpers ─────────────────────────────────────────
+  _osc(freq, type, t, dur, gNode) {
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    env.gain.setValueAtTime(0.001, t);
+    env.gain.exponentialRampToValueAtTime(0.85, t + 0.008);
+    env.gain.setValueAtTime(0.85, t + dur * 0.55);
+    env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(env); env.connect(gNode);
+    osc.start(t); osc.stop(t + dur + 0.01);
+  }
+
+  _lead(freq, t, dur) {
+    const ctx = this.ctx;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.001, t);
+    env.gain.exponentialRampToValueAtTime(0.8, t + 0.007);
+    env.gain.setValueAtTime(0.8, t + dur * 0.5);
+    env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    env.connect(this.gLead);
+    for (const det of [0, 7]) {
+      const o = ctx.createOscillator();
+      o.type = 'square'; o.frequency.setValueAtTime(freq, t);
+      o.detune.setValueAtTime(det, t); o.connect(env);
+      o.start(t); o.stop(t + dur + 0.01);
+    }
+  }
+
+  _kick(t) {
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(38, t + 0.10);
+    env.gain.setValueAtTime(1.0, t);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(env); env.connect(this.gDrum);
+    osc.start(t); osc.stop(t + 0.13);
+  }
+
+  _snare(t) {
+    const ctx = this.ctx;
+    const len = Math.ceil(ctx.sampleRate * 0.12);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const flt = ctx.createBiquadFilter();
+    flt.type = 'bandpass'; flt.frequency.value = 2400; flt.Q.value = 0.9;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.9, t);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
+    src.connect(flt); flt.connect(env); env.connect(this.gDrum);
+    src.start(t); src.stop(t + 0.12);
+  }
+
+  _hihat(t) {
+    const ctx = this.ctx;
+    const len = Math.ceil(ctx.sampleRate * 0.04);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const flt = ctx.createBiquadFilter();
+    flt.type = 'highpass'; flt.frequency.value = 7000;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.5, t);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    src.connect(flt); flt.connect(env); env.connect(this.gDrum);
+    src.start(t); src.stop(t + 0.045);
+  }
+
+  _scheduleStep(step, t) {
+    if (this.patKick[step])  this._kick(t);
+    if (this.patSnare[step]) this._snare(t);
+    if (this.patHihat[step]) this._hihat(t);
+
+    const bas = this.patBass[step];
+    const ld  = this.patLead[step];
+    const arp = this.patArp[step];
+
+    if (bas !== null) this._osc(bas, 'triangle', t, this.STEP * 1.9, this.gBass);
+    if (ld  !== null) this._lead(ld, t, this.STEP * 3.5);
+    if (arp !== null) this._osc(arp, 'square', t, this.STEP * 0.9, this.gArp);
+  }
+
+  _pump() {
+    const t = this.ctx.currentTime;
+    const lookahead = 0.08;
+    while (this._next < t + lookahead) {
+      this._scheduleStep(this._step, this._next);
+      this._step = (this._step + 1) % this.STEPS;
+      this._next += this.STEP;
+    }
+  }
+
+  // ── Public API ────────────────────────────────────────────
+  start() {
+    if (this.playing) return;
+    this.playing = true;
+    this._init();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this._step = 0;
+    this._next = this.ctx.currentTime + 0.05;
+    this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+    this.masterGain.gain.exponentialRampToValueAtTime(
+      this.muted ? 0.001 : 0.52,
+      this.ctx.currentTime + 0.8
+    );
+    this._timer = setInterval(() => this._pump(), this.TICK);
+  }
+
+  stop() {
+    if (!this.playing) return;
+    this.playing = false;
+    clearInterval(this._timer);
+    this._timer = null;
+    if (this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+    }
+  }
+
+  toggleMute() {
+    this.muted = !this.muted;
+    if (this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(
+        this.muted ? 0 : 0.52,
+        this.ctx.currentTime,
+        0.2
+      );
+    }
+    return this.muted;
+  }
+}
+
+window.BossMusic = new BossMusicSystem();

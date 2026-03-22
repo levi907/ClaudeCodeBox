@@ -173,16 +173,33 @@ const ENEMY_DEFS = {
     barWidth: 32,
     barColor: '#8000a0',
   },
-  boss: {
-    name: 'BOSS',
-    hp: 600, speed: 40, damage: 40, armor: 5,
-    xpDrop: [80, 120],
-    size: 40,
-    score: 20,
-    drawFn: (ctx, x, y, af) => Sprites.enemyBoss(ctx, x, y, af),
-    barWidth: 60,
-    barColor: '#cc0000',
-    isBoss: true,
+  // ── Three unique bosses ─────────────────────────────────
+  lich: {
+    name: 'THE LICH KING',
+    hp: 900, speed: 38, damage: 45, armor: 6,
+    xpDrop: [400, 500],
+    size: 42, score: 50,
+    drawFn: (ctx, x, y, af) => Sprites.enemyBossLich(ctx, x, y, af),
+    barWidth: 64, barColor: '#8800cc',
+    isBoss: true, bossType: 'lich',
+  },
+  weaver: {
+    name: 'THE FLESH WEAVER',
+    hp: 780, speed: 32, damage: 40, armor: 5,
+    xpDrop: [400, 500],
+    size: 46, score: 50,
+    drawFn: (ctx, x, y, af) => Sprites.enemyBossWeaver(ctx, x, y, af),
+    barWidth: 68, barColor: '#cc4400',
+    isBoss: true, bossType: 'weaver',
+  },
+  infernal: {
+    name: 'THE INFERNAL',
+    hp: 840, speed: 28, damage: 55, armor: 4,
+    xpDrop: [400, 500],
+    size: 44, score: 50,
+    drawFn: (ctx, x, y, af) => Sprites.enemyBossInfernal(ctx, x, y, af),
+    barWidth: 66, barColor: '#ff4400',
+    isBoss: true, bossType: 'infernal',
   },
 };
 
@@ -223,6 +240,11 @@ class Enemy {
     // Phase mod
     this._phased = false;
     this._phaseTimer = 2.5;  // starts vulnerable for 2.5s before first phase-in
+    // Boss ability timers (managed by game.js _updateBossAbility)
+    this._abilityTimer = 8;   // first ability fires after 8 s
+    this._chargeActive = false;
+    this._chargeTimer  = 0;
+    this._baseSpeed    = 0;
   }
 
   update(dt, playerX, playerY) {
@@ -436,17 +458,17 @@ class Enemy {
 
   dropXP() {
     const hasHugeXP = this.mods.includes('huge_xp');
-    const baseCount = rngInt(1, this.isBoss ? 15 : 3);
+    const baseCount = rngInt(1, this.isBoss ? 30 : 3);
     const count = hasHugeXP ? Math.max(12, baseCount * 5) : baseCount;
     const amount = rngInt(this.xpDrop[0], this.xpDrop[1]) * this.xpMult;
-    const spread = hasHugeXP ? 50 : 15;
+    const spread = this.isBoss ? 70 : (hasHugeXP ? 50 : 15);
     const orbs = [];
     for (let i = 0; i < count; i++) {
       orbs.push({
         x: this.x + rng(-spread, spread),
         y: this.y + rng(-spread, spread),
         value: Math.ceil(amount / count),
-        size: hasHugeXP ? rng(6, 9) : (this.isBoss ? 8 : rng(4, 6))
+        size: hasHugeXP ? rng(6, 9) : (this.isBoss ? rng(9, 13) : rng(4, 6))
       });
     }
     return orbs;

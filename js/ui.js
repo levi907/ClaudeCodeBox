@@ -942,26 +942,42 @@ class UI {
 
   drawBossBar(ctx, boss, width, height) {
     if (!boss || boss.isDead) return;
-    const barW = width * 0.6, barH = 16;
-    const x = (width - barW) / 2, y = height - 36;
+    const barW = width * 0.62, barH = 18;
+    const x = (width - barW) / 2, y = height - 40;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(x - 4, y - 4, barW + 8, barH + 20);
-    ctx.strokeStyle = '#880000'; ctx.lineWidth = 1.5;
-    ctx.strokeRect(x - 4, y - 4, barW + 8, barH + 20);
+    // Boss-type accent colour
+    const accent = boss.def.barColor || '#cc0000';
+    // Derive a darker shade for the fill gradient start
+    const darkBg = accent.replace(/^#/, '').length === 6
+      ? `rgba(${parseInt(accent.slice(1,3),16)*0.3|0},${parseInt(accent.slice(3,5),16)*0.3|0},${parseInt(accent.slice(5,7),16)*0.3|0},1)`
+      : '#200000';
 
+    // Background panel with coloured border
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(x - 5, y - 18, barW + 10, barH + 26);
+    ctx.strokeStyle = accent; ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - 5, y - 18, barW + 10, barH + 26);
+
+    // Boss name
     ctx.font = 'bold 10px "Courier New"'; ctx.textAlign = 'center';
-    ctx.fillStyle = '#ff4040'; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 6;
-    ctx.fillText(`★ ${boss.def.name.toUpperCase()} ★`, x + barW/2, y + barH + 10);
+    ctx.fillStyle = accent; ctx.shadowColor = accent; ctx.shadowBlur = 7;
+    ctx.fillText(`☠ ${boss.def.name} ☠`, x + barW/2, y - 5);
     ctx.shadowBlur = 0;
 
-    ctx.fillStyle = '#200000'; ctx.fillRect(x, y, barW, barH);
+    // HP bar track
+    ctx.fillStyle = '#180000'; ctx.fillRect(x, y, barW, barH);
+    // HP bar fill with per-boss gradient
     const ratio = clamp(boss.hp / boss.maxHp, 0, 1);
     const grad = ctx.createLinearGradient(x, 0, x + barW, 0);
-    grad.addColorStop(0, '#880000'); grad.addColorStop(0.5, '#ff3030'); grad.addColorStop(1, '#ff6000');
+    const r = parseInt(accent.slice(1,3),16), g = parseInt(accent.slice(3,5),16), b = parseInt(accent.slice(5,7),16);
+    grad.addColorStop(0,   `rgb(${r*0.5|0},${g*0.5|0},${b*0.5|0})`);
+    grad.addColorStop(0.5, accent);
+    grad.addColorStop(1,   `rgb(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+20)})`);
     ctx.fillStyle = grad; ctx.fillRect(x, y, barW * ratio, barH);
-    ctx.strokeStyle = '#cc0000'; ctx.lineWidth = 1; ctx.strokeRect(x, y, barW, barH);
-    ctx.font = '10px "Courier New"'; ctx.fillStyle = '#fff';
+    ctx.strokeStyle = accent; ctx.lineWidth = 1; ctx.strokeRect(x, y, barW, barH);
+
+    // HP text
+    ctx.font = 'bold 10px "Courier New"'; ctx.fillStyle = '#fff'; ctx.shadowBlur = 0;
     ctx.fillText(`${Math.ceil(boss.hp)} / ${boss.maxHp}`, x + barW/2, y + barH/2 + 3.5);
   }
 }

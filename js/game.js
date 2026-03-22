@@ -103,6 +103,7 @@ class Game {
     this._critSurgeTimer = 0;
     this._endlessDiffMult = 1.0;
     this._endlessDiffTimer = null;
+    this._fireStrikes = [];
     this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
@@ -126,6 +127,7 @@ class Game {
     this.running = false;
     if (this._raf) cancelAnimationFrame(this._raf);
     if (this._endlessDiffTimer) { clearInterval(this._endlessDiffTimer); this._endlessDiffTimer = null; }
+    window.BossMusic?.stop();
     this.init();
     this.running = true;
     this._lastTime = performance.now();
@@ -426,6 +428,9 @@ class Game {
     // Spawn enemies
     this._updateSpawning(dt);
 
+    // Infernal boss fire strikes
+    this._updateFireStrikes(dt);
+
     // Enemies
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
@@ -445,6 +450,7 @@ class Game {
       }
 
       e.update(dt, this.player.x, this.player.y);
+      if (e.isBoss && !e.isDead) this._updateBossAbility(e, dt);
 
       // DoT death (poison/bleed/decay/poisonStacks killed this enemy during update)
       if (e.isDead) {
@@ -982,14 +988,20 @@ class Game {
     }
 
     if (enemy.isBoss) {
-      this.particles.explode(enemy.x, enemy.y, '#ff0000', 40);
+      // Spectacular death burst — colour matches boss type
+      const bossColor = enemy.def.barColor || '#ff0000';
+      this.particles.explode(enemy.x, enemy.y, bossColor, 50);
+      this.particles.explode(enemy.x, enemy.y, '#ff8800', 30);
       this.particles.levelUpBurst(enemy.x, enemy.y);
+      this.particles.spark(enemy.x, enemy.y, '#ffcc44', 24);
+      this.particles.floatText(enemy.x, enemy.y - 28, `☠ ${enemy.def.name} SLAIN ☠`, bossColor, 16);
+      // Legendary forge drop
       const lf = new LegendaryForge(enemy.x, enemy.y);
       this.legendaryForgePickups.push(lf);
-      // Dramatic entrance burst for legendary forge
-      this.particles.explode(enemy.x, enemy.y, '#ff8800', 24);
-      this.particles.spark(enemy.x, enemy.y, '#ffcc44', 16);
-      this.particles.floatText(enemy.x, enemy.y - 50, '⚒ LEGENDARY FORGE!', '#ffcc44', 18);
+      this.particles.floatText(enemy.x, enemy.y - 55, '⚒ LEGENDARY FORGE!', '#ffcc44', 18);
+      // Restore dungeon music
+      window.BossMusic?.stop();
+      window.Music?.start();
     } else if (enemy.rarity === 'rare') {
       this.particles.explode(enemy.x, enemy.y, '#ffd700', 14);
       this.particles.spark(enemy.x, enemy.y, '#ffd700', 8);
@@ -1127,10 +1139,18 @@ class Game {
 
   _spawnBoss() {
     const { x, y } = this._spawnPosition();
-    const diff = getDifficultyMult(this.time, true);
-    const boss = new Enemy(x, y, 'boss', diff);
+    const diff = getDifficultyMult(this.time, true) * this._endlessDiffMult;
+    const types = ['lich', 'weaver', 'infernal'];
+    const type  = types[Math.floor(Math.random() * types.length)];
+    const boss  = new Enemy(x, y, type, diff);
+    boss._baseSpeed    = boss.speed;
+    boss._abilityTimer = 8;
     this.enemies.push(boss);
-    this.particles.floatText(this.player.x, this.player.y - 40, '⚠ BOSS APPROACHING ⚠', '#ff3030', 18);
+    const name = boss.def.name;
+    this.particles.floatText(this.player.x, this.player.y - 40,
+      `☠ ${name} AWAKENS ☠`, '#ff3030', 16);
+    window.Music?.stop();
+    window.BossMusic?.start();
   }
 
   _spawnPosition() {
@@ -1144,6 +1164,81 @@ class Game {
     else if (side === 2) { x = -hw; y = rng(-hh, hh); }
     else                 { x = hw; y = rng(-hh, hh); }
     return { x: this.player.x + x, y: this.player.y + y };
+  }
+
+  // ── Boss ability handler ─────────────────────────────────
+  _updateBossAbility(boss, dt) {
+    const bt = boss.def.bossType;
+
+    if (bt === 'lich') {
+      // Bone Charge: every 10 s dash at player at 3.5× speed for 1.5 s
+      if (boss._chargeActive) {
+        boss._chargeTimer -= dt;
+        if (boss._chargeTimer <= 0) {
+          boss._chargeActive = false;
+          boss.speed = boss._baseSpeed;
+          boss._abilityTimer = 10;
+        }
+      } else {
+        boss._abilityTimer -= dt;
+        if (boss._abilityTimer <= 0) {
+          boss._chargeActive = true;
+          boss._chargeTimer  = 1.5;
+          boss.speed = boss._baseSpeed * 3.5;
+          this.particles.spark(boss.x, boss.y, '#aa00ff', 18);
+          this.particles.floatText(boss.x, boss.y - 65, '💀 BONE CHARGE!', '#cc44ff', 16);
+        }
+      }
+
+    } else if (bt === 'weaver') {
+      // Throw Minion: every 10 s hurl a fast wraith at the player
+      boss._abilityTimer -= dt;
+      if (boss._abilityTimer <= 0) {
+        boss._abilityTimer = 10;
+        const angle = Math.atan2(this.player.y - boss.y, this.player.x - boss.x);
+        const spawnX = boss.x + Math.cos(angle) * 55;
+        const spawnY = boss.y + Math.sin(angle) * 55;
+        const minion = new Enemy(spawnX, spawnY, 'wraith', getDifficultyMult(this.time));
+        minion.knockbackX = Math.cos(angle) * 700;
+        minion.knockbackY = Math.sin(angle) * 700;
+        this.enemies.push(minion);
+        this.particles.spark(boss.x, boss.y, '#cc5500', 16);
+        this.particles.floatText(boss.x, boss.y - 65, '☠ HURL MINION!', '#cc5500', 15);
+      }
+
+    } else if (bt === 'infernal') {
+      // Fire Strike: every 6 s mark player location; strike 1.5 s later
+      boss._abilityTimer -= dt;
+      if (boss._abilityTimer <= 0) {
+        boss._abilityTimer = 6;
+        this._fireStrikes.push({
+          wx: this.player.x, wy: this.player.y,
+          timer: 1.5, maxTimer: 1.5, radius: 80,
+          damage: boss.damage,
+        });
+        this.particles.floatText(boss.x, boss.y - 65, '🔥 FIRE STRIKE!', '#ff4400', 15);
+      }
+    }
+  }
+
+  // ── Fire strike updater (Infernal boss) ──────────────────
+  _updateFireStrikes(dt) {
+    for (let i = this._fireStrikes.length - 1; i >= 0; i--) {
+      const fs = this._fireStrikes[i];
+      fs.timer -= dt;
+      if (fs.timer <= 0) {
+        // Detonate
+        this.particles.explode(fs.wx, fs.wy, '#ff4400', 28);
+        this.particles.spark(fs.wx, fs.wy, '#ffcc00', 18);
+        this.particles.floatText(fs.wx, fs.wy - 22, '🔥', '#ff6600', 22);
+        // Damage player if in radius
+        if (this.player.invincibleTime <= 0 &&
+            distSq(fs.wx, fs.wy, this.player.x, this.player.y) < fs.radius * fs.radius) {
+          this.player.takeDamage(fs.damage, this.particles);
+        }
+        this._fireStrikes.splice(i, 1);
+      }
+    }
   }
 
   // Hard cap prevents unbounded growth from chain/multicast cascades
@@ -1493,6 +1588,32 @@ class Game {
     }
 
     this.particles.draw(ctx, cx, cy);
+
+    // Fire strike danger indicators (Infernal boss)
+    for (const fs of this._fireStrikes) {
+      const progress = 1 - fs.timer / fs.maxTimer;
+      const sx = fs.wx - cx, sy = fs.wy - cy;
+      ctx.save();
+      // Pulsing outer ring
+      const pulse = 0.5 + 0.5 * Math.sin(progress * Math.PI * 12);
+      ctx.strokeStyle = `rgba(255,68,0,${0.55 + 0.35 * pulse})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 12 * pulse;
+      ctx.beginPath(); ctx.arc(sx, sy, fs.radius, 0, Math.PI * 2); ctx.stroke();
+      // Shrinking inner fill (telegraphs impact)
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(255,68,0,${0.06 + 0.10 * progress})`;
+      ctx.beginPath(); ctx.arc(sx, sy, fs.radius, 0, Math.PI * 2); ctx.fill();
+      // Crosshair lines
+      ctx.strokeStyle = `rgba(255,120,0,${0.45 + 0.3 * pulse})`;
+      ctx.lineWidth = 1.5; ctx.shadowBlur = 0;
+      const hs = 14;
+      ctx.beginPath();
+      ctx.moveTo(sx - hs, sy); ctx.lineTo(sx + hs, sy);
+      ctx.moveTo(sx, sy - hs); ctx.lineTo(sx, sy + hs);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     const boss = this.enemies.find(e => e.isBoss && !e.isDead);
     this.ui.drawBossBar(ctx, boss, w, h);

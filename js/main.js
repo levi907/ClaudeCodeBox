@@ -72,6 +72,7 @@
     const handleMuteToggle = () => {
       const muted = window.Music?.toggleMute();
       window.MenuMusic?.toggleMute();
+      window.BossMusic?.toggleMute();
       musicBtn.textContent = muted !== undefined ? (muted ? '♪̶' : '♪') : musicBtn.textContent;
       musicBtn.style.opacity = muted ? '0.45' : '1';
     };
