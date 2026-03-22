@@ -628,19 +628,17 @@ class Game {
       m.update(dt, this.player.x, this.player.y);
       if (m.collected) {
         this.xpMagnets.splice(i, 1);
-        // Instantly collect all XP orbs and heart pickups
-        const xpMult = this.player._xpMultiplier || 1;
+        // Pull all XP orbs and hearts toward the player visually
         for (const orb of this.xpOrbs) {
-          this.player.gainXP(Math.ceil(orb.value * xpMult), this.particles);
+          orb.magnetized = true;
+          orb.age = orb.settleTime; // skip the bounce settle phase
         }
         for (const h of this.heartPickups) {
-          this.player.heal(h.healAmount);
+          h.magnetized = true;
         }
-        this.xpOrbs = [];
-        this.heartPickups = [];
-        this.particles.explode(this.player.x, this.player.y, '#40ff80', 20);
-        this.particles.floatText(this.player.x, this.player.y - 30, 'XP COLLECTED!', '#40ff80', 14);
-        this._checkLevelUp();
+        this.particles.explode(this.player.x, this.player.y, '#40ff80', 18);
+        this.particles.spark(this.player.x, this.player.y, '#aaffcc', 12);
+        this.particles.floatText(this.player.x, this.player.y - 30, '✦ MAGNET!', '#40ff80', 14);
       }
     }
 

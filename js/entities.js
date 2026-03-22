@@ -487,6 +487,16 @@ class XPOrb {
 
   update(dt, playerX, playerY, playerRange) {
     this.age += dt;
+    if (this.magnetized) {
+      // Rush directly to player at high speed regardless of range
+      const d = dist(this.x, this.y, playerX, playerY);
+      const a = angle(this.x, this.y, playerX, playerY);
+      const speed = 500 + (1 - Math.min(d / 400, 1)) * 500;
+      this.x += Math.cos(a) * speed * dt;
+      this.y += Math.sin(a) * speed * dt;
+      if (d < 14) this.collected = true;
+      return;
+    }
     if (this.age < this.settleTime) {
       this.vx *= Math.pow(0.1, dt);
       this.vy += 80 * dt;
@@ -521,6 +531,14 @@ class HeartPickup {
 
   update(dt, playerX, playerY) {
     this.age += dt;
+    if (this.magnetized) {
+      const d = dist(this.x, this.y, playerX, playerY);
+      const a = angle(this.x, this.y, playerX, playerY);
+      this.x += Math.cos(a) * 500 * dt;
+      this.y += Math.sin(a) * 500 * dt;
+      if (d < 15) this.collected = true;
+      return;
+    }
     const d = dist(this.x, this.y, playerX, playerY);
     if (d < 20) this.collected = true;
   }
