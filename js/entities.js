@@ -535,9 +535,10 @@ class XPOrb {
       this.x += this.vx * dt;
       this.y += this.vy * dt;
     } else {
-      // Attracted to player if in range
-      const d = dist(this.x, this.y, playerX, playerY);
-      if (d < playerRange) {
+      // Attracted to player if in range — use distSq to skip sqrt for out-of-range orbs
+      const dSq = distSq(this.x, this.y, playerX, playerY);
+      if (dSq < playerRange * playerRange) {
+        const d = Math.sqrt(dSq);
         const a = angle(this.x, this.y, playerX, playerY);
         const speed = 200 + (playerRange - d) * 2;
         this.x += Math.cos(a) * speed * dt;

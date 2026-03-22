@@ -427,6 +427,14 @@ class Game {
         if (this.enemies[i] === e) this.enemies.splice(i, 1);
         continue;
       }
+      // Cull non-boss enemies knocked far off-screen — teleport to a fresh spawn
+      // position so they re-approach rather than computing indefinitely off-screen.
+      if (!e.isBoss && distSq(e.x, e.y, this.player.x, this.player.y) > 3500 * 3500) {
+        const pos = this._spawnPosition();
+        e.x = pos.x; e.y = pos.y;
+        e.knockbackX = 0; e.knockbackY = 0;
+      }
+
       e.update(dt, this.player.x, this.player.y);
 
       // DoT death (poison/bleed/decay/poisonStacks killed this enemy during update)
@@ -439,8 +447,8 @@ class Game {
 
       // Enemy hits player
       if (this.player.invincibleTime <= 0) {
-        const d = dist(e.x, e.y, this.player.x, this.player.y);
-        if (d < e.size + this.player.size * 0.7) {
+        const _hitR = e.size + this.player.size * 0.7;
+        if (distSq(e.x, e.y, this.player.x, this.player.y) < _hitR * _hitR) {
           // Arcane Ward: block the hit if shield is ready
           if (this.player._wardDuration && this._wardTimer >= this.player._wardDuration) {
             this._wardTimer = 0;
@@ -503,8 +511,9 @@ class Game {
 
       for (const e of this.enemies) {
         if (e.isDead) continue;
-        const d = dist(p.x, p.y, e.x, e.y);
-        if (d < p.size + e.size) {
+        const _projR = p.size + e.size;
+        if (distSq(p.x, p.y, e.x, e.y) >= _projR * _projR) continue;
+        {
           if (!p.hitEnemy(e)) continue;
 
           // Barrier: absorbs the first hit entirely
@@ -668,6 +677,21 @@ class Game {
         this._checkLevelUp();
       }
     }
+    // Cull XP orbs that are too far from the player; teleport them nearby so
+    // the XP is never lost but old orbs don't keep getting updated off-screen.
+    if (this.frame % 30 === 0) {
+      const CULL_ORB_SQ = 2000 * 2000;
+      for (const orb of this.xpOrbs) {
+        if (!orb.magnetized && distSq(orb.x, orb.y, this.player.x, this.player.y) > CULL_ORB_SQ) {
+          const a = Math.random() * Math.PI * 2;
+          const r = 600 + Math.random() * 200;
+          orb.x = this.player.x + Math.cos(a) * r;
+          orb.y = this.player.y + Math.sin(a) * r;
+          orb.vx = 0; orb.vy = 0;
+          orb.age = orb.settleTime;
+        }
+      }
+    }
 
     // Heart pickups
     for (let i = this.heartPickups.length - 1; i >= 0; i--) {
@@ -677,6 +701,17 @@ class Game {
         this.player.heal(h.healAmount);
         this.particles.floatText(this.player.x, this.player.y - 20, `+${h.healAmount}`, '#ff6090', 15);
         this.heartPickups.splice(i, 1);
+      }
+    }
+    // Cull hearts that drifted very far (teleport near player so they remain reachable)
+    if (this.frame % 60 === 0) {
+      const CULL_HEART_SQ = 2000 * 2000;
+      for (const h of this.heartPickups) {
+        if (!h.magnetized && distSq(h.x, h.y, this.player.x, this.player.y) > CULL_HEART_SQ) {
+          const a = Math.random() * Math.PI * 2;
+          h.x = this.player.x + Math.cos(a) * 700;
+          h.y = this.player.y + Math.sin(a) * 700;
+        }
       }
     }
 
