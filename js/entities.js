@@ -35,7 +35,7 @@ class Player {
   }
 
   get effectiveSpeed() {
-    return this.baseSpeed * this.speedMultiplier;
+    return this.baseSpeed * this.speedMultiplier * (this._speedBoostActive ? 1.6 : 1);
   }
 
   get xpRange() {
@@ -545,6 +545,56 @@ class HeartPickup {
 
   draw(ctx, screenX, screenY) {
     Sprites.drawHeart(ctx, screenX, screenY, 8, this.age * 60);
+  }
+}
+
+// ---- Timed PowerUp Pickup ----
+class PowerUpPickup {
+  constructor(x, y, type) {
+    this.x = x; this.y = y;
+    this.type = type; // 'speed' | 'crit'
+    this.age = 0;
+    this.collected = false;
+  }
+
+  update(dt, playerX, playerY) {
+    this.age += dt;
+    if (dist(this.x, this.y, playerX, playerY) < 24) this.collected = true;
+  }
+
+  draw(ctx, screenX, screenY) {
+    ctx.save();
+    const pulse = 0.6 + 0.4 * Math.sin(this.age * 4.5);
+    const bob   = Math.sin(this.age * 2.6) * 4;
+
+    if (this.type === 'speed') {
+      ctx.shadowColor = '#00ffcc';
+      ctx.shadowBlur  = 18 * pulse;
+      ctx.font = 'bold 22px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.9 + 0.1 * pulse;
+      ctx.fillText('⚡', screenX, screenY + bob);
+      ctx.shadowBlur  = 0;
+      ctx.globalAlpha = 0.85;
+      ctx.font = 'bold 7px "Courier New"';
+      ctx.fillStyle = '#00ffcc';
+      ctx.fillText('SPEED BOOST', screenX, screenY + bob + 17);
+    } else {
+      ctx.shadowColor = '#ff4400';
+      ctx.shadowBlur  = 18 * pulse;
+      ctx.font = 'bold 22px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.9 + 0.1 * pulse;
+      ctx.fillText('★', screenX, screenY + bob);
+      ctx.shadowBlur  = 0;
+      ctx.globalAlpha = 0.85;
+      ctx.font = 'bold 7px "Courier New"';
+      ctx.fillStyle = '#ff8800';
+      ctx.fillText('CRIT SURGE', screenX, screenY + bob + 17);
+    }
+    ctx.restore();
   }
 }
 

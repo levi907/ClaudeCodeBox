@@ -160,7 +160,7 @@ class Wand {
 
   update(dt, game) {
     const stats = this.computeStats();
-    const totalCdr = Math.min(0.8, stats.cooldownReduction + game.player.cooldownReduction);
+    const totalCdr = Math.min(0.8, stats.cooldownReduction + game.player.cooldownReduction + (game.player._speedBoostActive ? 0.5 : 0));
     const cd = stats.cooldown * (1 - totalCdr);
 
     this.cooldownTimer -= dt;
@@ -201,7 +201,7 @@ class Wand {
       if (stats.unstableCore && Math.random() < 0.08) mult *= 8;
 
       const baseDmg = Math.round(stats.damage * mult);
-      const isCrit  = Math.random() < (p.critChance + stats.critBonus);
+      const isCrit  = p._critSurgeActive || Math.random() < (p.critChance + stats.critBonus);
       const dmg     = isCrit ? baseDmg * 2 : baseDmg;
 
       // Phase Shot: pierce all enemies; relics can also grant pierce
@@ -275,7 +275,7 @@ class Wand {
     // Arcane Cyclone: omni-directional shots
     if (p._omniShot > 0) {
       const baseDmg = Math.round(stats.damage * totalDmgMult);
-      const isCrit  = Math.random() < (p.critChance + stats.critBonus);
+      const isCrit  = p._critSurgeActive || Math.random() < (p.critChance + stats.critBonus);
       const dmg     = isCrit ? baseDmg * 2 : baseDmg;
       for (let i = 0; i < p._omniShot; i++) {
         const a = (Math.PI * 2 * i) / p._omniShot;

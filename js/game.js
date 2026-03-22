@@ -26,6 +26,7 @@ class Game {
     this.rareForgePickups = [];
     this.diceForgePickups = [];
     this.xpMagnets = [];
+    this.powerUpPickups = [];
     this.wand = null;
     this.inventory = [];  // 9 gem slots
     this.relics = [];
@@ -63,6 +64,7 @@ class Game {
     this.rareForgePickups = [];
     this.diceForgePickups = [];
     this.xpMagnets = [];
+    this.powerUpPickups = [];
     this.wand = new Wand();
     this.inventory = new Array(9).fill(null);
     this.relics = [];
@@ -93,6 +95,8 @@ class Game {
     this._sigils = [];
     this._headhunterStacks = [];
     this._headhunterTimer = 0;
+    this._speedBoostTimer = 0;
+    this._critSurgeTimer = 0;
     this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
@@ -197,6 +201,7 @@ class Game {
           if (!e.isDead) {
             e.frozen = Math.max(e.frozen, 1.5);
             e.takeDamage(80);
+            if (e.isDead) this.onEnemyDead(e);
           }
         }
         this.particles.explode(this.player.x, this.player.y, '#88ccff', 30);
@@ -214,6 +219,7 @@ class Game {
             e.x += (this.player.x - e.x) * 0.7;
             e.y += (this.player.y - e.y) * 0.7;
             e.takeDamage(100);
+            if (e.isDead) this.onEnemyDead(e);
           }
         }
         this.particles.explode(this.player.x, this.player.y, '#cc44ff', 30);
@@ -271,6 +277,24 @@ class Game {
         this.particles.explode(this.player.x, this.player.y, '#ff4488', 16);
         this.particles.floatText(this.player.x, this.player.y - 30, '❤ VITAL SURGE', '#ff4488', 14);
       }
+    }
+
+    // Timed powerup: Speed Boost
+    if (this._speedBoostTimer > 0) {
+      this._speedBoostTimer -= dt;
+      this.player._speedBoostActive = true;
+      if (this._speedBoostTimer <= 0) { this._speedBoostTimer = 0; this.player._speedBoostActive = false; }
+    } else {
+      this.player._speedBoostActive = false;
+    }
+
+    // Timed powerup: Crit Surge
+    if (this._critSurgeTimer > 0) {
+      this._critSurgeTimer -= dt;
+      this.player._critSurgeActive = true;
+      if (this._critSurgeTimer <= 0) { this._critSurgeTimer = 0; this.player._critSurgeActive = false; }
+    } else {
+      this.player._critSurgeActive = false;
     }
 
     // Headhunter: decay stolen mod timer
@@ -374,11 +398,22 @@ class Game {
     // Enemies
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
-      if (e.isDead) { this.enemies.splice(i, 1); continue; }
+      // Safety net: dead enemy still in array (killed by ability with no onEnemyDead call).
+      // Call onEnemyDead so bosses always drop their forge, then remove.
+      if (e.isDead) {
+        this.onEnemyDead(e);
+        if (this.enemies[i] === e) this.enemies.splice(i, 1);
+        continue;
+      }
       e.update(dt, this.player.x, this.player.y);
 
       // DoT death (poison/bleed/decay/poisonStacks killed this enemy during update)
-      if (e.isDead) { this.onEnemyDead(e); this.enemies.splice(i, 1); continue; }
+      if (e.isDead) {
+        this.onEnemyDead(e);
+        // onEnemyDead may already have removed e from the array; only splice if it hasn't
+        if (this.enemies[i] === e) this.enemies.splice(i, 1);
+        continue;
+      }
 
       // Enemy hits player
       if (this.player.invincibleTime <= 0) {
@@ -525,6 +560,7 @@ class Game {
               if (!t.isDead && dist(t.x, t.y, e.x, e.y) < 150) {
                 t.frozen = Math.max(t.frozen, 2.0);
                 t.takeDamage(60);
+                if (t.isDead) this.onEnemyDead(t);
               }
             }
             this.particles.spark(e.x, e.y, '#88ddff', 10);
@@ -642,6 +678,24 @@ class Game {
       }
     }
 
+    // Timed powerup pickups
+    for (let i = this.powerUpPickups.length - 1; i >= 0; i--) {
+      const pu = this.powerUpPickups[i];
+      pu.update(dt, this.player.x, this.player.y);
+      if (pu.collected) {
+        this.powerUpPickups.splice(i, 1);
+        if (pu.type === 'speed') {
+          this._speedBoostTimer = 20;
+          this.particles.explode(this.player.x, this.player.y, '#00ffcc', 16);
+          this.particles.floatText(this.player.x, this.player.y - 30, '⚡ SPEED BOOST!', '#00ffcc', 14);
+        } else {
+          this._critSurgeTimer = 20;
+          this.particles.explode(this.player.x, this.player.y, '#ff6600', 16);
+          this.particles.floatText(this.player.x, this.player.y - 30, '★ CRIT SURGE!', '#ff8800', 14);
+        }
+      }
+    }
+
     // Legendary forge pickups
     for (let i = this.legendaryForgePickups.length - 1; i >= 0; i--) {
       const f = this.legendaryForgePickups[i];
@@ -716,7 +770,8 @@ class Game {
   }
 
   onEnemyDead(enemy) {
-    if (!enemy.isDead) return;
+    if (!enemy.isDead || enemy._deathHandled) return;
+    enemy._deathHandled = true;
     this.player.kills++;
 
     // Virulent poison: spreads to nearby enemies on death
@@ -739,13 +794,17 @@ class Game {
       this.heartPickups.push(new HeartPickup(enemy.x, enemy.y));
     }
     if (!enemy.isBoss && Math.random() < 0.003) {
-      this.xpMagnets.push(new XPMagnet(enemy.x, enemy.y));
-    }
-    if (!enemy.isBoss && Math.random() < 0.003) {
       this.rareForgePickups.push(new RareForge(enemy.x, enemy.y));
     }
     if (!enemy.isBoss && Math.random() < 0.003) {
       this.diceForgePickups.push(new DiceForge(enemy.x, enemy.y));
+    }
+    // 3% combined drop for all timed powerups (magnet, speed boost, crit surge)
+    if (!enemy.isBoss && Math.random() < 0.03) {
+      const r = Math.random();
+      if (r < 1/3)      this.xpMagnets.push(new XPMagnet(enemy.x, enemy.y));
+      else if (r < 2/3) this.powerUpPickups.push(new PowerUpPickup(enemy.x, enemy.y, 'speed'));
+      else              this.powerUpPickups.push(new PowerUpPickup(enemy.x, enemy.y, 'crit'));
     }
 
     // Soul Vampire: heal on kill
@@ -1308,6 +1367,9 @@ class Game {
     // XP magnets
     for (const m of this.xpMagnets) m.draw(ctx, m.x - cx, m.y - cy);
 
+    // Powerup pickups
+    for (const pu of this.powerUpPickups) pu.draw(ctx, pu.x - cx, pu.y - cy);
+
     // Enemies
     for (const e of this.enemies) e.draw(ctx, e.x - cx, e.y - cy);
 
@@ -1344,25 +1406,32 @@ class Game {
     this.ui.drawBossBar(ctx, boss, w, h);
     this.ui.drawAbilityCooldowns(ctx, this, w, h);
 
-    // Headhunter stack indicator
-    if (this._headhunterTimer > 0 && this._headhunterStacks.length > 0) {
-      const stackCount = this._headhunterStacks.length;
-      const timerPct = this._headhunterTimer / 10;
-      const hx = 14, hy = 18;
-      ctx.save();
-      ctx.font = 'bold 11px "Courier New"';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#ff8800';
-      ctx.shadowColor = '#ff8800';
-      ctx.shadowBlur = 8;
-      ctx.fillText(`⚔ HEADHUNTER  ×${stackCount}`, hx, hy);
-      ctx.shadowBlur = 0;
-      // Timer bar
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(hx, hy + 4, 130, 4);
-      ctx.fillStyle = '#ff8800';
-      ctx.fillRect(hx, hy + 4, Math.round(130 * timerPct), 4);
-      ctx.restore();
+    // Active powerup HUD indicators (stacked top-left)
+    {
+      const hx = 14;
+      let hy = 18;
+      const drawIndicator = (label, color, timerPct) => {
+        ctx.save();
+        ctx.font = 'bold 11px "Courier New"';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(label, hx, hy);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(hx, hy + 4, 130, 4);
+        ctx.fillStyle = color;
+        ctx.fillRect(hx, hy + 4, Math.round(130 * timerPct), 4);
+        ctx.restore();
+        hy += 24;
+      };
+      if (this._headhunterTimer > 0 && this._headhunterStacks.length > 0)
+        drawIndicator(`⚔ HEADHUNTER  ×${this._headhunterStacks.length}`, '#ff8800', this._headhunterTimer / 10);
+      if (this._speedBoostTimer > 0)
+        drawIndicator('⚡ SPEED BOOST', '#00ffcc', this._speedBoostTimer / 20);
+      if (this._critSurgeTimer > 0)
+        drawIndicator('★ CRIT SURGE', '#ff8800', this._critSurgeTimer / 20);
     }
 
     this._drawVignette(ctx, w, h);
