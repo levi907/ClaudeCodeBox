@@ -828,7 +828,8 @@ class UI {
 
   hideGameOver() { this.gameoverScreen.classList.add('hidden'); }
 
-  // Continue after victory — keep all progress, disable the win timer
+  // Continue after victory — keep all progress, disable the win timer,
+  // and start progressive difficulty escalation (+10% every 10 s).
   _continueRun() {
     document.getElementById('win-screen')?.classList.add('hidden');
     this.game._endless = true;   // disables the 6-minute win check
@@ -837,6 +838,20 @@ class UI {
       this.game._lastTime = performance.now();
       this.game._loop();
     }
+
+    // Clear any previous escalation timer (safety, e.g. double-click)
+    if (this.game._endlessDiffTimer) clearInterval(this.game._endlessDiffTimer);
+
+    this.game._endlessDiffTimer = setInterval(() => {
+      this.game._endlessDiffMult *= 1.10;
+      for (const e of this.game.enemies) {
+        if (e.isDead) continue;
+        e.speed   *= 1.10;
+        e.maxHp    = Math.ceil(e.maxHp * 1.10);
+        e.hp       = Math.min(Math.ceil(e.hp * 1.10), e.maxHp);
+        e.damage   = Math.ceil(e.damage * 1.10);
+      }
+    }, 10000);
   }
 
   showWin(player, relics) {

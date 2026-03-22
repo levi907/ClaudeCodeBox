@@ -66,21 +66,27 @@
   }
   bindRestart('win-restart-btn');
 
-  // Music mute toggle
+  // Music mute toggle — syncs both game music and menu music
   const musicBtn = document.getElementById('music-btn');
   if (musicBtn) {
-    musicBtn.addEventListener('click', () => {
+    const handleMuteToggle = () => {
       const muted = window.Music?.toggleMute();
-      musicBtn.textContent = muted ? '♪̶' : '♪';
+      window.MenuMusic?.toggleMute();
+      musicBtn.textContent = muted !== undefined ? (muted ? '♪̶' : '♪') : musicBtn.textContent;
       musicBtn.style.opacity = muted ? '0.45' : '1';
-    });
-    musicBtn.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      const muted = window.Music?.toggleMute();
-      musicBtn.textContent = muted ? '♪̶' : '♪';
-      musicBtn.style.opacity = muted ? '0.45' : '1';
-    });
+    };
+    musicBtn.addEventListener('click', handleMuteToggle);
+    musicBtn.addEventListener('touchend', (e) => { e.preventDefault(); handleMuteToggle(); });
   }
+
+  // Start menu music on first user interaction (AudioContext requires gesture)
+  const _startMenuMusic = () => {
+    window.MenuMusic?.start();
+    document.removeEventListener('pointerdown', _startMenuMusic);
+    document.removeEventListener('keydown', _startMenuMusic);
+  };
+  document.addEventListener('pointerdown', _startMenuMusic);
+  document.addEventListener('keydown', _startMenuMusic);
 
   // Prevent context menu on long press (mobile)
   document.addEventListener('contextmenu', e => e.preventDefault());

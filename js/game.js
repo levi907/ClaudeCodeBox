@@ -101,6 +101,8 @@ class Game {
     this._headhunterTimer = 0;
     this._speedBoostTimer = 0;
     this._critSurgeTimer = 0;
+    this._endlessDiffMult = 1.0;
+    this._endlessDiffTimer = null;
     this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
@@ -116,12 +118,14 @@ class Game {
     this._lastTime = performance.now();
     this._loop();
     document.getElementById('start-screen').classList.add('hidden');
+    window.MenuMusic?.stop();
     window.Music?.start();
   }
 
   restart() {
     this.running = false;
     if (this._raf) cancelAnimationFrame(this._raf);
+    if (this._endlessDiffTimer) { clearInterval(this._endlessDiffTimer); this._endlessDiffTimer = null; }
     this.init();
     this.running = true;
     this._lastTime = performance.now();
@@ -1043,7 +1047,7 @@ class Game {
     if (this.enemies.length >= MAX_ENEMIES) return;
     const minutes = this.time / 60;
     const count = Math.min(1 + Math.floor(minutes * CONFIG.ENEMY_WAVE_GROWTH), CONFIG.ENEMY_MAX_WAVE);
-    const diff = getDifficultyMult(this.time);
+    const diff = getDifficultyMult(this.time) * this._endlessDiffMult;
     for (let i = 0; i < count; i++) {
       if (this.enemies.length >= MAX_ENEMIES) break;
       const type = this._pickEnemyType(minutes);

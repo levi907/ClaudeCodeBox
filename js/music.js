@@ -397,3 +397,241 @@ class MusicSystem {
 }
 
 window.Music = new MusicSystem();
+
+// ============================================================
+//  MENU MUSIC SYSTEM — chill spooky 8-bit ambient
+// ============================================================
+
+class MenuMusicSystem {
+  constructor() {
+    this.BPM   = 72;
+    this.STEP  = 60 / 72 / 4;   // ≈ 0.2083 s per 16th-note
+    this.STEPS = 64;             // 4 bars of 16 steps
+    this.TICK  = 50;             // pump interval ms
+    this.playing = false;
+    this.muted   = false;
+    this.ctx     = null;
+    this.masterGain = null;
+    this._timer  = null;
+    this._step   = 0;
+    this._next   = 0;
+    this._buildPatterns();
+  }
+
+  // ── Note frequencies ─────────────────────────────────────
+  // A natural/harmonic minor: A B C D E F G(#)
+  _buildPatterns() {
+    const _ = null;
+    // ── Bell melody (sparse, haunting)
+    // Bars: Am feel — A4, E4, D4, C4 / G#4, A4, F4, E4
+    this.patBell = [
+      440.0, _,     _,     _,     _,     _,     _,     _,
+      329.6, _,     _,     _,     _,     _,     _,     _,  // bar 1
+      293.7, _,     _,     _,     261.6, _,     _,     _,
+      329.6, _,     _,     _,     _,     _,     _,     _,  // bar 2
+      415.3, _,     _,     _,     440.0, _,     _,     _,
+      _,     _,     _,     _,     _,     _,     _,     _,  // bar 3
+      349.2, _,     _,     _,     _,     _,     _,     _,
+      329.6, _,     _,     _,     261.6, _,     _,     _,  // bar 4
+    ];
+    // ── Slow pad arpeggio (triangle, every 4 steps)
+    // Am → F → Dm → E  (harmonic minor leading tone on bar 4)
+    this.patPad = [
+      220.0, _,     _,     _,     261.6, _,     _,     _,
+      329.6, _,     _,     _,     261.6, _,     _,     _,  // Am
+      174.6, _,     _,     _,     220.0, _,     _,     _,
+      261.6, _,     _,     _,     220.0, _,     _,     _,  // F
+      146.8, _,     _,     _,     174.6, _,     _,     _,
+      220.0, _,     _,     _,     174.6, _,     _,     _,  // Dm
+      164.8, _,     _,     _,     207.7, _,     _,     _,
+      246.9, _,     _,     _,     207.7, _,     _,     _,  // E (harmonic minor)
+    ];
+    // ── Bass drone (whole notes, 1 per bar)
+    this.patBass = [
+      110.0, _,     _,     _,     _,     _,     _,     _,
+      _,     _,     _,     _,     _,     _,     _,     _,  // A2
+      87.31, _,     _,     _,     _,     _,     _,     _,
+      _,     _,     _,     _,     _,     _,     _,     _,  // F2
+      73.42, _,     _,     _,     _,     _,     _,     _,
+      _,     _,     _,     _,     _,     _,     _,     _,  // D2
+      82.41, _,     _,     _,     _,     _,     _,     _,
+      _,     _,     _,     _,     _,     _,     _,     _,  // E2
+    ];
+    // ── Ghost sparkle (high notes, ultra-quiet)
+    this.patGhost = [
+      _,     _,     _,     _,     880.0, _,     _,     _,
+      _,     _,     _,     _,     659.3, _,     _,     _,  // A5, E5
+      _,     _,     _,     _,     523.3, _,     _,     _,
+      _,     _,     _,     _,     880.0, _,     _,     _,  // C5, A5
+      _,     _,     _,     _,     698.5, _,     _,     _,
+      _,     _,     _,     _,     880.0, _,     _,     _,  // F5, A5
+      _,     _,     _,     _,     659.3, _,     _,     _,
+      _,     _,     _,     _,     830.6, _,     _,     _,  // E5, G#5
+    ];
+  }
+
+  // ── Audio graph ───────────────────────────────────────────
+  _init() {
+    if (this.ctx) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0;
+    this.masterGain.connect(this.ctx.destination);
+
+    // Long echo for atmospheric spaciousness
+    this._echoDelay = this.ctx.createDelay(2.0);
+    this._echoDelay.delayTime.value = 0.5;
+    this._echoFB  = this.ctx.createGain(); this._echoFB.gain.value  = 0.35;
+    this._echoWet = this.ctx.createGain(); this._echoWet.gain.value = 0.25;
+    this._echoDelay.connect(this._echoFB);
+    this._echoFB.connect(this._echoDelay);
+    this._echoDelay.connect(this._echoWet);
+    this._echoWet.connect(this.masterGain);
+
+    // Per-channel gains
+    this.gBell  = this.ctx.createGain(); this.gBell.gain.value  = 0.30;
+    this.gPad   = this.ctx.createGain(); this.gPad.gain.value   = 0.18;
+    this.gBass  = this.ctx.createGain(); this.gBass.gain.value  = 0.35;
+    this.gGhost = this.ctx.createGain(); this.gGhost.gain.value = 0.07;
+
+    this.gBell.connect(this.masterGain);
+    this.gBell.connect(this._echoDelay);  // bell echoes
+    this.gPad.connect(this.masterGain);
+    this.gBass.connect(this.masterGain);
+    this.gGhost.connect(this.masterGain);
+    this.gGhost.connect(this._echoDelay); // ghost sparkle echoes
+  }
+
+  // ── Voice synthesisers ────────────────────────────────────
+
+  // Bell: sharp attack, long exponential decay (music-box feel)
+  _bell(freq, t) {
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, t);
+    env.gain.setValueAtTime(0.001, t);
+    env.gain.exponentialRampToValueAtTime(0.9, t + 0.006);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.72);
+    osc.connect(env);
+    env.connect(this.gBell);
+    osc.start(t);
+    osc.stop(t + 0.74);
+  }
+
+  // Pad: soft triangle, sustains then fades
+  _pad(freq, t, dur) {
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, t);
+    env.gain.setValueAtTime(0.001, t);
+    env.gain.exponentialRampToValueAtTime(0.85, t + 0.06);
+    env.gain.setValueAtTime(0.85, t + dur * 0.6);
+    env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(env);
+    env.connect(this.gPad);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  // Bass: deep triangle drone, slow attack
+  _bass(freq, t) {
+    const ctx  = this.ctx;
+    const dur  = this.STEP * 15.5;
+    const osc  = ctx.createOscillator();
+    const env  = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, t);
+    env.gain.setValueAtTime(0.001, t);
+    env.gain.exponentialRampToValueAtTime(0.9, t + 0.12);
+    env.gain.setValueAtTime(0.9, t + this.STEP * 13);
+    env.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(env);
+    env.connect(this.gBass);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  // Ghost: ultra-brief sparkle in high register
+  _ghost(freq, t) {
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, t);
+    env.gain.setValueAtTime(0.001, t);
+    env.gain.exponentialRampToValueAtTime(0.9, t + 0.004);
+    env.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc.connect(env);
+    env.connect(this.gGhost);
+    osc.start(t);
+    osc.stop(t + 0.24);
+  }
+
+  // ── Scheduler ─────────────────────────────────────────────
+  _scheduleStep(step, t) {
+    const mel = this.patBell[step];
+    const pad = this.patPad[step];
+    const bas = this.patBass[step];
+    const gho = this.patGhost[step];
+    if (mel !== null) this._bell(mel, t);
+    if (pad !== null) this._pad(pad, t, this.STEP * 3.8);
+    if (bas !== null) this._bass(bas, t);
+    if (gho !== null) this._ghost(gho, t);
+  }
+
+  _pump() {
+    const t = this.ctx.currentTime;
+    const lookahead = 0.10;
+    while (this._next < t + lookahead) {
+      this._scheduleStep(this._step, this._next);
+      this._step = (this._step + 1) % this.STEPS;
+      this._next += this.STEP;
+    }
+  }
+
+  // ── Public API ────────────────────────────────────────────
+  start() {
+    if (this.playing) return;
+    this.playing = true;
+    this._init();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this._step = 0;
+    this._next = this.ctx.currentTime + 0.05;
+    this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+    this.masterGain.gain.exponentialRampToValueAtTime(
+      this.muted ? 0.001 : 0.45,
+      this.ctx.currentTime + 3.0
+    );
+    this._timer = setInterval(() => this._pump(), this.TICK);
+  }
+
+  stop() {
+    if (!this.playing) return;
+    this.playing = false;
+    clearInterval(this._timer);
+    this._timer = null;
+    if (this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 1.0);
+    }
+  }
+
+  toggleMute() {
+    this.muted = !this.muted;
+    if (this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(
+        this.muted ? 0 : 0.45,
+        this.ctx.currentTime,
+        0.2
+      );
+    }
+    return this.muted;
+  }
+}
+
+window.MenuMusic = new MenuMusicSystem();
