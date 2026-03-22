@@ -105,3 +105,65 @@ function xpRequired(level) {
   for (let i = base.length - 1; i < level; i++) v = Math.floor(v * 1.35);
   return v;
 }
+
+// ============================================================
+//  SpatialGrid — broad-phase collision partitioning
+//
+//  Divides the world into fixed-size cells. Entities are inserted
+//  with their bounding box so each projectile/AoE only visits the
+//  handful of candidates in nearby cells rather than the full list.
+//
+//  Usage (each frame):
+//    grid.clear();
+//    for (const e of enemies) grid.insert(e);   // O(E)
+//    grid.query(px, py, pr, out);               // fills `out` with candidates
+// ============================================================
+class SpatialGrid {
+  constructor(cellSize = 120) {
+    this.cs    = cellSize;
+    this.cells = new Map();
+    this._gen  = 0; // generation stamp — avoids Set allocation for dedup
+  }
+
+  clear() { this.cells.clear(); }
+
+  insert(e) {
+    const { cs } = this;
+    const r  = e.size;
+    const x0 = Math.floor((e.x - r) / cs);
+    const x1 = Math.floor((e.x + r) / cs);
+    const y0 = Math.floor((e.y - r) / cs);
+    const y1 = Math.floor((e.y + r) / cs);
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cy = y0; cy <= y1; cy++) {
+        const k = `${cx},${cy}`;
+        let cell = this.cells.get(k);
+        if (!cell) { cell = []; this.cells.set(k, cell); }
+        cell.push(e);
+      }
+    }
+  }
+
+  // Fill `out` with all entities whose bounding box overlaps the
+  // circle (x, y, r).  Uses a per-entity generation stamp so the
+  // same entity is never added to `out` twice (no Set allocation).
+  query(x, y, r, out) {
+    const { cs } = this;
+    const x0  = Math.floor((x - r) / cs);
+    const x1  = Math.floor((x + r) / cs);
+    const y0  = Math.floor((y - r) / cs);
+    const y1  = Math.floor((y + r) / cs);
+    const gen = ++this._gen;
+    out.length = 0;
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cy = y0; cy <= y1; cy++) {
+        const cell = this.cells.get(`${cx},${cy}`);
+        if (!cell) continue;
+        for (const e of cell) {
+          if (e._gridGen !== gen) { e._gridGen = gen; out.push(e); }
+        }
+      }
+    }
+    return out;
+  }
+}

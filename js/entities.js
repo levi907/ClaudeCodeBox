@@ -565,15 +565,13 @@ class HeartPickup {
   update(dt, playerX, playerY) {
     this.age += dt;
     if (this.magnetized) {
-      const d = dist(this.x, this.y, playerX, playerY);
       const a = angle(this.x, this.y, playerX, playerY);
       this.x += Math.cos(a) * 500 * dt;
       this.y += Math.sin(a) * 500 * dt;
-      if (d < 15) this.collected = true;
+      if (distSq(this.x, this.y, playerX, playerY) < 225) this.collected = true;
       return;
     }
-    const d = dist(this.x, this.y, playerX, playerY);
-    if (d < 20) this.collected = true;
+    if (distSq(this.x, this.y, playerX, playerY) < 400) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {
@@ -592,7 +590,7 @@ class PowerUpPickup {
 
   update(dt, playerX, playerY) {
     this.age += dt;
-    if (dist(this.x, this.y, playerX, playerY) < 24) this.collected = true;
+    if (distSq(this.x, this.y, playerX, playerY) < 576) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {
@@ -641,7 +639,7 @@ class XPMagnet {
 
   update(dt, playerX, playerY) {
     this.age += dt;
-    if (dist(this.x, this.y, playerX, playerY) < 22) this.collected = true;
+    if (distSq(this.x, this.y, playerX, playerY) < 484) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {
@@ -659,7 +657,7 @@ class RareForge {
 
   update(dt, playerX, playerY) {
     this.age += dt;
-    if (dist(this.x, this.y, playerX, playerY) < 25) this.collected = true;
+    if (distSq(this.x, this.y, playerX, playerY) < 625) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {
@@ -691,7 +689,7 @@ class DiceForge {
 
   update(dt, playerX, playerY) {
     this.age += dt;
-    if (dist(this.x, this.y, playerX, playerY) < 25) this.collected = true;
+    if (distSq(this.x, this.y, playerX, playerY) < 625) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {
@@ -723,7 +721,7 @@ class LegendaryForge {
 
   update(dt, playerX, playerY) {
     this.age += dt;
-    if (dist(this.x, this.y, playerX, playerY) < 42) this.collected = true;
+    if (distSq(this.x, this.y, playerX, playerY) < 1764) this.collected = true;
   }
 
   draw(ctx, screenX, screenY) {

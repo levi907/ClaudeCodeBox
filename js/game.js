@@ -32,6 +32,10 @@ class Game {
     this.relics = [];
     this._nukeTimer = 0;
 
+    // Broad-phase spatial grid — rebuilt each frame before projectile checks
+    this._enemyGrid = new SpatialGrid(120);
+    this._gridOut   = []; // reusable candidate buffer (avoids per-query allocation)
+
     this.camera = { x: 0, y: 0 };
 
     this._spawnTimer = 0;
@@ -242,7 +246,7 @@ class Game {
         if (sig.age >= sig.duration) { this._sigils.splice(i, 1); continue; }
         const sigDmg = 15 * dt;
         for (const e of this.enemies) {
-          if (!e.isDead && dist(e.x, e.y, sig.x, sig.y) < sig.radius) {
+          if (!e.isDead && distSq(e.x, e.y, sig.x, sig.y) < sig.radius * sig.radius) {
             e.hp -= sigDmg;
             if (e.hp <= 0) { e.isDead = true; this.onEnemyDead(e); }
           }
@@ -267,7 +271,7 @@ class Game {
         const surgeDmg = Math.round(this.player.maxHp * 0.30);
         let hit = 0;
         for (const e of this.enemies) {
-          if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < 200) {
+          if (!e.isDead && distSq(e.x, e.y, this.player.x, this.player.y) < 40000) {
             const result = e.takeDamage(surgeDmg);
             this.particles.floatText(e.x, e.y - 12, `${result.actual}`, '#ff4488', 12);
             if (e.isDead) this.onEnemyDead(e);
@@ -325,9 +329,10 @@ class Game {
       if (this._soulDrainTimer >= 1) {
         this._soulDrainTimer = 0;
         const drainDmg = 12;
+        const _drainSq = this.player._soulDrain * this.player._soulDrain;
         let drainCount = 0;
         for (const e of this.enemies) {
-          if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < this.player._soulDrain) {
+          if (!e.isDead && distSq(e.x, e.y, this.player.x, this.player.y) < _drainSq) {
             e.takeDamage(drainDmg);
             if (e.isDead) this.onEnemyDead(e);
             drainCount++;
@@ -346,7 +351,7 @@ class Game {
       if (this._mirrorPulseTimer >= 6) {
         this._mirrorPulseTimer = 0;
         for (const e of this.enemies) {
-          if (!e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < 300) {
+          if (!e.isDead && distSq(e.x, e.y, this.player.x, this.player.y) < 90000) {
             e.takeDamage(30);
             if (e.isDead) this.onEnemyDead(e);
           }
@@ -392,7 +397,7 @@ class Game {
     if (this.player._dashTimer > 0 && this.player._dashedEnemies) {
       const p = this.player;
       for (const e of this.enemies) {
-        if (!e.isDead && !p._dashedEnemies.has(e) && dist(e.x, e.y, p.x, p.y) < 52) {
+        if (!e.isDead && !p._dashedEnemies.has(e) && distSq(e.x, e.y, p.x, p.y) < 2704) {
           p._dashedEnemies.add(e);
           e.knockback(p.x, p.y, 750);
           e.takeDamage(30);
@@ -465,7 +470,7 @@ class Game {
             }
             // Cursed Mirror: reflect damage to nearby enemies
             if (this.player._cursedMirror) {
-              const nearby = this.enemies.filter(en => !en.isDead && dist(en.x, en.y, this.player.x, this.player.y) < 300);
+              const nearby = this.enemies.filter(en => !en.isDead && distSq(en.x, en.y, this.player.x, this.player.y) < 90000);
               for (const n of nearby) {
                 n.takeDamage(e.damage);
                 if (n.isDead) this.onEnemyDead(n);
@@ -497,6 +502,9 @@ class Game {
       }
     }
 
+    // Rebuild spatial grid from live enemies once before all collision checks
+    this._buildEnemyGrid();
+
     // Wand fires
     this.wand.update(dt, this);
 
@@ -509,10 +517,12 @@ class Game {
       p.update(dt);
       if (p.isDead) { this.projectiles.splice(i, 1); continue; }
 
-      for (const e of this.enemies) {
+      // Broad-phase: only check candidates in nearby grid cells
+      this._enemyGrid.query(p.x, p.y, p.size, this._gridOut);
+      for (const e of this._gridOut) {
         if (e.isDead) continue;
         const _projR = p.size + e.size;
-        if (distSq(p.x, p.y, e.x, e.y) >= _projR * _projR) continue;
+        if (distSq(p.x, p.y, e.x, e.y) >= _projR * _projR) continue; // narrow phase
         {
           if (!p.hitEnemy(e)) continue;
 
@@ -576,7 +586,7 @@ class Game {
           if (p.overload && isCrit) {
             const overloadDmg = Math.round(p.damage * 0.8);
             for (const t of this.enemies) {
-              if (!t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 150) {
+              if (!t.isDead && t !== e && distSq(t.x, t.y, e.x, e.y) < 22500) {
                 const tr = t.takeDamage(overloadDmg);
                 this.particles.floatText(t.x, t.y - 10, `${tr.actual}`, '#ffcc00', 10);
                 if (t.isDead) this.onEnemyDead(t);
@@ -588,7 +598,7 @@ class Game {
           // Frost Nova: 20% chance freeze + 60 damage to enemies in 150px for 2s
           if (p.frostNova && Math.random() < 0.20) {
             for (const t of this.enemies) {
-              if (!t.isDead && dist(t.x, t.y, e.x, e.y) < 150) {
+              if (!t.isDead && distSq(t.x, t.y, e.x, e.y) < 22500) {
                 t.frozen = Math.max(t.frozen, 2.0);
                 t.takeDamage(60);
                 if (t.isDead) this.onEnemyDead(t);
@@ -607,7 +617,7 @@ class Game {
           if (p.chainLightning && !e.isDead) {
             const chainDmg = Math.round(p.damage * 0.6);
             const chainTargets = this.enemies
-              .filter(t => !t.isDead && t !== e && dist(t.x, t.y, e.x, e.y) < 200)
+              .filter(t => !t.isDead && t !== e && distSq(t.x, t.y, e.x, e.y) < 40000)
               .sort((a, b) => distSq(e.x, e.y, a.x, a.y) - distSq(e.x, e.y, b.x, b.y))
               .slice(0, 3);
             for (const ct of chainTargets) {
@@ -792,8 +802,8 @@ class Game {
     this.particles.explode(proj.x, proj.y, '#c050ff', 20);
     for (const e of this.enemies) {
       if (e.isDead) continue;
-      const d = dist(proj.x, proj.y, e.x, e.y);
-      if (d < proj.explosionRadius + e.size) {
+      const _expR = proj.explosionRadius + e.size;
+      if (distSq(proj.x, proj.y, e.x, e.y) < _expR * _expR) {
         const dmg = Math.round(proj.damage * 0.7);
         const result = e.takeDamage(dmg);
         this.particles.floatText(e.x, e.y - 12, `${result.actual}`, '#dd88ff', 11);
@@ -805,7 +815,7 @@ class Game {
   // Chain gem: on hit, fire new bolts at nearby unhit enemies
   _spawnChainProjectiles(proj, count = 1) {
     const chainTargets = [...this.enemies]
-      .filter(e => !e.isDead && !proj.hitEnemies.has(e.id) && dist(proj.x, proj.y, e.x, e.y) < proj.chainRange)
+      .filter(e => !e.isDead && !proj.hitEnemies.has(e.id) && distSq(proj.x, proj.y, e.x, e.y) < proj.chainRange * proj.chainRange)
       .sort((a, b) => distSq(proj.x, proj.y, a.x, a.y) - distSq(proj.x, proj.y, b.x, b.y))
       .slice(0, count);
 
@@ -834,7 +844,7 @@ class Game {
     // Virulent poison: spreads to nearby enemies on death
     if (enemy.virulentlyPoisoned) {
       const nearby = this.enemies
-        .filter(e => !e.isDead && !e.virulentlyPoisoned && dist(e.x, e.y, enemy.x, enemy.y) < 160)
+        .filter(e => !e.isDead && !e.virulentlyPoisoned && distSq(e.x, e.y, enemy.x, enemy.y) < 25600)
         .slice(0, 4);
       for (const e of nearby) {
         e.virulentlyPoisoned = true;
@@ -872,7 +882,7 @@ class Game {
     // Soul Burst: fire 3 soul bolts at nearby enemies
     if (this.player._soulBurstGem) {
       const soulTargets = this.enemies
-        .filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 350)
+        .filter(e => !e.isDead && distSq(e.x, e.y, enemy.x, enemy.y) < 122500)
         .slice(0, 3);
       const ws = this.wand.computeStats();
       for (const st of soulTargets) {
@@ -891,7 +901,7 @@ class Game {
     if (this.player._shockwaveGem) {
       const ws = this.wand.computeStats();
       const shockDmg = Math.round(ws.damage * this.player.damageMultiplier * 1.5);
-      const shockTargets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 280);
+      const shockTargets = this.enemies.filter(e => !e.isDead && distSq(e.x, e.y, enemy.x, enemy.y) < 78400);
       for (const st of shockTargets) {
         st.knockback(enemy.x, enemy.y, 500);
         st.takeDamage(shockDmg);
@@ -903,7 +913,7 @@ class Game {
     // Combustion: poisoned enemies explode on death (no cascade)
     if (this.player._combustionGem && enemy.poisoned > 0 && !enemy._combustionKill) {
       const combDmg = Math.round(enemy.maxHp * 0.6);
-      const nearby = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, enemy.x, enemy.y) < 90);
+      const nearby = this.enemies.filter(e => !e.isDead && distSq(e.x, e.y, enemy.x, enemy.y) < 8100);
       for (const n of nearby) {
         n.takeDamage(combDmg);
         if (n.isDead) { n._combustionKill = true; this.onEnemyDead(n); }
@@ -928,7 +938,7 @@ class Game {
     if (this.player._chainDeathPct && this.player._chainDeathRadius && !enemy._chainKill) {
       const dmg = Math.round(enemy.maxHp * this.player._chainDeathPct);
       const nearby = this.enemies.filter(e => !e.isDead && e !== enemy &&
-        dist(e.x, e.y, enemy.x, enemy.y) < this.player._chainDeathRadius);
+        distSq(e.x, e.y, enemy.x, enemy.y) < this.player._chainDeathRadius * this.player._chainDeathRadius);
       for (const n of nearby) {
         const result = n.takeDamage(dmg);
         this.particles.floatText(n.x, n.y - 12, `${result.actual}`, '#ff8040', 11);
@@ -1125,7 +1135,15 @@ class Game {
     return { x: this.player.x + x, y: this.player.y + y };
   }
 
-  spawnProjectile(proj) { this.projectiles.push(proj); }
+  // Hard cap prevents unbounded growth from chain/multicast cascades
+  spawnProjectile(proj) { if (this.projectiles.length < 300) this.projectiles.push(proj); }
+
+  _buildEnemyGrid() {
+    this._enemyGrid.clear();
+    for (const e of this.enemies) {
+      if (!e.isDead) this._enemyGrid.insert(e);
+    }
+  }
 
   getNearestEnemies(count) {
     if (this.enemies.length === 0) return [];
@@ -1277,7 +1295,8 @@ class Game {
   _thunderAegisStrike() {
     const radius = 160;
     const dmg = Math.round(this.wand.computeStats().damage * 1.5);
-    const targets = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, this.player.x, this.player.y) < radius);
+    const _aegisRSq = radius * radius;
+    const targets = this.enemies.filter(e => !e.isDead && distSq(e.x, e.y, this.player.x, this.player.y) < _aegisRSq);
     for (const t of targets) {
       const result = t.takeDamage(dmg);
       this._lightningArcs.push({ x1: this.player.x, y1: this.player.y, x2: t.x, y2: t.y, age: 0, maxAge: 0.25 });
@@ -1292,7 +1311,7 @@ class Game {
     const radius = this.player._nukeRadius;
     const dmg = Math.round(this.wand.computeStats().damage * 10);
     const targets = this.enemies.filter(e => !e.isDead &&
-      dist(e.x, e.y, this.player.x, this.player.y) < radius);
+      distSq(e.x, e.y, this.player.x, this.player.y) < radius * radius);
     for (const t of targets) {
       t.takeDamage(dmg);
       if (t.isDead) this.onEnemyDead(t);
@@ -1310,7 +1329,7 @@ class Game {
       .sort(() => Math.random() - 0.5).slice(0, 1);
     for (const t of targets) {
       // AoE at target position
-      const nearby = this.enemies.filter(e => !e.isDead && dist(e.x, e.y, t.x, t.y) < radius);
+      const nearby = this.enemies.filter(e => !e.isDead && distSq(e.x, e.y, t.x, t.y) < radius * radius);
       for (const n of nearby) {
         n.takeDamage(dmg);
         if (n.isDead) this.onEnemyDead(n);
