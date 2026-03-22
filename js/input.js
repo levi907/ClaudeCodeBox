@@ -6,8 +6,23 @@ class InputHandler {
   constructor() {
     this.keys = {};
     this.joystick = { active: false, dx: 0, dy: 0, id: null, startX: 0, startY: 0 };
+    this._dashPressed = false;
     this._setupKeyboard();
     this._setupTouch();
+    this._setupDashButton();
+  }
+
+  consumeDash() {
+    if (this._dashPressed) { this._dashPressed = false; return true; }
+    return false;
+  }
+
+  _setupDashButton() {
+    const btn = document.getElementById('dash-btn');
+    if (!btn) return;
+    const fire = (e) => { e.preventDefault(); this._dashPressed = true; };
+    btn.addEventListener('touchstart', fire, { passive: false });
+    btn.addEventListener('mousedown', fire);
   }
 
   _setupKeyboard() {
@@ -17,6 +32,7 @@ class InputHandler {
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
         e.preventDefault();
       }
+      if (e.code === 'Space' && !e.repeat) this._dashPressed = true;
     });
     document.addEventListener('keyup', e => {
       this.keys[e.code] = false;

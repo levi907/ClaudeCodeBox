@@ -388,6 +388,28 @@ class Game {
     // Player movement
     this.player.update(dt, this.input);
 
+    // Dash: apply knockback + damage to enemies touched during dash
+    if (this.player._dashTimer > 0 && this.player._dashedEnemies) {
+      const p = this.player;
+      for (const e of this.enemies) {
+        if (!e.isDead && !p._dashedEnemies.has(e) && dist(e.x, e.y, p.x, p.y) < 52) {
+          p._dashedEnemies.add(e);
+          e.knockback(p.x, p.y, 750);
+          e.takeDamage(30);
+          if (e.isDead) this.onEnemyDead(e);
+          this.particles.spark(e.x, e.y, '#88ccff', 8);
+        }
+      }
+      // Afterimage trail
+      if (Math.random() < 0.55) {
+        this.particles.spark(p.x, p.y, '#4488cc', 3);
+      }
+    }
+    // Flash on dash start
+    if (this.player._dashJustStarted) {
+      this.particles.explode(this.player.x, this.player.y, '#aaddff', 10);
+    }
+
     // Camera follows player
     this.camera.x = this.player.x - this.width / 2;
     this.camera.y = this.player.y - this.height / 2;
@@ -1432,6 +1454,38 @@ class Game {
         drawIndicator('⚡ SPEED BOOST', '#00ffcc', this._speedBoostTimer / 20);
       if (this._critSurgeTimer > 0)
         drawIndicator('★ CRIT SURGE', '#ff8800', this._critSurgeTimer / 20);
+    }
+
+    // Dash cooldown arc (bottom-right, near dash button)
+    {
+      const p = this.player;
+      const cdTotal = 3.0;
+      const cdPct = p._dashCooldown <= 0 ? 1 : 1 - (p._dashCooldown / cdTotal);
+      const bx = w - 54, by = h - 54, r = 22;
+      ctx.save();
+      // Background ring
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      // Fill arc
+      const startAngle = -Math.PI / 2;
+      ctx.beginPath();
+      ctx.arc(bx, by, r, startAngle, startAngle + Math.PI * 2 * cdPct);
+      ctx.strokeStyle = cdPct >= 1 ? '#aaddff' : '#4488aa';
+      ctx.shadowColor = cdPct >= 1 ? '#aaddff' : 'transparent';
+      ctx.shadowBlur = cdPct >= 1 ? 10 : 0;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      // Label
+      ctx.font = 'bold 11px "Courier New"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = cdPct >= 1 ? '#ddeeff' : '#6699aa';
+      ctx.shadowBlur = 0;
+      ctx.fillText(cdPct >= 1 ? '»' : `${Math.ceil(p._dashCooldown)}s`, bx, by);
+      ctx.restore();
     }
 
     this._drawVignette(ctx, w, h);

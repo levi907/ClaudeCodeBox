@@ -68,7 +68,7 @@
 
 /* Restrict user-select to game interactive surfaces only */
 #game-canvas, .touch-zone, .joystick-base, .joystick-thumb,
-.wand-gem-slot, .inv-slot, #wand-hud-btn, #hud-overlay {
+.wand-gem-slot, .inv-slot, #wand-hud-btn, #dash-btn, #hud-overlay {
   user-select: none;
   -webkit-user-select: none;
 }
@@ -344,6 +344,37 @@ html, body {
     0 0 16px rgba(224,144,48,0.25),
     inset 0 1px 0 rgba(224,144,48,0.25);
 }
+/* Dash button */
+#dash-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 54px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 38%, rgba(68,136,200,0.22), rgba(20,50,80,0.82));
+  border: 2px solid rgba(100,180,255,0.55);
+  color: #aaddff;
+  font-size: 22px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: all;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow:
+    0 0 18px rgba(68,136,220,0.35),
+    inset 0 1px 0 rgba(160,210,255,0.18);
+  z-index: 31;
+  transition: box-shadow 0.1s, transform 0.1s;
+}
+#dash-btn:active {
+  transform: scale(0.92);
+  box-shadow: 0 0 28px rgba(100,180,255,0.6), inset 0 1px 0 rgba(180,230,255,0.3);
+}
+
 .wand-gem-dot {
   display: inline-block;
   width: 8px; height: 8px;

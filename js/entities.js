@@ -32,6 +32,11 @@ class Player {
     this.pendingRelicLevels = 0;
     this.isDead = false;
     this.vx = 0; this.vy = 0;
+    this._dashCooldown = 0;
+    this._dashTimer = 0;
+    this._dashVx = 0; this._dashVy = 0;
+    this._dashJustStarted = false;
+    this._dashedEnemies = null;
   }
 
   get effectiveSpeed() {
@@ -44,8 +49,35 @@ class Player {
 
   update(dt, input) {
     const move = input.getMovement();
-    this.vx = move.x * this.effectiveSpeed;
-    this.vy = move.y * this.effectiveSpeed;
+
+    // Dash
+    this._dashJustStarted = false;
+    if (this._dashCooldown > 0) this._dashCooldown -= dt;
+    if (input.consumeDash() && this._dashCooldown <= 0 && this._dashTimer <= 0) {
+      const spd = 820;
+      if (move.x !== 0 || move.y !== 0) {
+        this._dashVx = move.x * spd;
+        this._dashVy = move.y * spd;
+      } else {
+        this._dashVx = this.facing * spd;
+        this._dashVy = 0;
+      }
+      this._dashTimer = 0.22;
+      this._dashCooldown = 3.0;
+      this.invincibleTime = Math.max(this.invincibleTime, 0.26);
+      this._dashJustStarted = true;
+      this._dashedEnemies = new Set();
+    }
+    if (this._dashTimer > 0) this._dashTimer -= dt;
+
+    if (this._dashTimer > 0) {
+      this.vx = this._dashVx;
+      this.vy = this._dashVy;
+    } else {
+      this.vx = move.x * this.effectiveSpeed;
+      this.vy = move.y * this.effectiveSpeed;
+    }
+
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
