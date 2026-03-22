@@ -1461,7 +1461,7 @@ class Game {
       const p = this.player;
       const cdTotal = 3.0;
       const cdPct = p._dashCooldown <= 0 ? 1 : 1 - (p._dashCooldown / cdTotal);
-      const bx = w - 54, by = h - 54, r = 22;
+      const bx = w - 48, by = h - 84, r = 28;
       ctx.save();
       // Background ring
       ctx.beginPath();

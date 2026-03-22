@@ -18,11 +18,30 @@ class InputHandler {
   }
 
   _setupDashButton() {
+    // Desktop: listen on the element directly
     const btn = document.getElementById('dash-btn');
-    if (!btn) return;
-    const fire = (e) => { e.preventDefault(); this._dashPressed = true; };
-    btn.addEventListener('touchstart', fire, { passive: false });
-    btn.addEventListener('mousedown', fire);
+    if (btn) {
+      btn.addEventListener('mousedown', (e) => { e.preventDefault(); this._dashPressed = true; });
+    }
+
+    // Mobile: detect via document-level touchstart using bounding-rect hit test.
+    // This bypasses any element-level event propagation issues and matches how
+    // the joystick zone already works on mobile.
+    document.addEventListener('touchstart', (e) => {
+      const dashBtn = document.getElementById('dash-btn');
+      if (!dashBtn) return;
+      const rect = dashBtn.getBoundingClientRect();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        // Extra 12px padding for easier tapping on small screens
+        if (t.clientX >= rect.left - 12 && t.clientX <= rect.right  + 12 &&
+            t.clientY >= rect.top  - 12 && t.clientY <= rect.bottom + 12) {
+          e.preventDefault();
+          this._dashPressed = true;
+          break;
+        }
+      }
+    }, { passive: false });
   }
 
   _setupKeyboard() {
