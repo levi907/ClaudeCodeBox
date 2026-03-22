@@ -964,10 +964,14 @@ class Game {
     // Rarity size/XP multipliers
     if (rarity === 'uncommon') {
       enemy.size *= 1.1;
+      enemy.maxHp = Math.ceil(enemy.maxHp * 3);
+      enemy.hp = enemy.maxHp;
       enemy.xpMult = 3;
       enemy._rarityBarColor = '#4499ff';
     } else {
       enemy.size *= 1.2;
+      enemy.maxHp = Math.ceil(enemy.maxHp * 10);
+      enemy.hp = enemy.maxHp;
       enemy.xpMult = 10;
       enemy._rarityBarColor = '#ffd700';
     }
