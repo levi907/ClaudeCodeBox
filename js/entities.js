@@ -127,7 +127,7 @@ class Player {
   }
 
   draw(ctx, screenX, screenY) {
-    Sprites.player(ctx, screenX, screenY, this.facing, this.animFrame, this.flashTime, this._projSizeMult || 1);
+    Sprites.player(ctx, screenX, screenY, this.facing, this.animFrame, this.flashTime, this._playerSizeMult || 1);
   }
 }
 

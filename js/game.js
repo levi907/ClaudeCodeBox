@@ -1192,6 +1192,7 @@ class Game {
     p._extraChoices       = 0;
     p._omniShot           = 0;
     p._projSizeMult       = 1;
+    p._playerSizeMult     = 1; // headhunter size-mod only — does NOT include Giant's Wand
     p._nukeInterval       = 0;
     p._nukeRadius         = 0;
     p._berserkerMaxMult   = 0;
@@ -1282,7 +1283,10 @@ class Game {
       if (counts.huge_xp)      p._xpMultiplier      *= 1 + counts.huge_xp * 0.50;
       if (counts.regeneration) p._hpRegen           += counts.regeneration * 3;
       if (counts.reflect)      p._thorns            += counts.reflect * 3;
-      if (counts.size)         p._projSizeMult      += counts.size * 0.15;
+      if (counts.size) {
+        p._projSizeMult    += counts.size * 0.15;
+        p._playerSizeMult  += counts.size * 0.15;
+      }
       if (counts.erratic)      p.critChance          = Math.min(0.95, p.critChance + counts.erratic * 0.10);
       if (counts.barrier)      p.armor              += counts.barrier * 15;
     }
