@@ -91,6 +91,8 @@ class Game {
     this._bloodFrenzyStacks = 0;
     this._bloodFrenzyTimer = 0;
     this._sigils = [];
+    this._headhunterStacks = [];
+    this._headhunterTimer = 0;
     this.player.pendingRelicLevels = 0;
     this.inventoryOpen = false;
     this.camera.x = 0;
@@ -271,6 +273,16 @@ class Game {
       }
     }
 
+    // Headhunter: decay stolen mod timer
+    if (this._headhunterTimer > 0) {
+      this._headhunterTimer -= dt;
+      if (this._headhunterTimer <= 0) {
+        this._headhunterTimer = 0;
+        this._headhunterStacks = [];
+        this._reapplyAllBonuses();
+      }
+    }
+
     // Blood Frenzy: decay stacks
     if (this._bloodFrenzyStacks > 0) {
       this._bloodFrenzyTimer -= dt;
@@ -438,6 +450,14 @@ class Game {
         if (d < p.size + e.size) {
           if (!p.hitEnemy(e)) continue;
 
+          // Barrier: absorbs the first hit entirely
+          if (e.barrierActive) {
+            e.barrierActive = false;
+            this.particles.spark(e.x, e.y, '#88ccff', 10);
+            this.particles.floatText(e.x, e.y - 15, '🛡 BARRIER', '#88ccff', 12);
+            continue;
+          }
+
           // Curse: apply before damage so the applying hit benefits
           if (p.curse) {
             e.cursed = Math.max(e.cursed, 8.0);
@@ -533,6 +553,12 @@ class Game {
           // Reaper (gem): execute enemies below 40% HP
           if (p.reaper && !e.isDead && e.hp < e.maxHp * 0.40) {
             e.takeDamage(99999);
+          }
+
+          // Reflect mod: 1% of damage dealt is reflected back to player
+          if (e.mods.includes('reflect') && result.actual > 0) {
+            const reflectDmg = Math.max(1, Math.round(result.actual * 0.01));
+            this.player.hp = Math.max(1, this.player.hp - reflectDmg);
           }
 
           this.particles.floatText(e.x, e.y - 15, `${result.actual}`,
@@ -800,6 +826,26 @@ class Game {
       if (nearby.length > 0) this.particles.explode(enemy.x, enemy.y, '#ff6030', 8);
     }
 
+    // Headhunter: steal mods from killed enemies
+    if (this.player._headhunterGem && enemy.mods.length > 0) {
+      const canSteal = 20 - this._headhunterStacks.length;
+      if (canSteal > 0) {
+        const stolen = enemy.mods.slice(0, canSteal);
+        this._headhunterStacks.push(...stolen);
+        this._headhunterTimer = 10;
+        this._reapplyAllBonuses();
+        this.particles.floatText(enemy.x, enemy.y - 20,
+          `⚔ ${stolen.length} MOD${stolen.length > 1 ? 'S' : ''} STOLEN`, '#ff8800', 13);
+        this.particles.spark(enemy.x, enemy.y, '#ff8800', 10);
+      }
+    }
+
+    // Huge XP explosion visual
+    if (enemy.mods.includes('huge_xp')) {
+      this.particles.explode(enemy.x, enemy.y, '#88ffaa', 18);
+      this.particles.floatText(enemy.x, enemy.y - 28, '✦ HUGE XP!', '#88ffaa', 14);
+    }
+
     if (enemy.isBoss) {
       this.particles.explode(enemy.x, enemy.y, '#ff0000', 40);
       this.particles.levelUpBurst(enemy.x, enemy.y);
@@ -809,6 +855,13 @@ class Game {
       this.particles.explode(enemy.x, enemy.y, '#ff8800', 24);
       this.particles.spark(enemy.x, enemy.y, '#ffcc44', 16);
       this.particles.floatText(enemy.x, enemy.y - 50, '⚒ LEGENDARY FORGE!', '#ffcc44', 18);
+    } else if (enemy.rarity === 'rare') {
+      this.particles.explode(enemy.x, enemy.y, '#ffd700', 14);
+      this.particles.spark(enemy.x, enemy.y, '#ffd700', 8);
+      this.particles.blood(enemy.x, enemy.y, 4);
+    } else if (enemy.rarity === 'uncommon') {
+      this.particles.spark(enemy.x, enemy.y, '#4499ff', 8);
+      this.particles.blood(enemy.x, enemy.y, 4);
     } else {
       this.particles.blood(enemy.x, enemy.y, 6);
       this.particles.spark(enemy.x, enemy.y, '#ff4040', 4);
@@ -871,8 +924,56 @@ class Game {
       if (this.enemies.length >= MAX_ENEMIES) break;
       const type = this._pickEnemyType(minutes);
       const { x, y } = this._spawnPosition();
-      this.enemies.push(new Enemy(x, y, type, diff));
+      const enemy = new Enemy(x, y, type, diff);
+      const rarity = this._rollMonsterRarity();
+      if (rarity !== 'normal') this._applyMonsterRarity(enemy, rarity);
+      this.enemies.push(enemy);
     }
+  }
+
+  _rollMonsterRarity() {
+    const r = Math.random();
+    if (r < 0.005) return 'rare';
+    if (r < 0.055) return 'uncommon';
+    return 'normal';
+  }
+
+  _applyMonsterRarity(enemy, rarity) {
+    enemy.rarity = rarity;
+    const modCount = rarity === 'rare' ? 6 : 2;
+    const pool = ['size', 'damage', 'hp', 'move_speed', 'huge_xp', 'erratic', 'barrier', 'regeneration', 'reflect'];
+    const available = [...pool];
+    const picked = [];
+    while (picked.length < modCount && available.length > 0) {
+      const idx = Math.floor(Math.random() * available.length);
+      picked.push(available.splice(idx, 1)[0]);
+    }
+    enemy.mods = picked;
+
+    // Apply stat effects from mods
+    for (const mod of picked) {
+      switch (mod) {
+        case 'size':       enemy.size    *= 1.3; break;
+        case 'damage':     enemy.damage   = Math.ceil(enemy.damage * 1.5); break;
+        case 'hp':         enemy.maxHp    = Math.ceil(enemy.maxHp * 1.5); enemy.hp = enemy.maxHp; break;
+        case 'move_speed': enemy.speed   *= 1.3; break;
+        case 'barrier':    enemy.barrierActive = true; break;
+      }
+    }
+
+    // Rarity size/XP multipliers
+    if (rarity === 'uncommon') {
+      enemy.size *= 1.1;
+      enemy.xpMult = 3;
+      enemy._rarityBarColor = '#4499ff';
+    } else {
+      enemy.size *= 1.2;
+      enemy.xpMult = 10;
+      enemy._rarityBarColor = '#ffd700';
+    }
+
+    // huge_xp stacks with rarity mult
+    if (picked.includes('huge_xp')) enemy.xpMult *= 10;
   }
 
   _pickEnemyType(minutes) {
@@ -1016,6 +1117,7 @@ class Game {
     p._sigilGem       = ws.sigil;
     p._warpBoltGem    = ws.warpBolt;
     p._vitalSurgeGem  = ws.vitalSurge;
+    p._headhunterGem  = ws.headhunter;
 
     // Vital Surge: +50% max HP
     if (ws.vitalSurge) {
@@ -1029,6 +1131,25 @@ class Game {
     // Pickup range from attract/magnetism gems and void_pull
     p.xpRangeBonus += ws.xpRangeBonus;
     if (ws.voidPull) p.xpRangeBonus += 400;
+
+    // Headhunter: apply stolen monster mod bonuses
+    if (this._headhunterTimer > 0 && this._headhunterStacks.length > 0) {
+      const counts = {};
+      for (const m of this._headhunterStacks) counts[m] = (counts[m] || 0) + 1;
+      if (counts.damage)       p.damageMultiplier   *= 1 + counts.damage * 0.30;
+      if (counts.move_speed)   p.speedMultiplier    += counts.move_speed * 0.12;
+      if (counts.hp) {
+        const hpBonus = counts.hp * 20;
+        p.maxHp += hpBonus;
+        p.hp = Math.min(p.hp + hpBonus, p.maxHp);
+      }
+      if (counts.huge_xp)      p._xpMultiplier      *= 1 + counts.huge_xp * 0.50;
+      if (counts.regeneration) p._hpRegen           += counts.regeneration * 3;
+      if (counts.reflect)      p._thorns            += counts.reflect * 3;
+      if (counts.size)         p._projSizeMult      += counts.size * 0.15;
+      if (counts.erratic)      p.critChance          = Math.min(0.95, p.critChance + counts.erratic * 0.10);
+      if (counts.barrier)      p.armor              += counts.barrier * 15;
+    }
   }
 
   // Keep legacy alias so old relics code paths don't break
@@ -1220,6 +1341,27 @@ class Game {
     const boss = this.enemies.find(e => e.isBoss && !e.isDead);
     this.ui.drawBossBar(ctx, boss, w, h);
     this.ui.drawAbilityCooldowns(ctx, this, w, h);
+
+    // Headhunter stack indicator
+    if (this._headhunterTimer > 0 && this._headhunterStacks.length > 0) {
+      const stackCount = this._headhunterStacks.length;
+      const timerPct = this._headhunterTimer / 10;
+      const hx = 14, hy = 18;
+      ctx.save();
+      ctx.font = 'bold 11px "Courier New"';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ff8800';
+      ctx.shadowColor = '#ff8800';
+      ctx.shadowBlur = 8;
+      ctx.fillText(`⚔ HEADHUNTER  ×${stackCount}`, hx, hy);
+      ctx.shadowBlur = 0;
+      // Timer bar
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(hx, hy + 4, 130, 4);
+      ctx.fillStyle = '#ff8800';
+      ctx.fillRect(hx, hy + 4, Math.round(130 * timerPct), 4);
+      ctx.restore();
+    }
 
     this._drawVignette(ctx, w, h);
   }

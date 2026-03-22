@@ -61,6 +61,7 @@ const MOD_DEFS = {
   warp_bolt:        { rarity: 'legendary', label: 'Warp Bolt',        color: '#ff8c00', format: () => 'Every 10s: fire a massive 5× damage bolt' },
   void_pull:        { rarity: 'legendary', label: 'Void Pull',        color: '#ff8c00', format: () => 'Massively increased pickup range' },
   vital_surge:      { rarity: 'legendary', label: 'Vital Surge',      color: '#ff8c00', format: () => '+50% Max HP. Every 8s, life pulse deals 30% Max HP to all enemies within 200px' },
+  headhunter:       { rarity: 'legendary', label: 'Headhunter',       color: '#ff8c00', format: () => 'On kill: steal mods from enemies (stack to 20, lasts 10s). Each mod boosts your own stats.' },
 };
 
 // Drop weight for each mod (higher = more likely to appear)
@@ -118,6 +119,7 @@ const MOD_WEIGHTS = {
   warp_bolt:        1,
   void_pull:        1,
   vital_surge:      1,
+  headhunter:       1,
 };
 
 // Numeric value for each non-legendary mod

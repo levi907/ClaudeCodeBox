@@ -180,22 +180,47 @@ class Enemy {
     this.decaying = 0;  // decay duration — loses 3% maxHp/s
     this.isDead = false;
     this.id = Math.random();
+    // Monster mod system
+    this.mods = [];
+    this.rarity = 'normal';
+    this.barrierActive = false;
+    this.erraticTimer = 0;
+    this.erraticOffset = 0;
+    this.xpMult = 1;
+    this._rarityBarColor = null;
   }
 
   update(dt, playerX, playerY) {
     this.animFrame += dt * 60;
     if (this.frozen > 0) { this.frozen -= dt; return; }
 
+    // Erratic movement: periodically veers off-course but ultimately reaches player
+    const isErratic = this.mods.includes('erratic');
+    if (isErratic) {
+      this.erraticTimer -= dt;
+      if (this.erraticTimer <= 0) {
+        this.erraticTimer = 0.5 + Math.random() * 1.2;
+        this.erraticOffset = (Math.random() - 0.5) * 2.6;
+      }
+    }
+
     // Move toward player
     const dx = playerX - this.x;
     const dy = playerY - this.y;
     const d = Math.sqrt(dx*dx + dy*dy) || 1;
+    const baseAngle = Math.atan2(dy, dx);
+    const moveAngle = isErratic ? baseAngle + this.erraticOffset : baseAngle;
     const spd = this.speed;
-    this.x += (dx/d) * spd * dt + this.knockbackX * dt;
-    this.y += (dy/d) * spd * dt + this.knockbackY * dt;
+    this.x += Math.cos(moveAngle) * spd * dt + this.knockbackX * dt;
+    this.y += Math.sin(moveAngle) * spd * dt + this.knockbackY * dt;
 
     this.knockbackX *= Math.pow(0.05, dt);
     this.knockbackY *= Math.pow(0.05, dt);
+
+    // Regeneration mod: heal 2% maxHp/s
+    if (this.mods.includes('regeneration') && this.hp < this.maxHp) {
+      this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.02 * dt);
+    }
 
     if (this.poisoned > 0) {
       this.poisoned -= dt;
@@ -245,12 +270,46 @@ class Enemy {
   }
 
   draw(ctx, screenX, screenY) {
-    this.def.drawFn(ctx, screenX, screenY, this.animFrame);
+    // Rarity glow border (drawn behind sprite)
+    if (this.rarity === 'uncommon') {
+      ctx.save();
+      const pulse = 0.7 + 0.3 * Math.sin(this.animFrame * 0.08);
+      ctx.shadowColor = '#4499ff';
+      ctx.shadowBlur = 14 * pulse;
+      ctx.strokeStyle = `rgba(68,153,255,${0.75 + 0.2 * pulse})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, this.size + 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    } else if (this.rarity === 'rare') {
+      ctx.save();
+      const pulse = 0.65 + 0.35 * Math.sin(this.animFrame * 0.1);
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 18 * pulse;
+      ctx.strokeStyle = `rgba(255,215,0,${0.8 + 0.2 * pulse})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, this.size + 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Sprite (scaled to current size relative to base def size)
+    const scale = this.size / this.def.size;
+    ctx.save();
+    ctx.translate(screenX, screenY);
+    ctx.scale(scale, scale);
+    this.def.drawFn(ctx, 0, 0, this.animFrame);
+    ctx.restore();
+
     // Health bar
     if (this.hp < this.maxHp) {
+      const barColor = this._rarityBarColor || this.def.barColor;
       Sprites.drawHealthBar(ctx, screenX, screenY - this.size - 4,
-        this.def.barWidth, this.hp, this.maxHp, this.def.barColor);
+        this.def.barWidth * scale, this.hp, this.maxHp, barColor);
     }
+
     // Frozen effect
     if (this.frozen > 0) {
       ctx.save();
@@ -262,30 +321,66 @@ class Enemy {
       ctx.globalAlpha = 1;
       ctx.restore();
     }
-    // Boss name tag
-    if (this.isBoss) {
+
+    // Barrier bubble
+    if (this.barrierActive) {
       ctx.save();
-      ctx.font = 'bold 10px "Courier New"';
+      const pulse = 0.65 + 0.35 * Math.sin(this.animFrame * 0.14);
+      ctx.shadowColor = '#88ccff';
+      ctx.shadowBlur = 16 * pulse;
+      ctx.strokeStyle = `rgba(136,204,255,${0.7 + 0.25 * pulse})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, this.size + 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.08 * pulse;
+      ctx.fillStyle = '#88ccff';
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, this.size + 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Rarity / boss name tag
+    if (this.isBoss || this.rarity !== 'normal') {
+      ctx.save();
+      ctx.font = 'bold 9px "Courier New"';
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#ff4040';
-      ctx.shadowColor = '#ff0000';
-      ctx.shadowBlur = 8;
-      ctx.fillText('★ BOSS ★', screenX, screenY - this.size - 10);
+      if (this.isBoss) {
+        ctx.fillStyle = '#ff4040';
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = 8;
+        ctx.font = 'bold 10px "Courier New"';
+        ctx.fillText('★ BOSS ★', screenX, screenY - this.size - 10);
+      } else if (this.rarity === 'rare') {
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 6;
+        ctx.fillText('★ RARE', screenX, screenY - this.size - 10);
+      } else if (this.rarity === 'uncommon') {
+        ctx.fillStyle = '#4499ff';
+        ctx.shadowColor = '#4499ff';
+        ctx.shadowBlur = 5;
+        ctx.fillText('◆ UNCOMMON', screenX, screenY - this.size - 10);
+      }
       ctx.shadowBlur = 0;
       ctx.restore();
     }
   }
 
   dropXP() {
-    const count = rngInt(1, this.isBoss ? 15 : 3);
-    const amount = rngInt(this.xpDrop[0], this.xpDrop[1]);
+    const hasHugeXP = this.mods.includes('huge_xp');
+    const baseCount = rngInt(1, this.isBoss ? 15 : 3);
+    const count = hasHugeXP ? Math.max(12, baseCount * 5) : baseCount;
+    const amount = rngInt(this.xpDrop[0], this.xpDrop[1]) * this.xpMult;
+    const spread = hasHugeXP ? 50 : 15;
     const orbs = [];
     for (let i = 0; i < count; i++) {
       orbs.push({
-        x: this.x + rng(-15, 15),
-        y: this.y + rng(-15, 15),
+        x: this.x + rng(-spread, spread),
+        y: this.y + rng(-spread, spread),
         value: Math.ceil(amount / count),
-        size: this.isBoss ? 8 : rng(4, 6)
+        size: hasHugeXP ? rng(6, 9) : (this.isBoss ? 8 : rng(4, 6))
       });
     }
     return orbs;
