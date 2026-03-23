@@ -80,10 +80,15 @@
     musicBtn.addEventListener('touchend', (e) => { e.preventDefault(); handleMuteToggle(); });
   }
 
-  // Start menu music immediately — AudioContext starts suspended and auto-resumes
-  // on first user gesture (Chrome behaviour). Deferred stop in game.start() handles
-  // the transition when the user clicks "Enter the Dungeon".
-  window.MenuMusic?.start();
+  // Start menu music on first pointer interaction.
+  // AudioContext created inside a user gesture starts in 'running' state immediately
+  // (no suspended/autoplay issue). If Enter is the first click, pointerdown fires
+  // before click, giving the music ~1s before game.start()'s deferred stop fires.
+  const _startMenuMusic = () => {
+    window.MenuMusic?.start();
+    document.removeEventListener('pointerdown', _startMenuMusic);
+  };
+  document.addEventListener('pointerdown', _startMenuMusic);
 
   // Prevent context menu on long press (mobile)
   document.addEventListener('contextmenu', e => e.preventDefault());
