@@ -121,7 +121,7 @@ class Game {
     document.getElementById('start-screen').classList.add('hidden');
     // Defer MenuMusic.stop() so the AudioContext has one tick to actually produce
     // sound (Chrome auto-resumes AudioContext on the same gesture that starts the game).
-    setTimeout(() => window.MenuMusic?.stop(), 400);
+    setTimeout(() => window.MenuMusic?.stop(), 1000);
     window.Music?.start();
   }
 

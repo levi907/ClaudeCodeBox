@@ -606,7 +606,7 @@ class MenuMusicSystem {
     this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
     this.masterGain.gain.exponentialRampToValueAtTime(
       this.muted ? 0.001 : 0.45,
-      this.ctx.currentTime + 1.5   // faster fade-in so music is audible sooner
+      this.ctx.currentTime + 0.15
     );
     this._timer = setInterval(() => this._pump(), this.TICK);
   }
